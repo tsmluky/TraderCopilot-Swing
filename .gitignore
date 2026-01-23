@@ -1,0 +1,66 @@
+.env
+
+# Local DBs (never commit)
+dev_local.db
+backend/dev_local.db
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+backend/logs/
+*.log
+
+
+# =========================
+# Local/runtime artifacts (never commit)
+# =========================
+_archive/
+_export/
+_stage/
+
+*.db
+*.db-shm
+*.db-wal
+
+backend/logs/
+*.log
+
+__pycache__/
+**/__pycache__/
+*.pyc
+
+.venv/
+venv/
+.env
+.env.*
+node_modules/
+.next/
+dist/
+build/
+
+# --- local/backups ---
+_backup_backend_*
+*.BAK_*
+*.bak
+*.tmp
+
+# --- python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- node ---
+node_modules/
+.next/
+dist/
+
+# --- local db / runtime ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- logs ---
+logs/
+*.log

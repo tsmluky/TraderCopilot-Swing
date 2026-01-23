@@ -1,0 +1,8 @@
+{
+    "titan_btc": {
+        "is_active": true
+    },
+    "eth_breaker": {
+        "is_active": false
+    }
+}

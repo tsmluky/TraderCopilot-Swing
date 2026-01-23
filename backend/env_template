@@ -1,0 +1,19 @@
+
+# === GEMINI CONFIGURATION (MIGRATION) ===
+# Variable crítica de autenticación (Google AI Studio)
+GEMINI_API_KEY=AIzaSy...
+
+# Modelos (Opcional - Defaults ajustados en código)
+# Advisor: Chat ligero y rápido
+GEMINI_MODEL_ADVISOR=gemini-2.5-flash-lite
+GEMINI_MAX_OUTPUT_ADVISOR=1000
+
+# PRO: Análisis profundo y estructurado (JSON)
+GEMINI_MODEL_PRO=gemini-2.5-flash
+GEMINI_MAX_OUTPUT_PRO=8000
+
+# Timeout global
+GEMINI_TIMEOUT_SEC=30
+
+# === OTHER ===
+# AI_PROVIDER=gemini  <-- Forced in code now, but good to keep
