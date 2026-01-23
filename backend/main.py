@@ -8,7 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 import threading
 
 from database import SessionLocal, engine, Base, get_db
@@ -169,7 +169,7 @@ def health():
 def ready():
     db = SessionLocal()
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         return {"ready": True}
     except Exception:
         LOG.exception("Ready check failed")
@@ -274,3 +274,4 @@ if __name__ == "__main__":
         port=int(os.getenv("PORT", "8000")),
         reload=reload_flag,
     )
+
