@@ -80,7 +80,9 @@ class DonchianBreakoutV2:
                 if col not in df.columns:
                     return None
             df = df.copy().reset_index(drop=True)
-            df[["open", "high", "low", "close", "volume"]] = df[["open", "high", "low", "close", "volume"]].astype(float)
+            df[["open", "high", "low", "close", "volume"]] = df[
+                ["open", "high", "low", "close", "volume"]
+            ].astype(float)
             return df
         except Exception:
             return None
@@ -255,7 +257,12 @@ class DonchianBreakoutV2:
         df["atr"] = self._compute_atr(df)
 
         last = df.iloc[-1]
-        if pd.isna(last["atr"]) or pd.isna(last["ema200"]) or pd.isna(last["donchian_high"]) or pd.isna(last["donchian_low"]):
+        if (
+            pd.isna(last["atr"])
+            or pd.isna(last["ema200"])
+            or pd.isna(last["donchian_high"])
+            or pd.isna(last["donchian_low"])
+        ):
             return []
 
         close = float(last["close"])
@@ -279,7 +286,10 @@ class DonchianBreakoutV2:
                 "bias": "long",
                 "trigger": "break_above_upper",
                 "distance": {"type": "atr", "value": round(dist_to_upper_atr, 3)},
-                "note": f"Near Donchian upper. Need breakout. Dist â‰ˆ {dist_to_upper_atr:.2f} ATR. Trend: bullish (above EMA200).",
+                "note": (
+                    f"Near Donchian upper. Need breakout. Dist â‰ˆ {dist_to_upper_atr:.2f} ATR. "
+                    "Trend: bullish (above EMA200)."
+                ),
             })
 
         # Short bias if price below EMA200
@@ -293,7 +303,10 @@ class DonchianBreakoutV2:
                 "bias": "short",
                 "trigger": "break_below_lower",
                 "distance": {"type": "atr", "value": round(dist_to_lower_atr, 3)},
-                "note": f"Near Donchian lower. Need breakdown. Dist â‰ˆ {dist_to_lower_atr:.2f} ATR. Trend: bearish (below EMA200).",
+                "note": (
+                    f"Near Donchian lower. Need breakdown. Dist â‰ˆ {dist_to_lower_atr:.2f} ATR. "
+                    "Trend: bearish (below EMA200)."
+                ),
             })
 
         items = sorted(items, key=lambda x: x["distance"]["value"])

@@ -1,5 +1,5 @@
-from core.entitlements import VALID_TOKENS_TRIAL, VALID_TOKENS_FULL, QUOTAS
-from core.trial_policy import TIER_TRIAL, TIER_TRADER, TIER_PRO, TIER_OWNER
+from core.entitlements import VALID_TOKENS_TRIAL, VALID_TOKENS_FULL
+from core.trial_policy import TIER_TRIAL, TIER_TRADER, TIER_PRO
 
 def print_table():
     print(f"{'TIER':<15} | {'TOKENS':<30} | {'TIMEFRAMES':<15} | {'ADVISOR':<8} | {'TELEGRAM':<8}")

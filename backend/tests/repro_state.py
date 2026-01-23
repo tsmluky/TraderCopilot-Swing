@@ -69,7 +69,7 @@ def test_strategy_persistence():
 
         # 5. CRITICAL: Verify S1 is STILL Enabled
         db.refresh(s1)
-        print(f"--- Verification: checking S1 state after S2 update ---")
+        print("--- Verification: checking S1 state after S2 update ---")
         print(f"S1 State: Enabled={s1.enabled}, Timeframe={s1.timeframes}")
         
         if s1.enabled != 1:

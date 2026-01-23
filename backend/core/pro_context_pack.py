@@ -9,15 +9,14 @@ Components:
 4. RAG Brain Content (Thesis, Risk, Catalysts).
 """
 import logging
-from typing import Dict, Any, Optional
-from pathlib import Path
+from typing import Dict, Any
 from sqlalchemy.orm import Session
 from models_db import User
 from core.lite_swing_engine import build_lite_swing_signal
 from indicators.market import get_market_data
 
 # Reuse RAG logic for loading files
-from rag_context import BRAIN_DIR, _load_snippet
+from rag_context import _load_snippet
 
 logger = logging.getLogger(__name__)
 

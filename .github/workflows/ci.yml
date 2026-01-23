@@ -52,13 +52,20 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
+        cache: 'pnpm'
+        cache-dependency-path: './web/pnpm-lock.yaml'
         
     - name: Install dependencies
-      run: npm ci
+      run: pnpm install --frozen-lockfile
       
     - name: Build
-      run: npm run build
+      run: pnpm run build

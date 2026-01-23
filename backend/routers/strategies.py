@@ -99,7 +99,8 @@ async def get_marketplace(
         configs = db.query(StrategyConfig).filter(StrategyConfig.user_id == current_user.id).all()
 
     # 3. Migration / Cleanup for Multi-Timeframe Architecture
-    # Goal: Reset legacy strategies to their canonical timeframe if a specific strategy now exists for the user's current overridden timeframe.
+    # Goal: Reset legacy strategies to their canonical timeframe if a specific strategy 
+    # now exists for the user's current overridden timeframe.
     try:
         migrated = False
         for c in configs:
@@ -117,24 +118,34 @@ async def get_marketplace(
             # Get Current Configured Timeframe
             try:
                 current_tf = json_lib.loads(c.timeframes)[0]
-            except:
+            except Exception:
                 current_tf = c.timeframes
 
             # If user has changed timeframe (e.g. titan_btc 1d -> 4h) - Case Insensitive Check
             if current_tf.lower() != canonical_tf.lower():
                 # Check if there is a BETTER candidate for this timeframe
                 # i.e. Another system persona with same Name+Symbol but naturally defaults to current_tf
-                better_candidate = next((p for p in SYSTEM_PERSONAS if 
-                                       p["name"] == system_p["name"] and 
-                                       p["symbol"] == system_p["symbol"] and 
-                                       p["timeframe"].lower() == current_tf.lower()), None)
+                better_candidate = next(
+                    (
+                        p
+                        for p in SYSTEM_PERSONAS
+                        if p["name"] == system_p["name"]
+                        and p["symbol"] == system_p["symbol"]
+                        and p["timeframe"].lower() == current_tf.lower()
+                    ),
+                    None,
+                )
                 
                 # OR: If no "better candidate" exists, but we are a System Strategy, 
                 # we should probably strictly enforce our canonical timeframe if we are now in a multi-timeframe world?
-                # No, let's stick to the "collision avoidance" logic: only reset if we are colliding with a dedicated strategy.
+                # No, let's stick to the "collision avoidance" logic: 
+                # only reset if we are colliding with a dedicated strategy.
                 
                 if better_candidate:
-                    print(f"[MIGRATION] Resetting {c.persona_id} from {current_tf} to {canonical_tf} because {better_candidate['id']} exists.")
+                    print(
+                        f"[MIGRATION] Resetting {c.persona_id} from {current_tf} to {canonical_tf} "
+                        f"because {better_candidate['id']} exists."
+                    )
                     c.timeframes = json_lib.dumps([canonical_tf])
                     db.add(c)
                     migrated = True

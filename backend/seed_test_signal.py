@@ -10,8 +10,8 @@ sys.path.insert(0, str(current_dir))
 # Force DB connection
 os.environ["DATABASE_URL"] = "sqlite:///backend/dev_local.db"
 
-from database import SessionLocal
-from models_db import Signal, StrategyConfig
+from database import SessionLocal  # noqa: E402
+from models_db import Signal, StrategyConfig  # noqa: E402
 
 def seed_test_signal():
     db = SessionLocal()

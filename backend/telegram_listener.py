@@ -2,10 +2,7 @@ import os
 import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from sqlalchemy.orm import Session
 from database import SessionLocal
-from models_db import User
-import threading
 
 # Bot Token from environment
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")

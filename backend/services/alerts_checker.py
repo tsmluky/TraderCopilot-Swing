@@ -2,10 +2,9 @@
 import os
 import asyncio
 from datetime import datetime
-from sqlalchemy.orm import Session
 from database import SessionLocal
 from models_db import WatchAlert, User
-from core.market_data_api import get_current_price, get_ohlcv_data
+from core.market_data_api import get_current_price
 from services.telegram_bot import bot
 
 async def check_watch_alerts():
@@ -76,7 +75,10 @@ async def check_watch_alerts():
                     is_triggered = True
             
             if is_triggered:
-                print(f"[ALERTS] TRIGGERED! {alert.token} {alert.side} @ {current_price} (Target: {alert.trigger_price})")
+                print(
+                    f"[ALERTS] TRIGGERED! {alert.token} {alert.side} @ {current_price} "
+                    f"(Target: {alert.trigger_price})"
+                )
                 
                 # Retrieve User for Chat ID
                 user = db.query(User).filter(User.id == alert.user_id).first()

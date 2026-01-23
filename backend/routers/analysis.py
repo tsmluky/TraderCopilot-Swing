@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict
 import traceback
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,20 +12,18 @@ from models import LiteReq, ProReq
 from models_db import User
 from core.signal_logger import log_signal
 from core.schemas import Signal
-from core.trial_policy import assert_trial_active, TIER_TRIAL_EXPIRED
+from core.trial_policy import assert_trial_active
 from core.timeframe_policy import assert_timeframe_allowed, normalize_timeframe
 from core.token_policy import assert_token_allowed, normalize_token
 
 from indicators.market import get_market_data
 
 # Legacy LITE heuristics (kept for PRO context & backward compatibility)
-from core.analysis_logic import _build_lite_from_market, _inject_rag_into_lite_rationale
 
 # New LITE-Swing Engine (Setup Detector)
 from core.lite_swing_engine import build_lite_swing_signal
 
 # PRO Analysis
-from core.analysis_logic import _build_pro_analysis # FALBACK IF DEEPSEEK MISSING
 
 router = APIRouter()
 
@@ -174,8 +171,17 @@ async def analyze_pro(
         # 4. Validation & Repair (One retry)
         if not validate_pro_output(analysis_text):
             print("[PRO] Output validation failed. Retrying with format repair...")
-            retry_prompt = prompt + "\n\nCRITICAL: You missed some required headers in the previous attempt. ENSURE ALL HEADERS ARE PRESENT."
-            analysis_text = ai.generate_analysis(retry_prompt, system_instruction="You are a professional crypto quant analyst. Strict formatting required.")
+            retry_prompt = (
+                prompt
+                + "\n\nCRITICAL: You missed some required headers in the previous attempt. "
+                "ENSURE ALL HEADERS ARE PRESENT."
+            )
+            analysis_text = ai.generate_analysis(
+                retry_prompt,
+                system_instruction=(
+                    "You are a professional crypto quant analyst. Strict formatting required."
+                ),
+            )
             
     except Exception as e:
         # Graceful error if AI fails

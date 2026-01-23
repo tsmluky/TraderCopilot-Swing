@@ -72,9 +72,9 @@ def setup_logging() -> logging.Logger:
 
     # Ensure uvicorn logs propagate
     for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
-        l = logging.getLogger(name)
-        l.setLevel(logging.INFO)
-        l.propagate = True
+        logger_inst = logging.getLogger(name)
+        logger_inst.setLevel(logging.INFO)
+        logger_inst.propagate = True
 
     return logger
 

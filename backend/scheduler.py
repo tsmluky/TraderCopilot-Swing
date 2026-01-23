@@ -161,7 +161,11 @@ class StrategyScheduler:
         lock = db.query(SchedulerLock).filter(SchedulerLock.lock_name == "main_scheduler").first()
 
         if not lock:
-            lock = SchedulerLock(lock_name="main_scheduler", owner_id=self.lock_id, expires_at=now + timedelta(seconds=self.lock_ttl))
+            lock = SchedulerLock(
+                lock_name="main_scheduler", 
+                owner_id=self.lock_id, 
+                expires_at=now + timedelta(seconds=self.lock_ttl)
+            )
             db.add(lock)
             db.commit()
             return True
@@ -182,7 +186,13 @@ class StrategyScheduler:
 
         try:
             return strategy.generate_signals(tokens=persona["tokens"], timeframe=persona["timeframe"]) or []
-        except (ccxt.RequestTimeout, ccxt.NetworkError, requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError, TimeoutError) as e:
+        except (
+            ccxt.RequestTimeout, 
+            ccxt.NetworkError, 
+            requests.exceptions.ReadTimeout, 
+            requests.exceptions.ConnectionError, 
+            TimeoutError
+        ) as e:
             # Provider/network flakiness: no ensuciar logs con traceback; continuar.
             LOG.warning(
                 "Network timeout | persona=%s tokens=%s tf=%s | %s: %s",
@@ -325,9 +335,11 @@ class StrategyScheduler:
             time.sleep(self.loop_interval)
 
 
-import os
+import os  # noqa: E402
 
-scheduler_instance = StrategyScheduler(loop_interval=int(os.getenv('SCHEDULER_INTERVAL_SEC', '60')))
+scheduler_instance = StrategyScheduler(
+    loop_interval=int(os.getenv('SCHEDULER_INTERVAL_SEC', '60'))
+)
 
 
 if __name__ == "__main__":

@@ -88,7 +88,7 @@ class DeepSeekProvider(AIProvider):
 
 # === GEMINI IMPLEMENTATION (REST Wrapper) ===
 
-from core.llm_client_gemini import call_llm
+from core.llm_client_gemini import call_llm  # noqa: E402
 
 class GeminiProvider(AIProvider):
     def __init__(self):

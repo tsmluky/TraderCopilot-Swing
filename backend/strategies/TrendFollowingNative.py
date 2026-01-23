@@ -72,7 +72,9 @@ class TrendFollowingNative:
                 if col not in df.columns:
                     return None
             df = df.copy().reset_index(drop=True)
-            df[["open", "high", "low", "close", "volume"]] = df[["open", "high", "low", "close", "volume"]].astype(float)
+            df[["open", "high", "low", "close", "volume"]] = df[
+                ["open", "high", "low", "close", "volume"]
+            ].astype(float)
             return df
         except Exception:
             return None
@@ -166,8 +168,14 @@ class TrendFollowingNative:
             atr = float(last["atr"])
             close = float(last["close"])
 
-            bullish_cross = float(prev["ema_fast"]) <= float(prev["ema_slow"]) and float(last["ema_fast"]) > float(last["ema_slow"])
-            bearish_cross = float(prev["ema_fast"]) >= float(prev["ema_slow"]) and float(last["ema_fast"]) < float(last["ema_slow"])
+            bullish_cross = (
+                float(prev["ema_fast"]) <= float(prev["ema_slow"])
+                and float(last["ema_fast"]) > float(last["ema_slow"])
+            )
+            bearish_cross = (
+                float(prev["ema_fast"]) >= float(prev["ema_slow"])
+                and float(last["ema_fast"]) < float(last["ema_slow"])
+            )
 
             if adx < self.min_adx:
                 continue
@@ -287,7 +295,10 @@ class TrendFollowingNative:
                 "bias": bias,
                 "trigger": trig,
                 "distance": {"type": "rel", "value": round(gap, 4)},
-                "note": f"EMAs converging. Gap â‰ˆ {gap:.4f} of price. ADX {adx:.1f} suggests trend strength building.",
+                "note": (
+                    f"EMAs converging. Gap â‰ˆ {gap:.4f} of price. "
+                    f"ADX {adx:.1f} suggests trend strength building."
+                ),
             })
 
         return items[:max_items]

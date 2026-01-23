@@ -14,10 +14,10 @@ sys.path.insert(0, str(backend_dir))
 # Mock Env
 os.environ["DATABASE_URL"] = "sqlite:///backend/dev_local.db"
 
-from database import SessionLocal
-from models_db import User
-from indicators.market import get_market_data
-from core.lite_swing_engine import build_lite_swing_signal
+from database import SessionLocal  # noqa: E402
+from models_db import User  # noqa: E402
+from indicators.market import get_market_data  # noqa: E402
+from core.lite_swing_engine import build_lite_swing_signal  # noqa: E402
 
 
 def main() -> int:

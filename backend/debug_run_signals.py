@@ -10,9 +10,7 @@ sys.path.insert(0, str(current_dir))
 # Mock Environment if needed (though .env should be loaded by main modules)
 os.environ["DATABASE_URL"] = "sqlite:///backend/dev_local.db"
 
-from scheduler import StrategyScheduler, get_active_strategies_from_db
-from database import SessionLocal
-from models_db import Signal
+from scheduler import StrategyScheduler, get_active_strategies_from_db  # noqa: E402
 
 def run_debug_cycle():
     print("="*60)

@@ -7,11 +7,11 @@ _BACKEND_DIR = os.path.abspath(os.path.join(_THIS_DIR, ".."))
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
-import pandas as pd
+import pandas as pd  # noqa: E402
 
-from strategies.DonchianBreakoutV2 import DonchianBreakoutV2
-from strategies.TrendFollowingNative import TrendFollowingNative
-from core.market_data_api import get_ohlcv_data
+from strategies.DonchianBreakoutV2 import DonchianBreakoutV2  # noqa: E402
+from strategies.TrendFollowingNative import TrendFollowingNative  # noqa: E402
+from core.market_data_api import get_ohlcv_data  # noqa: E402
 
 
 TOKENS = ["BTC", "ETH", "SOL", "BNB", "XRP"]

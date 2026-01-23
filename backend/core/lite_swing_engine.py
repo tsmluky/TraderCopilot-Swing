@@ -190,8 +190,16 @@ def build_lite_swing_signal(
     # Final fallback: if still none, run both strategies with default configs
     if not scoped:
         scoped = [
-            StrategyConfig(strategy_id="donchian_v2", tokens=json.dumps([token_u]), timeframes=json.dumps([timeframe])),
-            StrategyConfig(strategy_id="trend_following_native_v1", tokens=json.dumps([token_u]), timeframes=json.dumps([timeframe])),
+            StrategyConfig(
+                strategy_id="donchian_v2",
+                tokens=json.dumps([token_u]),
+                timeframes=json.dumps([timeframe]),
+            ),
+            StrategyConfig(
+                strategy_id="trend_following_native_v1",
+                tokens=json.dumps([token_u]),
+                timeframes=json.dumps([timeframe]),
+            ),
         ]
 
 # Pre-fetch data to avoid redundant API calls (Timeout Optimization)
@@ -405,7 +413,9 @@ def build_lite_swing_signal(
         tp=0.0,
         sl=0.0,
         confidence=0.05,
-        rationale="Conflicto entre estrategias Swing (direcciones opuestas). Señal NEUTRAL para proteger credibilidad.",
+        rationale=(
+            "Conflicto entre estrategias Swing (direcciones opuestas). Signal NEUTRAL para proteger credibilidad."
+        ),
         source="lite-swing@v1",
         indicators=indicators,
     )

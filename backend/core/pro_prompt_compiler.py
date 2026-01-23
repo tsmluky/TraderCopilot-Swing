@@ -80,7 +80,8 @@ Your task is to write a **Professional Swing Trading Report** for {token}.
 You must produce a report with EXACTLY these headers (Markdown H2):
 
 ## Thesis
-(Synthesize macro + token profile + current price action. First line must be: `**Horizon/Horizonte:** 2-6 {("weeks" if language == "en" else "semanas")} (Swing/Position)`)
+(Synthesize macro + token profile + current price action. First line must be: 
+`**Horizon/Horizonte:** 2-6 {("weeks" if language == "en" else "semanas")} (Swing/Position)`)
 
 ## Market Regime
 (Risk-on/off, Liquidity, Volatility Assessment)
@@ -100,7 +101,8 @@ You must produce a report with EXACTLY these headers (Markdown H2):
 - **Bear Case** (% Prob): ...
 
 ## Execution Plan
-(Actionable plan. Reference the Quant Engine Status: {setup.get('display')}. Suggest Entry Zone, Stop Loss, Take Profit targets.)
+(Actionable plan. Reference the Quant Engine Status: {setup.get('display')}. 
+Suggest Entry Zone, Stop Loss, Take Profit targets.)
 
 ## Confirmation Checklist
 (3-5 bullet points to confirm entry)

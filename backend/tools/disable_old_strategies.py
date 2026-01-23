@@ -1,8 +1,6 @@
 
 import sys
 import os
-import json
-from pathlib import Path
 
 # Add backend to path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
