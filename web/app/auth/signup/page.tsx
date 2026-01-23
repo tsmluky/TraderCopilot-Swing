@@ -22,7 +22,9 @@ const benefits = [
   'Strategy evaluation tools',
 ]
 
-function SignupForm({ plan }: { plan: string | null }) {
+function SignupForm() {
+  const searchParams = useSearchParams()
+  const plan = searchParams.get('plan')
   const router = useRouter()
   const { loginWithToken } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
@@ -207,9 +209,6 @@ function SignupForm({ plan }: { plan: string | null }) {
 }
 
 export default function SignupPage() {
-  const searchParams = useSearchParams()
-  const plan = searchParams.get('plan')
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Background */}
@@ -235,7 +234,7 @@ export default function SignupPage() {
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
         <Suspense fallback={<SignupFormLoading />}>
-          <SignupForm plan={plan} />
+          <SignupForm />
         </Suspense>
       </main>
     </div>
