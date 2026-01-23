@@ -1,0 +1,305 @@
+﻿
+from datetime import datetime
+from typing import List
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from models_db import User, DailyUsage
+from core.trial_policy import get_access_tier, TIER_TRIAL, TIER_TRIAL_EXPIRED, TIER_TRADER, TIER_PRO, TIER_OWNER
+
+# === 1. CONFIGURATION & DATA ===
+
+# Aliases: Input -> Canonical
+TOKEN_ALIASES = {}\n# Stablecoins (Blocked)
+STABLECOINS = {"USDT", "USDC", "DAI", "FDUSD", "TUSD", "USDD", "BUSD", "USDE", "PYUSD"}
+
+# Allow-lists (Canonical Symbols) imported from CENTRAL SOURCE
+from data.supported_tokens import VALID_TOKENS_TRIAL, VALID_TOKENS_FULL  # noqa: E402
+
+TOKENS_TRIAL = set(VALID_TOKENS_TRIAL)
+TOKENS_FULL = set(VALID_TOKENS_FULL)
+
+# Feature Quotas (Daily)
+# Adjusted for Swing tiers
+QUOTAS = {
+    TIER_TRIAL: {"ai_analysis": 2, "advisor_chat": 0},
+    TIER_TRIAL_EXPIRED: {"ai_analysis": 0, "advisor_chat": 0},
+    TIER_TRADER: {"ai_analysis": 10, "advisor_chat": 0}, # SwingLite: No Advisor
+    TIER_PRO: {"ai_analysis": 200, "advisor_chat": 500},
+    TIER_OWNER: {"ai_analysis": 9999, "advisor_chat": 9999},
+}
+
+# === 2. TOKEN CATALOG SERVICE ===
+
+class TokenCatalog:
+    @staticmethod
+    def normalize(token: str) -> str:
+        """
+        Normaliza entrada: Trim, Upper, Resolve Alias.
+        """
+        if not token:
+            return ""
+
+        t = token.strip().upper()
+
+        # 1. Alias Resolution
+        if t in TOKEN_ALIASES:
+            t = TOKEN_ALIASES[t]
+
+        return t
+
+    @staticmethod
+    def is_stablecoin(token: str) -> bool:
+        return token in STABLECOINS
+
+    @staticmethod
+    def get_allowed_tokens(tier: str) -> List[str]:
+        if tier == TIER_TRIAL:
+            return sorted(list(TOKENS_TRIAL))
+        
+        if tier in [TIER_TRADER, TIER_PRO, TIER_OWNER]:
+            return sorted(list(TOKENS_FULL))
+            
+        return [] # Expired or unknown
+
+    @staticmethod
+    def check_access(tier: str, token: str) -> bool:
+        """
+        Verifica si el plan tiene acceso al token (CANONICAL).
+        """
+        # Owner bypass
+        if tier == TIER_OWNER:
+            return True
+
+        if tier == TIER_TRIAL:
+            return token in TOKENS_TRIAL
+            
+        if tier in [TIER_TRADER, TIER_PRO]:
+            return token in TOKENS_FULL
+
+        return False  # Block
+
+
+# === 3. ENFORCEMENT FUNCTIONS ===
+
+def assert_token_allowed(user: User, raw_token: str):
+    """
+    ValidaciÃ³n estricta de token por tier.
+    Lanza 403 con JSON estructurado si falla.
+    """
+    # 0. Get Tier
+    tier = get_access_tier(user)
+
+    # 0.5. Normalize
+    token = TokenCatalog.normalize(raw_token)
+
+    # 1. Stablecoin Check
+    if TokenCatalog.is_stablecoin(token):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STABLECOIN_NOT_SUPPORTED",
+                "message": (
+                    f"Stablecoins like {token} are not supported for analysis targets."
+                ),
+                "tier": tier,
+            },
+        )
+
+    # 2. Tier Access Check
+    if not TokenCatalog.check_access(tier, token):
+        # Prepare standard response
+        allowed = TokenCatalog.get_allowed_tokens(tier)
+
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "TOKEN_NOT_ALLOWED",
+                "message": (
+                    f"Your plan ({tier}) does not include access to {token}."
+                ),
+                "tier": tier,
+                "token_requested": token,
+                "allowed_sample": allowed[:5],
+                "upgrade_required": True,
+            },
+        )
+
+    # Return normalized token
+    return token
+
+
+def can_use_advisor(user: User) -> bool:
+    """
+    Verifica acceso base al Advisor Chat.
+    Solo PRO / OWNER.
+    """
+    tier = get_access_tier(user)
+    return tier in [TIER_PRO, TIER_OWNER]
+
+
+def can_access_telegram(user: User) -> bool:
+    """
+    Verifica acceso a Telegram.
+    TRIAL / EXPIRED -> False
+    TRADER / PRO / OWNER -> True
+    """
+    tier = get_access_tier(user)
+    return tier in [TIER_TRADER, TIER_PRO, TIER_OWNER]
+
+
+def check_and_increment_quota(db: Session, user: User, feature: str):
+    """
+    Verifica y consume cuota diaria con atomicidad robusta.
+    """
+    tier = get_access_tier(user)
+
+    # Get Limits
+    limits = QUOTAS.get(tier, QUOTAS[TIER_TRIAL_EXPIRED])
+    limit = limits.get(feature, 0)
+
+    # Hard Block if 0
+    if limit <= 0:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "FEATURE_LOCKED",
+                "message": f"Feature {feature} not enabled for {tier}.",
+                "tier": tier,
+                "upgrade_required": True,
+            },
+        )
+
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+    # Retry loop to handle Insert Race Conditions (Upsert)
+    for attempt in range(3):
+        try:
+            # 1. Try to Get Record (with Lock if possible)
+            usage = None
+            try:
+                # Intentamos Locking (Postgres)
+                usage = (
+                    db.query(DailyUsage)
+                    .filter(
+                        DailyUsage.user_id == user.id,
+                        DailyUsage.feature == feature,
+                        DailyUsage.date == today_str,
+                    )
+                    .with_for_update()
+                    .first()
+                )
+            except Exception:
+                db.rollback()  # Limpiar estado transacciÃ³n fallida
+                usage = (
+                    db.query(DailyUsage)
+                    .filter(
+                        DailyUsage.user_id == user.id,
+                        DailyUsage.feature == feature,
+                        DailyUsage.date == today_str,
+                    )
+                    .first()
+                )
+
+            # 2. Si no existe, insertar (Atomic Insert attempt)
+            if not usage:
+                usage = DailyUsage(
+                    user_id=user.id, feature=feature, date=today_str, count=0
+                )
+                db.add(usage)
+                db.commit()
+                db.refresh(usage)
+
+            # 3. Check Limit
+            if usage.count >= limit:
+                # Quota Exceeded
+                raise HTTPException(
+                    status_code=429,
+                    detail={
+                        "code": "DAILY_QUOTA_EXCEEDED",
+                        "message": (
+                            f"You have reached your daily limit of {limit} for {feature}."
+                        ),
+                        "tier": tier,
+                        "limit": limit,
+                        "used": usage.count,
+                        "reset_at": "00:00 UTC",
+                        "upgrade_required": tier != TIER_PRO,
+                    },
+                )
+
+            # 4. Increment & Commit
+            usage.count += 1
+            db.commit()
+
+            return {
+                "used": usage.count,
+                "limit": limit,
+                "remaining": limit - usage.count,
+            }
+
+        except IntegrityError:
+            db.rollback()
+            continue
+
+        except HTTPException as e:
+            raise e
+
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Quota check failed: {str(e)}")
+
+    raise HTTPException(
+        status_code=500, detail="System busy: Unable to lock quota record."
+    )
+
+
+def get_user_entitlements(db: Session, user: User):
+    """
+    Retorna estado completo para UI.
+    """
+    tier = get_access_tier(user)
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+    # Get usage from DB
+    usages = (
+        db.query(DailyUsage)
+        .filter(DailyUsage.user_id == user.id, DailyUsage.date == today_str)
+        .all()
+    )
+
+    usage_map = {u.feature: u.count for u in usages}
+    limits = QUOTAS.get(tier, QUOTAS[TIER_TRIAL_EXPIRED])
+    
+    # [NEW] Timeframe Policy Lookup
+    from .timeframe_policy import allowed_timeframes_for
+    allowed_tfs = allowed_timeframes_for(tier)
+
+    return {
+        "tier": tier, # Canonical: TIER_TRIAL, TIER_TRADER, TIER_PRO, TIER_TRIAL_EXPIRED
+        "plan_label": user.plan, # "Free", "Trader", "Pro"
+        "expires_at": user.plan_expires_at.isoformat() if user.plan_expires_at else None,
+        "features": {
+            "ai_analysis": {
+                "limit": limits.get("ai_analysis", 0),
+                "used": usage_map.get("ai_analysis", 0),
+                "remaining": max(
+                    0, limits.get("ai_analysis", 0) - usage_map.get("ai_analysis", 0)
+                ),
+            },
+            "advisor_chat": {
+                "limit": limits.get("advisor_chat", 0),
+                "used": usage_map.get("advisor_chat", 0),
+                "remaining": max(
+                    0, limits.get("advisor_chat", 0) - usage_map.get("advisor_chat", 0)
+                ),
+            },
+        },
+        "allowed_tokens": TokenCatalog.get_allowed_tokens(tier),
+        "allowed_timeframes": allowed_tfs,
+        "is_trial_expired": tier == TIER_TRIAL_EXPIRED,
+        "telegram_access": can_access_telegram(user),
+        "advisor_access": can_use_advisor(user),
+        "server_time": datetime.utcnow().isoformat() + "Z",
+    }
+
