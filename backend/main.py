@@ -121,6 +121,10 @@ app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 app.include_router(logs_router, prefix="/logs", tags=["Logs"])
 app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"])
 
+# Missing Router
+from routers.advisor import router as advisor_router
+app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
+
 
 # ====== Database init ======
 @app.on_event("startup")
