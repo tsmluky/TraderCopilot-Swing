@@ -6,8 +6,29 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // --- API CLIENT ---
+// Normaliza NEXT_PUBLIC_API_BASE_URL para evitar URLs relativas si falta el esquema.
+// - Si falta esquema y es localhost/127.0.0.1 -> http://
+// - Si falta esquema y es dominio -> https://
+// - Siempre elimina trailing slashes
 
-const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/+$/, "");
+function normalizeBaseUrl(raw: string | undefined | null): string {
+    const v = String(raw ?? "").trim().replace(/\/+$/, "");
+    if (!v) return "http://localhost:8000";
+
+    if (v.startsWith("http://") || v.startsWith("https://")) {
+        return v.replace(/\/+$/, "");
+    }
+
+    // Sin esquema -> decide según host
+    const lower = v.toLowerCase();
+    if (lower.startsWith("localhost") || lower.startsWith("127.0.0.1")) {
+        return `http://${v}`.replace(/\/+$/, "");
+    }
+
+    return `https://${v}`.replace(/\/+$/, "");
+}
+
+const BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
 
 export class AuthError extends Error {
     constructor(message = "Unauthorized") {
