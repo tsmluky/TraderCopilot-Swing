@@ -14,7 +14,6 @@ import { AdvisorLocked } from '@/components/advisor-locked'
 import { advisorService } from '@/services/advisor'
 import { toast } from 'sonner'
 
-
 interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -57,7 +56,7 @@ What would you like to discuss today?`,
   }, [messages])
 
   const handleSend = async (textOverride?: string) => {
-    const text = textOverride || input;
+    const text = textOverride || input
     if (!text.trim() || isTyping) return
 
     const userMessage: Message = {
@@ -72,23 +71,36 @@ What would you like to discuss today?`,
     setIsTyping(true)
 
     try {
-      const history = [...messages, userMessage].map(m => ({
+      const history = [...messages, userMessage].map((m) => ({
         role: m.role,
-        content: m.content
+        content: m.content,
       }))
 
-      const response = await advisorService.chat(history)
+      const response: any = await advisorService.chat(history)
+
+      // Backend returns { reply, usage }.
+      // Keep backwards compatibility with older shapes: response/message/content/text.
+      const assistantContent =
+        typeof response === 'string'
+          ? response
+          : response?.reply ||
+            response?.response ||
+            response?.message ||
+            response?.content ||
+            response?.text ||
+            "I'm sorry, I couldn't process that."
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.response || response.message || response.content || "I'm sorry, I couldn't process that.",
+        content: assistantContent,
         timestamp: new Date(),
       }
+
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
       console.error(error)
-      toast.error("Failed to get response from Advisor")
+      toast.error('Failed to get response from Advisor')
     } finally {
       setIsTyping(false)
     }
@@ -130,15 +142,23 @@ What would you like to discuss today?`,
                   message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
                 )}
               >
-                <Avatar className={cn(
-                  'h-8 w-8 shrink-0',
-                  message.role === 'assistant' ? 'bg-primary/10' : 'bg-secondary'
-                )}>
-                  <AvatarFallback className={cn(
-                    'text-xs',
-                    message.role === 'assistant' ? 'text-primary' : 'text-foreground'
-                  )}>
-                    {message.role === 'assistant' ? 'AI' : user?.name?.charAt(0) || 'U'}
+                <Avatar
+                  className={cn(
+                    'h-8 w-8 shrink-0',
+                    message.role === 'assistant' ? 'bg-primary/10' : 'bg-secondary'
+                  )}
+                >
+                  <AvatarFallback
+                    className={cn(
+                      'text-xs',
+                      message.role === 'assistant'
+                        ? 'text-primary'
+                        : 'text-foreground'
+                    )}
+                  >
+                    {message.role === 'assistant'
+                      ? 'AI'
+                      : user?.name?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div
@@ -149,16 +169,28 @@ What would you like to discuss today?`,
                       : 'bg-secondary/50'
                   )}
                 >
-                  <div className={cn(
-                    'text-sm whitespace-pre-wrap prose prose-sm max-w-none',
-                    message.role === 'user' ? 'text-primary-foreground prose-invert' : 'text-foreground dark:prose-invert'
-                  )}>
+                  <div
+                    className={cn(
+                      'text-sm whitespace-pre-wrap prose prose-sm max-w-none',
+                      message.role === 'user'
+                        ? 'text-primary-foreground prose-invert'
+                        : 'text-foreground dark:prose-invert'
+                    )}
+                  >
                     {message.content.split('\n').map((line, i) => {
                       if (line.startsWith('**') && line.endsWith('**')) {
-                        return <p key={i} className="font-semibold mt-2 first:mt-0">{line.slice(2, -2)}</p>
+                        return (
+                          <p key={i} className="font-semibold mt-2 first:mt-0">
+                            {line.slice(2, -2)}
+                          </p>
+                        )
                       }
                       if (line.startsWith('- ')) {
-                        return <p key={i} className="ml-2">{line}</p>
+                        return (
+                          <p key={i} className="ml-2">
+                            {line}
+                          </p>
+                        )
                       }
                       return <p key={i}>{line}</p>
                     })}
@@ -169,13 +201,24 @@ What would you like to discuss today?`,
             {isTyping && (
               <div className="flex gap-3">
                 <Avatar className="h-8 w-8 bg-primary/10">
-                  <AvatarFallback className="text-xs text-primary">AI</AvatarFallback>
+                  <AvatarFallback className="text-xs text-primary">
+                    AI
+                  </AvatarFallback>
                 </Avatar>
                 <div className="rounded-lg bg-secondary/50 px-4 py-3">
                   <div className="flex gap-1">
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span
+                      className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce"
+                      style={{ animationDelay: '0ms' }}
+                    />
+                    <span
+                      className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce"
+                      style={{ animationDelay: '150ms' }}
+                    />
+                    <span
+                      className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce"
+                      style={{ animationDelay: '300ms' }}
+                    />
                   </div>
                 </div>
               </div>
@@ -185,7 +228,9 @@ What would you like to discuss today?`,
 
         {messages.length === 1 && (
           <div className="border-t border-border p-4">
-            <p className="text-xs text-muted-foreground mb-2">Suggested questions:</p>
+            <p className="text-xs text-muted-foreground mb-2">
+              Suggested questions:
+            </p>
             <div className="flex flex-wrap gap-2">
               {suggestedQuestions.map((question, i) => (
                 <Button
