@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
 import { AdvisorLocked } from '@/components/advisor-locked'
@@ -50,7 +49,8 @@ What would you like to discuss today?`,
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // Use 'auto' behavior to avoid fighting with user scroll, and block 'end' for precision
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
   }
 
   useEffect(() => {
@@ -134,7 +134,7 @@ What would you like to discuss today?`,
       </div>
 
       <Card className="flex flex-1 flex-col bg-card border-border overflow-hidden">
-        <ScrollArea className="flex-1 p-4">
+        <div className="flex-1 overflow-y-auto p-4 scroll-smooth">
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -173,10 +173,10 @@ What would you like to discuss today?`,
                 >
                   <div
                     className={cn(
-                      'text-sm whitespace-pre-wrap prose prose-sm max-w-none',
+                      'text-sm max-w-none overflow-x-auto',
                       message.role === 'user'
-                        ? 'text-primary-foreground prose-invert'
-                        : 'text-foreground dark:prose-invert'
+                        ? 'text-primary-foreground prose-invert whitespace-pre-wrap'
+                        : 'text-foreground dark:prose-invert whitespace-pre-wrap'
                     )}
                   >
                     {message.content.split('\n').map((line, i) => {
@@ -228,7 +228,7 @@ What would you like to discuss today?`,
 
             <div ref={messagesEndRef} />
           </div>
-        </ScrollArea>
+        </div>
 
         {messages.length === 1 && (
           <div className="border-t border-border p-4">
