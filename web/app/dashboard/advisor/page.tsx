@@ -47,13 +47,15 @@ What would you like to discuss today?`,
   ])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [messages])
+    scrollToBottom()
+  }, [messages, isTyping])
 
   const handleSend = async (textOverride?: string) => {
     const text = textOverride || input
@@ -84,11 +86,11 @@ What would you like to discuss today?`,
         typeof response === 'string'
           ? response
           : response?.reply ||
-            response?.response ||
-            response?.message ||
-            response?.content ||
-            response?.text ||
-            "I'm sorry, I couldn't process that."
+          response?.response ||
+          response?.message ||
+          response?.content ||
+          response?.text ||
+          "I'm sorry, I couldn't process that."
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -132,7 +134,7 @@ What would you like to discuss today?`,
       </div>
 
       <Card className="flex flex-1 flex-col bg-card border-border overflow-hidden">
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -223,6 +225,8 @@ What would you like to discuss today?`,
                 </div>
               </div>
             )}
+            )}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
 
