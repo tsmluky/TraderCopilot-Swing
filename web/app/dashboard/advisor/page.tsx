@@ -225,7 +225,7 @@ What would you like to discuss today?`,
                 </div>
               </div>
             )}
-            )}
+
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
