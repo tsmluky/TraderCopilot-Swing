@@ -37,7 +37,8 @@ def setup_worker_logging() -> logging.Logger:
     log_dir.mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger("scheduler")
     logger.setLevel(logging.INFO)
-    if logger.handlers: return logger
+    if logger.handlers:
+        return logger
     
     fmt = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
     
@@ -59,14 +60,19 @@ LOG = setup_worker_logging()
 # -------------------------------------------------------------------------
 
 def _env_int(name: str, default: int) -> int:
-    try: return int(os.getenv(name, str(default)))
-    except: return default
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
 
 def cadence_for_timeframe(tf: str) -> int:
     t = (tf or "").strip().lower()
-    if t in ("1h", "60m"): return _env_int("SCHED_CADENCE_1H_SEC", 300)
-    if t in ("4h", "240m"): return _env_int("SCHED_CADENCE_4H_SEC", 600)
-    if t in ("1d", "24h"): return _env_int("SCHED_CADENCE_1D_SEC", 3600)
+    if t in ("1h", "60m"):
+        return _env_int("SCHED_CADENCE_1H_SEC", 300)
+    if t in ("4h", "240m"):
+        return _env_int("SCHED_CADENCE_4H_SEC", 600)
+    if t in ("1d", "24h"):
+        return _env_int("SCHED_CADENCE_1D_SEC", 3600)
     return 600
 
 # -------------------------------------------------------------------------
@@ -82,7 +88,7 @@ class StrategyScheduler:
         self.registry = get_registry()
         try:
             load_default_strategies()
-        except:
+        except Exception:
             LOG.exception("Registry load failed")
             
         # State
@@ -91,9 +97,15 @@ class StrategyScheduler:
         
     def acquire_lock(self, db: Session) -> bool:
         now = datetime.utcnow()
-        lock = db.query(SchedulerLock).filter(SchedulerLock.lock_name == "main_scheduler").first()
+        lock = db.query(SchedulerLock).filter(
+            SchedulerLock.lock_name == "main_scheduler"
+        ).first()
         if not lock:
-            lock = SchedulerLock(lock_name="main_scheduler", owner_id=self.lock_id, expires_at=now + timedelta(seconds=self.lock_ttl))
+            lock = SchedulerLock(
+                lock_name="main_scheduler",
+                owner_id=self.lock_id,
+                expires_at=now + timedelta(seconds=self.lock_ttl)
+            )
             db.add(lock)
             db.commit()
             return True
@@ -184,7 +196,8 @@ class StrategyScheduler:
         Persist signals as Master Signals (user_id=NULL, mode=PLAN).
         Then Fan-out notifications.
         """
-        if not signals: return
+        if not signals:
+            return
         
         db = SessionLocal()
         try:
@@ -235,7 +248,8 @@ class StrategyScheduler:
             User.telegram_chat_id.isnot(None)
         ).all()
         
-        if not users: return
+        if not users:
+            return
 
         # 3. Dedupe & Send
         # We use a cache key to avoid spamming the same global signal repeated times 
@@ -263,7 +277,7 @@ class StrategyScheduler:
             has_lock = False
             try:
                 has_lock = self.acquire_lock(db)
-            except:
+            except Exception:
                 pass
             finally:
                 db.close()

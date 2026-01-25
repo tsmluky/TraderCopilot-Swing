@@ -79,7 +79,13 @@ async def stripe_webhook(
 
     payload = await request.body()
     if not stripe_signature:
-        raise HTTPException(status_code=400, detail={"code": "NO_SIGNATURE", "message": "Missing Stripe-Signature header"})
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "NO_SIGNATURE",
+                "message": "Missing Stripe-Signature header"
+            }
+        )
 
     try:
         event = stripe.Webhook.construct_event(payload, stripe_signature, webhook_secret)
@@ -144,7 +150,11 @@ async def stripe_webhook(
             return {"received": True}
 
         # 2) Subscription lifecycle updates
-        if ev_type in ("customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"):
+        if ev_type in (
+            "customer.subscription.created",
+            "customer.subscription.updated",
+            "customer.subscription.deleted"
+        ):
             sub = obj
             cust_id = sub.get("customer")
             sub_id = sub.get("id")

@@ -4,6 +4,7 @@ Assembles the Context Pack into a strict prompt for Institutional Analysis.
 Enforces Markdown structure.
 """
 from typing import Dict, Any
+import re
 
 REQUIRED_SECTIONS = [
     "## Thesis",
@@ -49,7 +50,8 @@ Your task is to write a **Premium Institutional Swing Report** for {token}.
 1. **Tone**: Authoritative, concise, precision-focused. No "fluff" or generic definitions.
 2. **Perspective**: Use "We", "Our Model", "Institutional Flows".
 3. **Horizon**: {horizon_weeks} (Swing/Position).
-4. **No Retail Disclaimers**: Do not use phrases like "Not financial advice". We are professionals. Use "Invalidation", "Risk Parameters".
+4. **No Retail Disclaimers**: Do not use phrases like "Not financial advice".
+   We are professionals. Use "Invalidation", "Risk Parameters".
 5. **Output Language**: {lang_name}.
 
 ---
@@ -139,7 +141,7 @@ def validate_pro_output(text: str) -> bool:
         return False
     return True
 
-import re
+
 
 def fix_markdown_spacing(text: str) -> str:
     """

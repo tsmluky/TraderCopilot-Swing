@@ -153,8 +153,14 @@ def _ensure_sqlite_users_columns(engine) -> None:
             for name, sqltype in wanted.items():
                 if name not in cols:
                     conn.execute(text(f"ALTER TABLE users ADD COLUMN {name} {sqltype}"))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id ON users(stripe_customer_id)"))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_subscription_id ON users(stripe_subscription_id)"))
+            conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id "
+                     "ON users(stripe_customer_id)")
+            )
+            conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_users_stripe_subscription_id "
+                     "ON users(stripe_subscription_id)")
+            )
 
         _SQLITE_USERS_PATCH_DONE = True
         print("[DB] SQLite users schema patched (billing/stripe columns ensured).")

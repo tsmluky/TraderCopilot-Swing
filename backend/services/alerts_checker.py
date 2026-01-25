@@ -87,9 +87,9 @@ async def check_watch_alerts():
                     break
             
             if not is_allowed:
-                # Silent skip, or expire? 
+                # Silent skip, or expire?
                 # If plan downgraded, maybe we shouldn't alert.
-                # print(f"[ALERTS] Skip {alert.id}: User {alert.user_id} lost entitlement for {alert.token} {alert.timeframe}")
+                # Skip alert if user lost entitlement for token/timeframe
                 continue
 
             # 2b. Price Check

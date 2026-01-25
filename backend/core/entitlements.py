@@ -57,9 +57,12 @@ STRATEGY_NAMES = {
 def get_plan_entitlements(plan: str) -> PlanEntitlements:
     """Returns the static entitlements for a given plan (normalized)."""
     norm_plan = (plan or "TRIAL").upper()
-    if norm_plan in ["FREE", "LITE", "SWINGLITE"]: norm_plan = "TRADER"
-    if norm_plan in ["SWINGPRO", "PREMIUM", "OWNER", "ADMIN"]: norm_plan = "PRO"
-    if norm_plan not in PLANS: norm_plan = "TRIAL"
+    if norm_plan in ["FREE", "LITE", "SWINGLITE"]:
+        norm_plan = "TRADER"
+    if norm_plan in ["SWINGPRO", "PREMIUM", "OWNER", "ADMIN"]:
+        norm_plan = "PRO"
+    if norm_plan not in PLANS:
+        norm_plan = "TRIAL"
     return PLANS[norm_plan]
 
 def get_user_entitlements(user: Optional[User]) -> Dict[str, List[StrategyOffering]]:
@@ -76,8 +79,10 @@ def get_user_entitlements(user: Optional[User]) -> Dict[str, List[StrategyOfferi
         is_trial_expired = False
     else:
         effective_plan = (user.plan or "TRIAL").upper()
-        if effective_plan in ["FREE", "LITE", "SWINGLITE"]: effective_plan = "TRADER"
-        if effective_plan in ["SWINGPRO", "PREMIUM"]: effective_plan = "PRO"
+        if effective_plan in ["FREE", "LITE", "SWINGLITE"]:
+            effective_plan = "TRADER"
+        if effective_plan in ["SWINGPRO", "PREMIUM"]:
+            effective_plan = "PRO"
         
         is_trial_expired = False
         if effective_plan == "TRIAL" or (user.plan or "").upper() == "FREE":
@@ -107,7 +112,8 @@ def get_user_entitlements(user: Optional[User]) -> Dict[str, List[StrategyOfferi
 
             if is_in_my_plan and not is_trial_expired:
                 # Active Offering
-                # User gets intersection of their allowed tokens and max tokens (which is just their allowed tokens usually)
+                # User gets intersection of their allowed tokens and max tokens
+                # (which is just their allowed tokens usually)
                 user_tokens = my_entitlements["tokens"]
                 
                 offerings.append({
@@ -144,7 +150,8 @@ class TokenCatalog:
     @staticmethod
     def get_allowed_tokens(tier: str) -> List[str]:
         plan = tier
-        if tier == "TRIAL_EXPIRED": plan = "TRIAL"
+        if tier == "TRIAL_EXPIRED":
+            plan = "TRIAL"
         ent = get_plan_entitlements(plan)
         return ent["tokens"]
 
