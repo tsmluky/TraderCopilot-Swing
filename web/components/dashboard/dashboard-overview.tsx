@@ -66,6 +66,23 @@ export function DashboardOverview() {
         }))
         .filter((s: Signal) => s.type !== 'NEUTRAL')
 
+      // Test Signal Injection
+      mappedSignals.unshift({
+        id: 'test-sig-1',
+        token: 'BTC',
+        timeframe: '4H',
+        type: 'LONG',
+        entryPrice: 64200,
+        targetPrice: 68500,
+        stopLoss: 62500,
+        confidence: 0.85,
+        timestamp: new Date(),
+        status: 'ACTIVE',
+        evaluation: 'pending',
+        pnl: undefined,
+        rationale: "Bullish divergence on RSI + Support retest. Institutional flow detected."
+      })
+
       setSignals(mappedSignals)
 
     } catch (e) {
@@ -80,7 +97,7 @@ export function DashboardOverview() {
   }, [])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Top Bar with Selectors */}
       <DashboardTopBar
         selectedToken={selectedToken}
@@ -93,7 +110,7 @@ export function DashboardOverview() {
       <KPICards data={stats} isLoading={isLoading} />
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         {/* Signals Feed */}
         <SignalsFeed
           selectedToken={selectedToken}
@@ -106,28 +123,33 @@ export function DashboardOverview() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Telegram Status Card */}
+          {/* Telegram Status Card */}
           {canAccessTelegram() ? (
-            <Card className="bg-card/80 backdrop-blur-sm border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Send className="h-4 w-4 text-primary" />
+            <Card className="bg-white dark:bg-card/40 backdrop-blur-xl border-black/5 dark:border-white/5 overflow-hidden group hover:border-primary/20 transition-all duration-500 shadow-sm dark:shadow-none">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-50" />
+              <CardHeader className="pb-3 relative z-10 border-b border-black/5 dark:border-white/5">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                    <Send className="h-4 w-4" />
+                  </div>
                   Telegram Alerts
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Status</span>
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/30 text-xs">
-                    Connected
-                  </Badge>
+              <CardContent className="space-y-4 pt-4 relative z-10">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-black/5 dark:bg-black/20 border border-black/5 dark:border-white/5">
+                  <span className="text-xs font-medium text-muted-foreground">Status</span>
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500">Active</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Alerts sent</span>
-                  <span className="text-sm font-medium text-foreground">--</span>
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs text-muted-foreground">Alerts delivered</span>
+                  <span className="text-sm font-bold text-foreground">--</span>
                 </div>
-                <p className="text-xs text-muted-foreground pt-2 border-t border-border">
-                  You will receive instant alerts for all new signals matching your preferences.
-                </p>
               </CardContent>
             </Card>
           ) : (
@@ -140,24 +162,26 @@ export function DashboardOverview() {
           )}
 
           {/* Quick Stats */}
-          <Card className="bg-card/80 backdrop-blur-sm border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Bell className="h-4 w-4 text-primary" />
+          <Card className="bg-white dark:bg-card/40 backdrop-blur-xl border-black/5 dark:border-white/5 overflow-hidden shadow-sm dark:shadow-none">
+            <CardHeader className="pb-3 border-b border-black/5 dark:border-white/5">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-500">
+                  <Bell className="h-4 w-4" />
+                </div>
                 Today's Activity
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 pt-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">New signals</span>
-                <span className="text-sm font-medium text-foreground">{stats.last7dSignals}</span>
+                <span className="text-xl font-bold text-foreground">{stats.last7dSignals}</span>
               </div>
             </CardContent>
           </Card>
 
           {/* Gating Restrictions Info - Hide for PRO */}
           {(!user || user.plan !== 'PRO') && (
-            <Card className="bg-card/50 border-border border-dashed">
+            <Card className="bg-white dark:bg-card/50 border-black/10 dark:border-border border-dashed shadow-sm dark:shadow-none">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   <span className="font-medium text-foreground">Plan restrictions: </span>

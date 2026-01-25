@@ -1,80 +1,48 @@
 'use client'
 
 import { useState } from 'react'
-import { TrendingUp, BarChart3, Clock, Lock } from 'lucide-react'
+import { TrendingUp, Lock } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/context/auth-context'
-import type { Strategy, Token } from '@/lib/types'
-import { StrategyDetailsSheet } from './strategy-details-sheet'
 import { ArrowUpRight } from 'lucide-react'
-import { toast } from 'sonner'
 import Link from 'next/link'
-import { strategiesService } from '@/services/strategies'
+import type { Strategy } from '@/lib/types' // Might need update? Strategy type is lenient.
+import { StrategyDetailsModal } from './strategy-details-modal'
 
-interface MasterStrategyCardProps {
-    name: string
-    description?: string
-    personas: Strategy[]
-    onToggle: (id: string, targetStatus: boolean, newTimeframe?: string) => void
-    isToggling?: boolean
-    onRefresh?: () => void
-    forcedTimeframe?: string
+// We need to define the Offering interface locally or import it if we updated types.
+// For now, we assume 'Strategy' type roughly matches what we return, 
+// or we adapt the component to 'StrategyOffering'.
+
+export interface StrategyOffering {
+    id: string
+    strategy_code: string
+    strategy_name: string
+    timeframe: string
+    tokens: string[]
+    all_tokens?: string[]
+    locked: boolean
+    locked_reason?: string
+    plan_required?: string
+    badges?: string[]
+    // Stats (optional - if backend adds them later)
+    win_rate?: string
+    total_signals?: number
 }
 
-export function MasterStrategyCard({ name, description, personas, onToggle, isToggling, onRefresh, forcedTimeframe }: MasterStrategyCardProps) {
-    const { canAccessTimeframe } = useAuth()
+interface MasterStrategyCardProps {
+    offering: StrategyOffering
+    onRefresh?: () => void
+}
 
-    // Sort personas by fixed token order: BTC, ETH, SOL, BNB, XRP
-    const tokenOrder: Record<string, number> = { 'BTC': 1, 'ETH': 2, 'SOL': 3, 'BNB': 4, 'XRP': 5 }
-    const sortedPersonas = [...personas].sort((a, b) => {
-        const tA = (a.symbol || (a.tokens && a.tokens[0]) || '')
-        const tB = (b.symbol || (b.tokens && b.tokens[0]) || '')
-        return (tokenOrder[tA] || 99) - (tokenOrder[tB] || 99)
-    })
+export function MasterStrategyCard({ offering }: MasterStrategyCardProps) {
+    // Modal State
+    const [showDetails, setShowDetails] = useState(false)
 
-    // State for active persona
-    // Initialize with prioritized logic:
-    // 1. First ACTIVE persona that Matches Forced Timeframe (Best case)
-    // 2. First persona that Matches Forced Timeframe (Default for section)
-    // 3. First ACTIVE persona (Fallback)
-    // 4. Default first persona
-    const [activePersonaId, setActivePersonaId] = useState<string>(() => {
-        if (forcedTimeframe) {
-            const contextActive = sortedPersonas.find(p => p.isActive && p.timeframes?.[0] === forcedTimeframe)
-            if (contextActive) return contextActive.id
+    const isLocked = offering.locked
 
-            const contextMatch = sortedPersonas.find(p => p.timeframes?.[0] === forcedTimeframe)
-            if (contextMatch) return contextMatch.id
-        }
-
-        const active = sortedPersonas.find(p => p.isActive)
-        return active ? active.id : (sortedPersonas[0]?.id || '')
-    })
-
-    const activePersona = sortedPersonas.find(p => p.id === activePersonaId) || sortedPersonas[0]
-
-    if (!activePersona) return null
-
-    // Check access based on active persona requirements
-    // If forcedTimeframe, check that specific one. Otherwise check config.
-    const timeframes = activePersona.timeframes || []
-    const effectiveTimeframe = forcedTimeframe || timeframes[0] || '4h'
-
-    const requiresPro = effectiveTimeframe.toLowerCase() === '1h'
-    const hasAccess = !requiresPro || canAccessTimeframe('1H')
-
-    // Contextual Active State
-    // If forcedTimeframe is set, isActive requires (isActive=true AND configuredTimeframe == forcedTimeframe)
-    // Compare case-insensitively just to be safe
-    const isContextActive = activePersona.isActive && (!forcedTimeframe || (timeframes[0]?.toLowerCase() === forcedTimeframe.toLowerCase()))
-    // Or should the toggle control just the *visible* one? 
-    // User asked for "Cards with token selectors". Usually this means you select the token causing the card to update.
-    // The Switch should probably control the *Active Persona*.
-
-    // Helper for token colors
+    // Token Colors Helper
     const getTokenColor = (t: string) => {
         switch (t.toUpperCase()) {
             case 'BTC': return 'text-orange-500 bg-orange-500/10 border-orange-500/20'
@@ -86,218 +54,147 @@ export function MasterStrategyCard({ name, description, personas, onToggle, isTo
         }
     }
 
-    // Display Vars
-    const hasData = activePersona.winRate > 0 || activePersona.signals > 0
-    const winRateDisplay = hasData ? `${activePersona.winRate}%` : '--'
-
-    // Sheet State
-    const [showDetails, setShowDetails] = useState(false)
+    // Stats Placeholders (Backend doesn't calculate them live yet for Offerings, 
+    // or we might need to fetch them separately. For MVP, show 'Active' or '--')
+    const winRateDisplay = offering.win_rate || '--'
+    const signalsDisplay = offering.total_signals || 0
 
     return (
         <>
-            <Card className={cn(
-                "group relative overflow-hidden border-border bg-gradient-to-br from-card to-card/50 transition-premium hover:shadow-premium-md hover:border-primary/20",
-                isContextActive ? "ring-1 ring-primary/20" : ""
-            )}>
-                <CardHeader
-                    className="pb-3 cursor-pointer hover:bg-muted/10 transition-colors"
-                    onClick={() => setShowDetails(true)}
-                >
+            <Card
+                className={cn(
+                    "group relative overflow-hidden transition-all cursor-pointer rounded-2xl",
+                    isLocked
+                        ? "bg-secondary/10 border-border opacity-70 hover:opacity-100"
+                        : "bg-white border-black/5 shadow-sm hover:shadow-xl hover:shadow-primary/5 dark:bg-gradient-to-br dark:from-card dark:to-card/50 dark:border-primary/10 dark:hover:border-primary/30"
+                )}
+                onClick={() => setShowDetails(true)}
+            >
+                <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                         <div className="space-y-1.5 flex-1">
-                            <div>
-                                <CardTitle className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
-                                    {name}
-                                    <ArrowUpRight className="h-4 w-4 text-muted-foreground/50" />
+                            <div className="flex items-center gap-2">
+                                <CardTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                                    {offering.strategy_name}
+                                    <span className={cn(
+                                        "text-xs px-2 py-0.5 rounded-md font-bold border",
+                                        isLocked
+                                            ? "bg-muted text-muted-foreground border-border"
+                                            : "bg-primary/5 text-primary border-primary/10 dark:bg-primary/10 dark:border-primary/20"
+                                    )}>
+                                        {offering.timeframe}
+                                    </span>
                                 </CardTitle>
-                                <CardDescription className="line-clamp-2 text-xs text-muted-foreground/80 h-8 max-w-[90%]">
-                                    {description || activePersona.description}
-                                </CardDescription>
                             </div>
+                            <CardDescription className="line-clamp-2 text-xs font-medium text-muted-foreground/80">
+                                {/* Description implied? Or we can map codes to descriptions here if API doesn't send it */}
+                                {offering.strategy_code === 'TITAN_BREAKOUT' ? "Breakout volatility system." : "Trend following momentum system."}
+                            </CardDescription>
                         </div>
 
-                        <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
-                            {/* Master Toggle? Or Contextual Toggle? Let's do Contextual for precision */}
-                            <div className="flex flex-col items-end gap-1">
-                                <Switch
-                                    key={activePersona.id}
-                                    checked={isContextActive}
-                                    onCheckedChange={(val) => {
-                                        // If forced mode, we might need to update timeframe first
-                                        if (forcedTimeframe && forcedTimeframe.toLowerCase() !== timeframes[0]?.toLowerCase()) {
-                                            // Pass the new timeframe to the handler
-                                            onToggle(activePersona.id, val, forcedTimeframe)
-                                        } else {
-                                            onToggle(activePersona.id, val)
-                                        }
-                                    }}
-                                    disabled={isToggling}
-                                    className="data-[state=checked]:bg-primary"
-                                />
-                                <span className="text-[10px] text-muted-foreground">
-                                    {isContextActive ? 'Active' : 'Paused'}
-                                </span>
-                            </div>
+                        <div className="flex items-center gap-2">
+                            {isLocked ? (
+                                <Badge variant="outline" className="text-[10px] gap-1 border-muted bg-muted/50 text-muted-foreground">
+                                    <Lock className="h-3 w-3" />
+                                    {offering.locked_reason === 'UPGRADE_REQUIRED' ? 'PRO' : 'LOCKED'}
+                                </Badge>
+                            ) : (
+                                <Badge variant="default" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20 pointer-events-none shadow-none font-bold">
+                                    Included
+                                </Badge>
+                            )}
                         </div>
                     </div>
                 </CardHeader>
 
                 <CardContent className="space-y-5">
-                    {/* Token Selector (Tabs style) */}
-                    <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
-                        {sortedPersonas.map(p => {
-                            const token = p.symbol || ((p.tokens && p.tokens[0]) ? p.tokens[0] : 'RAW')
-                            const isSelected = p.id === activePersonaId
+                    {/* Tokens (Read Only Chips) */}
+                    <div className="flex flex-wrap gap-2">
+                        {/* Active Tokens */}
+                        {offering.tokens.map((t, i) => (
+                            <div
+                                key={`active-${i}`}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-default transition-colors shadow-sm dark:shadow-none",
+                                    isLocked
+                                        ? "bg-muted/20 border-border text-muted-foreground opacity-60"
+                                        : getTokenColor(t)
+                                )}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {t}
+                            </div>
+                        ))}
 
-                            // Contextual Active for specific token
-                            const pTf = p.timeframes?.[0] || '4h'
-                            const pIsContextActive = p.isActive && (!forcedTimeframe || (pTf.toLowerCase() === forcedTimeframe.toLowerCase()))
-
-                            // "Illuminated" logic: If active, show full color. If paused, show muted.
-                            // Selection is indicated by a separate ring/border interaction.
-                            const baseColor = pIsContextActive
-                                ? getTokenColor(token)
-                                : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary hover:text-foreground"
-
-                            return (
-                                <button
-                                    key={p.id}
-                                    onClick={() => setActivePersonaId(p.id)}
-                                    className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all relative",
-                                        baseColor,
-                                        // High contrast ring for selection
-                                        isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-card"
-                                    )}
-                                >
-                                    {/* Optional Dot for Status - REMOVED for clarity (User Request) */}
-                                    {/* <div className={cn("w-1.5 h-1.5 rounded-full", p.isActive ? "bg-success" : "bg-muted-foreground/30")} /> */}
-                                    {token}
-                                </button>
-                            )
-                        })}
+                        {/* Locked Tokens (Diff) */}
+                        {(offering.all_tokens || []).filter(t => !offering.tokens.includes(t)).map((t, i) => (
+                            <TooltipProvider key={`locked-${i}`}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-border bg-secondary/30 text-muted-foreground/50 text-xs font-medium cursor-not-allowed"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <Lock className="w-3 h-3 opacity-50" />
+                                            {t}
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Available in Pro plan</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ))}
                     </div>
 
-                    {/* Context-Aware Stats */}
-                    <div className="grid grid-cols-3 gap-2 py-3 bg-secondary/20 rounded-lg border border-border/50 px-3 transition-opacity duration-300">
+                    {/* Status Bar */}
+                    <div className="grid grid-cols-3 gap-2 py-3 bg-secondary/20 dark:bg-secondary/10 rounded-xl border border-black/5 dark:border-border/50 px-3">
                         <div className="space-y-0.5">
-                            <span className="text-[10px] uppercase text-muted-foreground font-medium">Win Rate</span>
-                            <div className={cn("text-lg font-bold tabular-nums", hasData ? "text-success" : "text-muted-foreground/50")}>
+                            <span className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Status</span>
+                            <div className={cn("text-sm font-black tabular-nums", isLocked ? "text-muted-foreground" : "text-emerald-600 dark:text-emerald-500")}>
+                                {isLocked ? 'Locked' : 'Active'}
+                            </div>
+                        </div>
+
+                        {/* Placeholder Stats */}
+                        <div className="space-y-0.5">
+                            <span className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Win Rate</span>
+                            <div className="text-sm font-black tabular-nums text-foreground/80">
                                 {winRateDisplay}
                             </div>
                         </div>
                         <div className="space-y-0.5">
-                            <span className="text-[10px] uppercase text-muted-foreground font-medium">ROI (Est)</span>
-                            <div className={cn("text-lg font-bold tabular-nums", hasData ? "text-foreground" : "text-muted-foreground/50")}>
-                                {activePersona.expectedRoi || '--'}
-                            </div>
-                        </div>
-                        <div className="space-y-0.5">
-                            <span className="text-[10px] uppercase text-muted-foreground font-medium">Signals</span>
-                            <div className={cn("text-lg font-bold tabular-nums", hasData ? "text-foreground" : "text-muted-foreground/50")}>
-                                {activePersona.signals || 0}
+                            <span className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Signals</span>
+                            <div className="text-sm font-black tabular-nums text-foreground/80">
+                                {signalsDisplay}
                             </div>
                         </div>
                     </div>
 
-                    {/* Footer */}
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-                        <div className="flex items-center gap-2">
-                            {/* Timeframe Selector */}
-                            {/* Timeframe Selector - Hidden if forcedTimeframe is active */}
-                            {!forcedTimeframe && (
-                                <div className="flex bg-secondary/30 rounded-md p-0.5 border border-border/50 relative">
-                                    {['1h', '4h', '1d'].map((tf) => {
-                                        const isPro = tf === '1h';
-                                        const locked = isPro && !canAccessTimeframe('1H');
-                                        // Current config in DB
-                                        const currentTf = activePersona.timeframes?.[0] || '4h'
-                                        const isActiveConfig = currentTf.toLowerCase() === tf.toLowerCase()
-
-                                        // Visual Logic:
-                                        // If Strategy is RUNNING (isActive), the active config should be highlighted prominently (Primary Color).
-                                        // If Strategy is PAUSED, the active config is just selected (Secondary/Muted).
-                                        // Other buttons are allowed to be clicked to CHANGE the config.
-
-                                        return (
-                                            <button
-                                                key={tf}
-                                                disabled={locked}
-                                                onClick={async (e) => {
-                                                    e.stopPropagation()
-                                                    e.preventDefault()
-
-                                                    if (isActiveConfig || locked) return
-
-                                                    try {
-                                                        const promise = strategiesService.updatePersona(activePersona.id, { timeframe: tf })
-                                                        toast.promise(promise, {
-                                                            loading: 'Updating timeframe...',
-                                                            success: `Timeframe set to ${tf.toUpperCase()}`,
-                                                            error: 'Failed to update'
-                                                        })
-
-                                                        await promise;
-
-                                                        if (onRefresh) {
-                                                            await onRefresh()
-                                                        } else {
-                                                            window.location.reload()
-                                                        }
-                                                    } catch (err) {
-                                                        console.error(err)
-                                                    }
-                                                }}
-                                                className={cn(
-                                                    "px-2 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1 z-10 relative cursor-pointer min-w-[32px] justify-center",
-                                                    isActiveConfig
-                                                        ? (activePersona.isActive ? "bg-primary text-primary-foreground shadow-md font-bold" : "bg-foreground/10 text-foreground font-semibold")
-                                                        : "text-muted-foreground hover:text-foreground/80 hover:bg-secondary/50",
-                                                    locked && "opacity-50 cursor-not-allowed"
-                                                )}
-                                            >
-                                                {locked && <Lock className="h-2 w-2" />}
-                                                {tf.toUpperCase()}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
+                    {/* Access Overlay or Footer */}
+                    {isLocked && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[1px] z-20 transition-opacity hover:bg-background/50">
+                            {offering.locked_reason === 'UPGRADE_REQUIRED' && (
+                                <Link href="/pricing" onClick={(e) => e.stopPropagation()}>
+                                    <Badge className="cursor-pointer hover:scale-105 transition-transform bg-primary text-primary-foreground shadow-lg font-bold px-4 py-1.5 cursor-pointer">
+                                        Upgrade Subscription
+                                    </Badge>
+                                </Link>
                             )}
-
-                            <span className="flex items-center gap-1 ml-1">
-                                <TrendingUp className="h-3 w-3 opacity-70" />
-                                {activePersona.riskLevel || 'Medium'} Risk
-                            </span>
+                            {offering.locked_reason === 'TRIAL_EXPIRED' && (
+                                <Badge variant="destructive" className="cursor-not-allowed opacity-90 font-bold">
+                                    Trial Expired
+                                </Badge>
+                            )}
                         </div>
-
-                        {!hasData ? (
-                            <span className="text-xs italic opacity-50">Calibrating...</span>
-                        ) : (
-                            <button onClick={() => setShowDetails(true)} className="text-xs text-primary hover:underline">
-                                View History
-                            </button>
-                        )}
-                    </div>
-
+                    )}
                 </CardContent>
-
-                {/* Access Overlay */}
-                {!hasAccess && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-20">
-                        <Lock className="h-8 w-8 text-muted-foreground mb-2" />
-                        <p className="text-sm font-medium text-muted-foreground">PRO Strategy</p>
-                        <Link href="/pricing" onClick={(e) => e.stopPropagation()}>
-                            <Badge variant="outline" className="mt-2 border-primary/30 text-primary text-xs cursor-pointer hover:bg-primary/10">
-                                Upgrade to PRO
-                            </Badge>
-                        </Link>
-                    </div>
-                )}
             </Card>
-            <StrategyDetailsSheet
-                strategy={activePersona}
-                isOpen={showDetails}
-                onClose={() => setShowDetails(false)}
+
+            <StrategyDetailsModal
+                offering={offering}
+                open={showDetails}
+                onOpenChange={setShowDetails}
             />
         </>
     )

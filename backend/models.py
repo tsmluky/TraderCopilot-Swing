@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 from datetime import datetime
 from typing import Optional, Literal, List, Dict, Any
 
@@ -204,4 +204,5 @@ class ProAnalysisResponse(BaseModel):
     plan: ProPlan
     insight: ProInsight
     params: ProParams
+
 

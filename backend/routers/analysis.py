@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime
 import traceback
@@ -149,14 +149,13 @@ async def analyze_pro(
 
     # PRO does not strictly require timeframe logic on backend, but we validate user access.
     # We ignore req.timeframe for the text generation (uses fixed horizon), 
-    # but we might use it for internal checks or LITE sync (passed as 4H default in build_pro_context_pack).
     
     # 1. Build Context
     from core.pro_context_pack import build_pro_context_pack
     context = build_pro_context_pack(db, current_user, str(req.token))
     
     # 2. Compile Prompt
-    from core.pro_prompt_compiler import compile_pro_prompt, validate_pro_output
+    from core.pro_prompt_compiler import compile_pro_prompt, validate_pro_output, fix_markdown_spacing
     prompt = compile_pro_prompt(context, req.user_message, language=req.language)
     
     # 3. Call AI Service
@@ -182,6 +181,9 @@ async def analyze_pro(
                     "You are a professional crypto quant analyst. Strict formatting required."
                 ),
             )
+
+        # 4.5. Post-Process Formatting (Force Newlines)
+        analysis_text = fix_markdown_spacing(analysis_text)
             
     except Exception as e:
         # Graceful error if AI fails
@@ -207,3 +209,11 @@ async def analyze_pro(
             "generated_at": datetime.utcnow().isoformat() + "Z"
         }
     }
+
+def normalize_token_tf(token: str | None, timeframe: str | None):
+    # Canonical forms used by entitlements / internal routing
+    t = (token or "").strip()
+    tf = (timeframe or "").strip()
+    t_up = t.upper()
+    tf_up = tf.upper()
+    return t_up, tf_up

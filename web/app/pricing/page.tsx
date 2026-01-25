@@ -10,6 +10,9 @@ import Link from 'next/link'
 import { useUser } from '@/lib/user-context'
 import { BrandLogo } from '@/components/brand-logo'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { billingService } from '@/services/billing'
+import { toast } from 'sonner'
+import { useState } from 'react'
 
 // === COMPONENTS ===
 
@@ -24,6 +27,22 @@ function PricingBanner() {
   )
 }
 
+interface PlanCardProps {
+  name: string
+  price: string
+  period: string
+  description: string
+  features: { text: string; included: boolean; highlight?: boolean; tooltip?: string }[]
+  cta: string
+  href: string
+  popular?: boolean
+  isTrial?: boolean
+  originalPrice?: string
+  badge?: string
+  onAction?: () => void
+  isLoading?: boolean
+}
+
 function PlanCard({
   name,
   price,
@@ -36,19 +55,9 @@ function PlanCard({
   isTrial = false,
   originalPrice,
   badge,
-}: {
-  name: string
-  price: string
-  period: string
-  description: string
-  features: { text: string; included: boolean; highlight?: boolean; tooltip?: string }[]
-  cta: string
-  href: string
-  popular?: boolean
-  isTrial?: boolean
-  originalPrice?: string
-  badge?: string
-}) {
+  onAction,
+  isLoading
+}: PlanCardProps) {
   return (
     <Card
       className={cn(
@@ -125,7 +134,7 @@ function PlanCard({
         </div>
 
         <div className="mt-auto pt-6">
-          <Link href={href} className="block w-full">
+          {onAction ? (
             <Button
               className={cn(
                 'w-full font-semibold',
@@ -133,10 +142,25 @@ function PlanCard({
               )}
               variant={popular ? 'default' : isTrial ? 'outline' : 'secondary'}
               size="lg"
+              onClick={onAction}
+              disabled={isLoading}
             >
-              {cta}
+              {isLoading ? "Redirecting..." : cta}
             </Button>
-          </Link>
+          ) : (
+            <Link href={href} className="block w-full">
+              <Button
+                className={cn(
+                  'w-full font-semibold',
+                  popular ? 'shadow-lg shadow-primary/20' : ''
+                )}
+                variant={popular ? 'default' : isTrial ? 'outline' : 'secondary'}
+                size="lg"
+              >
+                {cta}
+              </Button>
+            </Link>
+          )}
           {originalPrice && (
             <p className="text-[10px] text-center text-muted-foreground mt-2 opacity-70">
               *Early adopter price locked forever
@@ -247,6 +271,25 @@ function FAQSection() {
 
 export default function PricingPage() {
   const { user } = useUser()
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+
+  const handleUpgrade = async (plan: string) => {
+    try {
+      if (!plan) return
+      setLoadingPlan(plan)
+      // Map plan name to backend enum
+      const backendPlan = plan.includes("PRO") ? "PRO" : "TRADER"
+      const { url } = await billingService.createCheckoutSession(backendPlan)
+      if (url) {
+        window.location.href = url
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to start checkout. Please try again.")
+    } finally {
+      setLoadingPlan(null)
+    }
+  }
 
   const plans = [
     {
@@ -309,6 +352,29 @@ export default function PricingPage() {
     },
   ]
 
+  // Inject upgrade handlers if user is logged in
+  const displayPlans = plans.map(p => {
+    // Skip handlers for free plan (signup link is fine, or maybe redirect to dashboard if logged in)
+    if (user && p.isTrial) {
+      return {
+        ...p,
+        cta: 'Go to Dashboard',
+        href: '/dashboard',
+        onAction: undefined
+      }
+    }
+
+    if (user && !p.isTrial) {
+      return {
+        ...p,
+        cta: user.plan === (p.name.includes("PRO") ? "PRO" : "TRADER") ? "Current Plan" : "Upgrade", // Simple check
+        onAction: () => handleUpgrade(p.name),
+        isLoading: loadingPlan === p.name
+      }
+    }
+    return p
+  })
+
   return (
     <div className="min-h-screen bg-background font-sans selection:bg-primary/20">
       {/* Dynamic Background */}
@@ -363,7 +429,7 @@ export default function PricingPage() {
 
         {/* Pricing Cards */}
         <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-start">
-          {plans.map((plan) => (
+          {displayPlans.map((plan) => (
             <PlanCard key={plan.name} {...plan} />
           ))}
         </div>

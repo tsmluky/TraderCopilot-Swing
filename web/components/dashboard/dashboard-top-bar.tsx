@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Lock, ArrowUpRight } from 'lucide-react'
+import { Lock, ArrowUpRight, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PlanBadge } from '@/components/plan-badge'
@@ -27,92 +27,94 @@ export function DashboardTopBar({
   onTimeframeChange,
 }: DashboardTopBarProps) {
   const { user } = useUser()
+  // Adjust features to safe defaults
   const features = (user ? PLAN_FEATURES[user.plan] : PLAN_FEATURES.FREE) || { tokens: [], timeframes: [] }
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-black/5 dark:border-white/5">
       {/* Token and Timeframe Selectors */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-4">
+
         {/* Token Selector */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide mr-1">Token</span>
-          <div className="flex items-center gap-1 rounded-lg bg-secondary/50 p-1">
-            <button
-              onClick={() => onTokenChange('ALL')}
-              className={cn(
-                'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
-                selectedToken === 'ALL'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              )}
-            >
-              All
-            </button>
-            {ALL_TOKENS.map((token) => {
-              const isAvailable = features.tokens.includes(token)
-              const tokenInfo = TOKEN_INFO[token]
-              return (
-                <button
-                  key={token}
-                  onClick={() => isAvailable && onTokenChange(token)}
-                  disabled={!isAvailable}
-                  className={cn(
-                    'px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1',
-                    selectedToken === token
-                      ? 'bg-primary text-primary-foreground'
-                      : isAvailable
-                        ? 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                        : 'text-muted-foreground/40 cursor-not-allowed'
-                  )}
-                  title={!isAvailable ? 'Upgrade to access' : tokenInfo.name}
-                >
-                  {token}
-                  {!isAvailable && <Lock className="h-2.5 w-2.5" />}
-                </button>
-              )
-            })}
-          </div>
+        <div className="bg-black/5 dark:bg-black/20 backdrop-blur-md p-1 rounded-xl border border-black/5 dark:border-white/5 flex items-center">
+          <span className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 opacity-50">
+            Token
+          </span>
+          <button
+            onClick={() => onTokenChange('ALL')}
+            className={cn(
+              'px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300',
+              selectedToken === 'ALL'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+            )}
+          >
+            All
+          </button>
+          <div className="w-px h-4 bg-black/10 dark:bg-white/10 mx-1" />
+          {ALL_TOKENS.map((token) => {
+            const isAvailable = features.tokens.includes(token)
+            return (
+              <button
+                key={token}
+                onClick={() => isAvailable && onTokenChange(token)}
+                disabled={!isAvailable}
+                className={cn(
+                  'px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5',
+                  selectedToken === token
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                    : isAvailable
+                      ? 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+                      : 'text-muted-foreground/30 cursor-not-allowed'
+                )}
+                title={!isAvailable ? 'Upgrade to access' : token}
+              >
+                {token}
+                {!isAvailable && <Lock className="h-2.5 w-2.5 opacity-70" />}
+              </button>
+            )
+          })}
         </div>
 
         {/* Timeframe Selector */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide mr-1">TF</span>
-          <div className="flex items-center gap-1 rounded-lg bg-secondary/50 p-1">
-            <button
-              onClick={() => onTimeframeChange('ALL')}
-              className={cn(
-                'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
-                selectedTimeframe === 'ALL'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              )}
-            >
-              All
-            </button>
-            {ALL_TIMEFRAMES.map((tf) => {
-              const isAvailable = features.timeframes.includes(tf)
-              const isPro = tf === '1H'
-              return (
-                <button
-                  key={tf}
-                  onClick={() => isAvailable && onTimeframeChange(tf)}
-                  disabled={!isAvailable}
-                  className={cn(
-                    'px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1',
-                    selectedTimeframe === tf
-                      ? 'bg-primary text-primary-foreground'
-                      : isAvailable
-                        ? 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                        : 'text-muted-foreground/40 cursor-not-allowed'
-                  )}
-                  title={!isAvailable ? '1H requires SwingPro' : `${tf} timeframe`}
-                >
-                  {tf}
-                  {!isAvailable && isPro && <Lock className="h-2.5 w-2.5" />}
-                </button>
-              )
-            })}
-          </div>
+        <div className="bg-black/5 dark:bg-black/20 backdrop-blur-md p-1 rounded-xl border border-black/5 dark:border-white/5 flex items-center">
+          <span className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 opacity-50">
+            TF
+          </span>
+          <button
+            onClick={() => onTimeframeChange('ALL')}
+            className={cn(
+              'px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300',
+              selectedTimeframe === 'ALL'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+            )}
+          >
+            All
+          </button>
+          <div className="w-px h-4 bg-black/10 dark:bg-white/10 mx-1" />
+          {ALL_TIMEFRAMES.map((tf) => {
+            const isAvailable = features.timeframes.includes(tf)
+            return (
+              <button
+                key={tf}
+                onClick={() => isAvailable && onTimeframeChange(tf)}
+                disabled={!isAvailable}
+                className={cn(
+                  'px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5',
+                  selectedTimeframe === tf
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                    : isAvailable
+                      ? 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+                      : 'text-muted-foreground/30 cursor-not-allowed'
+                )}
+                title={!isAvailable ? 'Upgrade required' : `${tf} timeframe`}
+              >
+                {tf}
+                {!isAvailable && <Lock className="h-2.5 w-2.5 opacity-70" />}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -120,9 +122,9 @@ export function DashboardTopBar({
       <div className="flex items-center gap-3">
         {user?.plan !== 'PRO' && (
           <Link href="/pricing">
-            <Button size="sm" className="gap-1.5 h-8">
-              Upgrade
-              <ArrowUpRight className="h-3.5 w-3.5" />
+            <Button size="sm" className="gap-2 h-9 px-4 bg-gradient-to-r from-primary to-blue-600 border-0 shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+              Unlock Full Access
+              <ArrowUpRight className="h-3.5 w-3.5 opacity-70" />
             </Button>
           </Link>
         )}

@@ -41,7 +41,7 @@ function EvaluationBadge({ status }: { status: EvaluationStatus }) {
 
   return (
     <span className={cn(
-      'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium',
+      'inline-flex items-center gap-1 rounded-md border px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider',
       className
     )}>
       <Icon className={cn('h-2.5 w-2.5', animate && 'animate-spin')} />
@@ -62,16 +62,20 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
   const isShort = signal.type === 'SHORT'
   const isNeutral = signal.type === 'NEUTRAL'
 
+  // Normalize confidence (handle 0-1 vs 0-100)
+  const confidenceValue = signal.confidence <= 1 ? signal.confidence * 100 : signal.confidence
+  const displayConfidence = Math.round(confidenceValue)
+
   // Clean raw audit markers from rationale for display
   const displayRationale = signal.rationale?.replace(/\| AUDIT:.*$/, '')?.trim() || "No rationale provided."
 
   // Locked state
   if (isLocked) {
     return (
-      <div className="group relative overflow-hidden rounded-xl border border-dashed border-border/50 bg-muted/30 p-6">
-        <div className="flex flex-col items-center justify-center text-center min-h-[160px]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
-            <Lock className="h-5 w-5 text-muted-foreground" />
+      <div className="group relative overflow-hidden rounded-xl border border-dashed border-black/10 dark:border-border/50 bg-secondary/10 dark:bg-muted/30 p-4">
+        <div className="flex flex-col items-center justify-center text-center min-h-[140px]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary mb-2">
+            <Lock className="h-4 w-4 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium text-muted-foreground mb-1">
             {isTokenLocked ? `${signal.token} Signals` : '1H Timeframe'}
@@ -87,8 +91,8 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
   // NEUTRAL State (Simplified Card)
   if (isNeutral) {
     return (
-      <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 transition-all duration-300 hover:border-border hover:bg-card">
-        <div className="p-4 flex flex-col gap-3 min-h-[140px]">
+      <div className="group relative overflow-hidden rounded-xl border border-black/5 dark:border-border/50 bg-white dark:bg-card/50 transition-all duration-300 hover:border-border hover:bg-card shadow-sm dark:shadow-none">
+        <div className="p-3 flex flex-col gap-3 min-h-[130px]">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
               <div
@@ -121,57 +125,55 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
     )
   }
 
+  // Default Active Layout (Compacted)
   return (
     <div className={cn(
-      'group relative overflow-hidden rounded-xl border border-border/50 bg-card transition-all duration-300',
-      'hover:border-border hover:shadow-soft-md'
+      'group relative overflow-hidden rounded-xl border border-black/5 dark:border-border/50 bg-white dark:bg-card transition-all duration-300',
+      'hover:border-black/10 dark:hover:border-border hover:shadow-md dark:hover:shadow-soft-md shadow-sm dark:shadow-none'
     )}>
       {/* Top accent line based on signal type */}
       <div className={cn(
         'absolute top-0 left-0 right-0 h-px',
-        isLong ? 'bg-gradient-to-r from-transparent via-long to-transparent' : 'bg-gradient-to-r from-transparent via-short to-transparent'
+        isLong ? 'bg-gradient-to-r from-transparent via-emerald-500 to-transparent' : 'bg-gradient-to-r from-transparent via-rose-500 to-transparent'
       )} />
 
       {/* Header */}
-      <div className="p-4 pb-3">
-        <div className="flex items-start justify-between gap-3">
+      <div className="p-3 pb-2">
+        <div className="flex items-start justify-between gap-1">
           {/* Token info */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 overflow-hidden">
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-xs font-bold shrink-0"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold shrink-0"
               style={{ backgroundColor: `${tokenInfo.color}12`, color: tokenInfo.color }}
             >
               {signal.token}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground">{signal.token}/USDT</span>
-                <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
-                  {signal.timeframe}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">{tokenInfo.name}</p>
+            <div className="min-w-0 flex flex-col justify-center">
+              <span className="font-medium text-sm text-foreground leading-none">{tokenInfo.name}</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5">
+                USDT • {signal.timeframe}
+              </span>
             </div>
           </div>
 
           {/* Direction badge */}
-          <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
             <span
               className={cn(
-                'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold whitespace-nowrap',
+                'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap',
                 isLong
                   ? 'badge-long'
                   : 'badge-short'
               )}
             >
               {isLong ? (
-                <ArrowUpRight className="h-3.5 w-3.5" />
+                <ArrowUpRight className="h-3 w-3" />
               ) : (
-                <ArrowDownRight className="h-3.5 w-3.5" />
+                <ArrowDownRight className="h-3 w-3" />
               )}
               {signal.type}
             </span>
-            <div className="max-w-[100px] flex justify-end">
+            <div className="flex justify-end">
               <EvaluationBadge status={signal.evaluation} />
             </div>
           </div>
@@ -179,94 +181,80 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
       </div>
 
       {/* Body */}
-      <div className="px-4 pb-4 space-y-3">
+      <div className="px-3 pb-3 space-y-2">
         {/* Entry range - highlighted */}
-        <div className="rounded-lg bg-secondary/50 p-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-              Entry Range
+        <div className="rounded-lg bg-secondary/50 p-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+              Entry
             </span>
-            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground/50" />
+            <TrendingUp className="h-3 w-3 text-muted-foreground/50" />
           </div>
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-lg font-mono font-semibold text-foreground tabular-nums">
+            <span className="text-base font-mono font-bold text-foreground tabular-nums">
               ${formatPrice(signal.entryPrice)}
             </span>
             {signal.entryRangeLow && signal.entryRangeHigh && (
-              <span className="text-xs text-muted-foreground font-mono tabular-nums whitespace-nowrap">
-                ${formatPrice(signal.entryRangeLow)} - ${formatPrice(signal.entryRangeHigh)}
+              <span className="text-[10px] text-muted-foreground font-mono tabular-nums whitespace-nowrap opacity-80">
+                (${formatPrice(signal.entryRangeLow)} - ${formatPrice(signal.entryRangeHigh)})
               </span>
             )}
           </div>
         </div>
 
         {/* Targets grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-0.5">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
               Target
             </span>
-            <p className="text-sm font-mono font-semibold text-success tabular-nums truncate">
+            <p className="text-sm font-mono font-bold text-success tabular-nums truncate">
               ${formatPrice(signal.targetPrice)}
             </p>
           </div>
-          <div className="space-y-1">
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-              Stop Loss
+          <div className="space-y-0.5">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+              Stop
             </span>
-            <p className="text-sm font-mono font-semibold text-destructive tabular-nums truncate">
+            <p className="text-sm font-mono font-bold text-destructive tabular-nums truncate">
               ${formatPrice(signal.stopLoss)}
             </p>
           </div>
         </div>
 
-        {/* Invalidation */}
-        {signal.invalidation && (
-          <div className="flex items-center gap-1.5 rounded-md bg-warning-muted/50 px-2.5 py-1.5">
-            <AlertTriangle className="h-3 w-3 text-warning shrink-0" />
-            <span className="text-[11px] text-warning truncate">
-              Invalidation: <span className="font-mono font-medium">${formatPrice(signal.invalidation)}</span>
-            </span>
-          </div>
-        )}
-
-        {/* Rationale (if present and not covered elsewhere) */}
-        {/* Optional: Add small Rationale snippet here if desired? Users like context. */}
-        {/* For now, just Confidence. */}
-
         {/* Confidence meter */}
-        <div className="space-y-1.5">
+        <div className="space-y-1 pt-1">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-              Confidence
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+              AI Confidence
             </span>
-            <span className="text-xs font-semibold text-foreground tabular-nums">
-              {signal.confidence}%
+            <span className="text-[10px] font-bold text-foreground tabular-nums">
+              {displayConfidence}%
             </span>
           </div>
-          <div className="h-1.5 w-full rounded-full bg-secondary">
+          <div className="h-1 w-full rounded-full bg-secondary">
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-500',
-                signal.confidence >= 80 ? 'bg-success' : signal.confidence >= 60 ? 'bg-primary' : 'bg-warning'
+                displayConfidence >= 80 ? 'bg-success' : displayConfidence >= 60 ? 'bg-primary' : 'bg-warning'
               )}
-              style={{ width: `${signal.confidence}%` }}
+              style={{ width: `${displayConfidence}%` }}
             />
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between border-t border-border/50 px-4 py-3">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between border-t border-border/50 px-3 py-2 bg-secondary/5">
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
           <Clock className="h-3 w-3" />
           <span>{timeAgo(signal.timestamp)}</span>
         </div>
         {signal.status === 'ACTIVE' && (
-          <span className="flex items-center gap-1.5 text-xs font-medium text-success">
-            <span className="relative flex h-2 w-2">
+          <span className="flex items-center gap-1 text-[10px] font-bold text-success uppercase tracking-wider">
+            <span className="relative flex h-1.5 w-1.5 ">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
             </span>
             Active
           </span>

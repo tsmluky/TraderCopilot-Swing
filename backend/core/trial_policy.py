@@ -1,7 +1,7 @@
-# backend/core/trial_policy.py
+﻿# backend/core/trial_policy.py
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
 
 from fastapi import HTTPException
@@ -12,32 +12,49 @@ TIER_TRADER = "TRADER"
 TIER_PRO = "PRO"
 TIER_OWNER = "OWNER"
 
-TRIAL_DAYS = 7
+TRIAL_DAYS = 3
 
 
 def _trial_expires_at(user: Any) -> datetime | None:
     exp = getattr(user, "plan_expires_at", None)
     if exp:
         return exp
+
     created = getattr(user, "created_at", None)
     if created:
         try:
             return created + timedelta(days=TRIAL_DAYS)
         except Exception:
             return None
+
     return None
+
+
+def _as_utc_aware(dt: datetime) -> datetime:
+    """
+    Normaliza datetime naive/aware a UTC-aware para comparaciones seguras.
+    """
+    tz = getattr(dt, "tzinfo", None)
+    if tz is None or tz.utcoffset(dt) is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def is_trial_active(user: Any) -> bool:
     if not user:
         return False
+
     plan = (getattr(user, "plan", None) or "").upper()
     if plan != "FREE":
         return False
+
     exp = _trial_expires_at(user)
     if not exp:
         return False
-    return datetime.utcnow() < exp
+
+    now = datetime.now(timezone.utc)
+    exp_utc = _as_utc_aware(exp)
+    return now < exp_utc
 
 
 def get_access_tier(user: Any) -> Literal["TRIAL", "TRIAL_EXPIRED", "TRADER", "PRO", "OWNER"]:

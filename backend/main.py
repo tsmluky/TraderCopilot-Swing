@@ -1,4 +1,4 @@
-import os
+﻿import os
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -19,6 +19,7 @@ from routers.analysis import router as analysis_router
 from routers.signals import router as signals_router
 from routers.settings import router as settings_router
 from routers.webhooks import router as webhooks_router
+from routers.billing import router as billing_router
 from routers.users import router as users_router
 from routers.stats import router as stats_router
 from routers.logs import router as logs_router
@@ -31,7 +32,6 @@ from routers.advisor import router as advisor_router
 from core.entitlements import get_user_entitlements
 from core.trial_policy import get_access_tier
 from strategies.registry import load_default_strategies
-from scheduler import scheduler_instance
 from telegram_listener import start_telegram_polling
 
 load_dotenv()
@@ -148,6 +148,7 @@ def on_startup():
     if os.getenv("RUN_SCHEDULER", "false").lower() in ("1", "true", "yes"):
         def _run():
             try:
+                from scheduler import scheduler_instance
                 scheduler_instance.run()
             except Exception:
                 LOG.exception("Scheduler thread crashed")
@@ -274,4 +275,7 @@ if __name__ == "__main__":
         port=int(os.getenv("PORT", "8000")),
         reload=reload_flag,
     )
+
+
+app.include_router(billing_router, prefix="/billing", tags=["Billing"])
 

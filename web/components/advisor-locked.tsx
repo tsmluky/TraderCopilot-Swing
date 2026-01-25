@@ -25,44 +25,43 @@ const benefits = [
 
 export function AdvisorLocked() {
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">AI Advisor</h1>
-        <p className="text-muted-foreground">Get personalized swing trading insights</p>
+    <div className="flex h-[calc(100vh-8rem)] flex-col min-h-[500px]">
+      <div className="mb-2 shrink-0">
+        <h1 className="text-lg font-bold tracking-tight text-foreground">AI Advisor</h1>
+        <p className="text-xs text-muted-foreground">Get personalized swing trading insights</p>
       </div>
 
-      <Card className="flex flex-1 bg-card/50 border-border backdrop-blur-sm">
-        <CardContent className="flex flex-1 flex-col items-center justify-center p-8 lg:p-12">
-          <div className="max-w-lg w-full space-y-8 text-center">
+      <Card className="flex flex-1 bg-card/50 border-border backdrop-blur-sm shadow-sm overflow-hidden">
+        <CardContent className="flex flex-1 flex-col items-center justify-center p-4 lg:p-6">
+          <div className="max-w-md w-full space-y-3 text-center">
             {/* Icon */}
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
-              <Lock className="h-9 w-9 text-primary" />
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 shadow-sm shrink-0">
+              <Lock className="h-5 w-5 text-primary" />
             </div>
 
             {/* Headline */}
-            <div className="space-y-3">
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+            <div className="space-y-1 shrink-0">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">
                 Advisor is a SwingPro feature
               </h2>
-              <p className="text-muted-foreground leading-relaxed max-w-md mx-auto">
-                Unlock AI-powered swing trading guidance with our most advanced plan. 
-                Get real-time analysis and position management support.
+              <p className="text-xs text-muted-foreground leading-normal max-w-sm mx-auto">
+                Unlock AI-powered swing trading guidance via the most advanced plan.
               </p>
             </div>
 
             {/* Benefits */}
-            <div className="grid gap-4 text-left">
+            <div className="grid gap-2 text-left shrink-0">
               {benefits.map((benefit) => (
                 <div
                   key={benefit.title}
-                  className="flex gap-4 p-4 rounded-xl bg-secondary/30 border border-border/50"
+                  className="flex gap-2.5 p-2 rounded-md bg-secondary/30 border border-border/50 items-center"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
-                    <benefit.icon className="h-5 w-5 text-primary" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-primary/10 border border-primary/20">
+                    <benefit.icon className="h-3.5 w-3.5 text-primary" />
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="font-medium text-foreground text-sm">{benefit.title}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                  <div className="">
+                    <h3 className="font-semibold text-foreground text-xs">{benefit.title}</h3>
+                    <p className="text-[10px] text-muted-foreground leading-tight line-clamp-1">
                       {benefit.description}
                     </p>
                   </div>
@@ -71,25 +70,25 @@ export function AdvisorLocked() {
             </div>
 
             {/* Pro Badge */}
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span>
-                Included in <span className="font-medium text-primary">SwingPro</span> at $99/month
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground pt-1 shrink-0">
+              <Sparkles className="h-3 w-3 text-primary" />
+              <span className="text-[11px]">
+                Included in <span className="font-bold text-primary">SwingPro</span> at <span className="line-through opacity-70 ml-0.5">$49</span> $29/mo
               </span>
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="flex flex-row items-center justify-center gap-2 pt-1 shrink-0">
               <Link href="/pricing">
-                <Button size="lg" className="gap-2 min-w-[200px]">
+                <Button size="sm" className="gap-1.5 min-w-[140px] h-8 text-xs font-semibold shadow-md shadow-primary/10">
                   Upgrade to SwingPro
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
               <Link href="/dashboard">
-                <Button size="lg" variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Dashboard
+                <Button size="sm" variant="ghost" className="gap-1.5 text-muted-foreground hover:text-foreground h-8 text-xs">
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back
                 </Button>
               </Link>
             </div>

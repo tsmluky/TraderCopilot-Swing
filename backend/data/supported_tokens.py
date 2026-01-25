@@ -1,29 +1,36 @@
 ﻿"""
-Central token allowlists for TraderCopilot-Swing (LOCAL + MVP).
+Central allowlists for TraderCopilot-Swing (MVP).
 
-Source of truth:
-- VALID_TOKENS_TRIAL: tokens allowed during trial tier
-- VALID_TOKENS_FULL: tokens allowed for paid tiers (SwingLite/SwingPro)
+Spec (Jan 2026):
+- TRIAL (Free Trial) == TRADER/SwingLite:
+  Tokens: BTC, ETH, SOL
+  Timeframes: 4H, 1D
 
-IMPORTANT:
-Do NOT redefine these later in the file. If you add other lists, use different names.
+- PRO/SwingPRO:
+  Tokens: BTC, ETH, SOL, BNB, XRP
+  Timeframes: 1H, 4H, 1D
 """
 
-# ==========================================
-# Canonical token allowlists (Swing plan)
-# ==========================================
-VALID_TOKENS_TRIAL = ["BTC", "ETH"]
+# --------------------------
+# Tokens
+# --------------------------
+VALID_TOKENS_TRIAL = ["BTC", "ETH", "SOL"]
 VALID_TOKENS_FULL  = ["BTC", "ETH", "SOL", "BNB", "XRP"]
 
-# Optional: if you ever need a "free" list distinct from TRIAL, define it explicitly.
-# For Swing MVP, TRIAL is the free experience, so we keep this aligned.
+# Keep FREE aligned with TRIAL for Swing MVP.
 VALID_TOKENS_FREE = VALID_TOKENS_TRIAL
 
+# --------------------------
+# Timeframes
+# --------------------------
+VALID_TIMEFRAMES_TRIAL = ["4H", "1D"]
+VALID_TIMEFRAMES_FULL  = ["1H", "4H", "1D"]
 
-# =========================
+VALID_TIMEFRAMES_FREE = VALID_TIMEFRAMES_TRIAL
+
+# --------------------------
 # Compatibility aliases
-# (expected by some modules)
-# =========================
+# --------------------------
 TOKENS_TRIAL = VALID_TOKENS_TRIAL
 TOKENS_FULL  = VALID_TOKENS_FULL
 
@@ -32,3 +39,12 @@ SUPPORTED_TOKENS_FULL  = VALID_TOKENS_FULL
 
 ALLOWED_TOKENS_TRIAL = VALID_TOKENS_TRIAL
 ALLOWED_TOKENS_FULL  = VALID_TOKENS_FULL
+
+TIMEFRAMES_TRIAL = VALID_TIMEFRAMES_TRIAL
+TIMEFRAMES_FULL  = VALID_TIMEFRAMES_FULL
+
+SUPPORTED_TIMEFRAMES_TRIAL = VALID_TIMEFRAMES_TRIAL
+SUPPORTED_TIMEFRAMES_FULL  = VALID_TIMEFRAMES_FULL
+
+ALLOWED_TIMEFRAMES_TRIAL = VALID_TIMEFRAMES_TRIAL
+ALLOWED_TIMEFRAMES_FULL  = VALID_TIMEFRAMES_FULL

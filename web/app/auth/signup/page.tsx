@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, ArrowRight, Check, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +14,7 @@ import SignupFormLoading from './loading'
 import { useAuth } from '@/context/auth-context'
 import { authService } from '@/services/auth'
 import { BrandLogo } from '@/components/brand-logo'
+import { billingService } from '@/services/billing'
 
 const benefits = [
   'Access to BTC & ETH signals',
@@ -22,17 +23,21 @@ const benefits = [
   'Strategy evaluation tools',
 ]
 
-function SignupForm() {
-  const searchParams = useSearchParams()
-  const plan = searchParams.get('plan')
+function SignupForm({ plan }: { plan: string | null }) {
   const router = useRouter()
-  const { loginWithToken } = useAuth()
+  const { loginWithToken, user } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (user) {
+      router.push('/dashboard')
+    }
+  }, [user, router])
 
   const planConfig = {
     pro: { label: 'SwingPro', price: '$29/mo', color: 'text-primary' },
@@ -46,15 +51,29 @@ function SignupForm() {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
+
     try {
-      // 1. Register
+      // 1) Register
       await authService.register({ email, password, name })
 
-      // 2. Auto Login
+      // 2) Auto Login
       const data = await authService.login(email, password)
       await loginWithToken(data.access_token)
 
-      // 3. Redirect
+      // 3) If paid plan -> Stripe Checkout
+      const planLower = (plan || '').toLowerCase()
+      const targetPlan =
+        planLower === 'pro' ? 'PRO' :
+          planLower === 'trader' ? 'TRADER' :
+            null
+
+      if (targetPlan) {
+        const { url } = await billingService.createCheckoutSession(targetPlan as 'TRADER' | 'PRO')
+        window.location.href = url
+        return
+      }
+
+      // 4) Otherwise normal redirect
       const next = new URLSearchParams(window.location.search).get('next') || '/dashboard'
       router.push(next)
     } catch (err: any) {
@@ -70,11 +89,8 @@ function SignupForm() {
 
   return (
     <div className="w-full max-w-md animate-fade-up">
-      {/* Card */}
       <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl p-8 shadow-lg">
-        {/* Header */}
         <div className="text-center mb-8">
-          {/* Plan badge */}
           <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-secondary/50 px-4 py-1.5 mb-4">
             <span className={cn('text-sm font-medium', currentPlan.color)}>
               {currentPlan.label}
@@ -86,7 +102,6 @@ function SignupForm() {
           <p className="text-sm text-muted-foreground">Start your swing trading journey</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
@@ -144,7 +159,6 @@ function SignupForm() {
             <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
           </div>
 
-          {/* Benefits for trial */}
           {!plan && (
             <div className="rounded-xl border border-border/50 bg-secondary/30 p-4 space-y-3">
               <p className="text-sm font-medium text-foreground">Your trial includes:</p>
@@ -186,7 +200,6 @@ function SignupForm() {
           </Button>
         </form>
 
-        {/* Footer */}
         <div className="mt-8 pt-6 border-t border-border/50 text-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
@@ -197,7 +210,6 @@ function SignupForm() {
         </div>
       </div>
 
-      {/* Disclaimer */}
       <p className="text-center text-xs text-muted-foreground/60 mt-6 px-4">
         By signing up, you agree to our{' '}
         <Link href="#" className="hover:text-muted-foreground">Terms of Service</Link>
@@ -209,14 +221,15 @@ function SignupForm() {
 }
 
 export default function SignupPage() {
+  const searchParams = useSearchParams()
+  const plan = searchParams.get('plan')
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Background */}
       <div className="fixed inset-0 -z-10">
         <div className="gradient-radial absolute inset-0" />
       </div>
 
-      {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -231,10 +244,9 @@ export default function SignupPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
         <Suspense fallback={<SignupFormLoading />}>
-          <SignupForm />
+          <SignupForm plan={plan} />
         </Suspense>
       </main>
     </div>

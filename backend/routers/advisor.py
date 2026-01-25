@@ -84,19 +84,24 @@ def advisor_chat(
     quota = check_and_increment_quota(db, current_user, "advisor_chat")
 
     # 3.5 Fetch User Profile
-    profile = (
-        db.query(CopilotProfile)
-        .filter(CopilotProfile.user_id == current_user.id)
-        .first()
-    )
+    # 3.5 Fetch User Profile
     profile_context = ""
-    if profile:
-        profile_context = (
-            f"User Profile: [Style: {profile.trader_style}, "
-            f"Risk: {profile.risk_tolerance}, "
-            f"Horizon: {profile.time_horizon}]\n"
-            f"Custom Instructions: {profile.custom_instructions or 'None'}"
+    try:
+        profile = (
+            db.query(CopilotProfile)
+            .filter(CopilotProfile.user_id == current_user.id)
+            .first()
         )
+        if profile:
+            profile_context = (
+                f"User Profile: [Style: {profile.trader_style}, "
+                f"Risk: {profile.risk_tolerance}, "
+                f"Horizon: {profile.time_horizon}]\n"
+                f"Custom Instructions: {profile.custom_instructions or 'None'}"
+            )
+    except Exception as e:
+        print(f"[ADVISOR] Warning: Could not fetch profile (DB Error?): {e}")
+        # non-critical, continue
 
     # 4. Build Dynamic System Context if Token is present
     system_context_block = ""

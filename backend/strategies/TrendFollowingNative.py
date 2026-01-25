@@ -287,19 +287,18 @@ class TrendFollowingNative:
 
         if gap <= near_cross:
             bias = "long" if ef > es else "short"
-            trig = "ema_cross_up" if ef > es else "ema_cross_down"
+            # trigger price proxy: ema_slow (the level to cross)
             items.append({
                 "strategy_id": self.META.id,
                 "token": token_u,
                 "timeframe": timeframe,
-                "bias": bias,
-                "trigger": trig,
-                "distance": {"type": "rel", "value": round(gap, 4)},
-                "note": (
-                    f"EMAs converging. Gap â‰ˆ {gap:.4f} of price. "
+                "side": bias,
+                "trigger_price": round(es, 2),
+                "distance_atr": round(gap * 100, 2), # Show gap as %-ish or raw? Frontend expects 'ATR'. Let's use gap (rel) as 'distance_atr' proxy for now or 0.0
+                "reason": (
+                    f"EMAs converging. Gap ≈ {gap:.4f} of price. "
                     f"ADX {adx:.1f} suggests trend strength building."
                 ),
             })
 
         return items[:max_items]
-

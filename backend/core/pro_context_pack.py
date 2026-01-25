@@ -20,7 +20,7 @@ from rag_context import _load_snippet
 
 logger = logging.getLogger(__name__)
 
-HORIZON_LABEL = "2-6 Semanas (Swing/Position)"
+
 
 def _get_brain_content(token: str) -> Dict[str, str]:
     """Loads specialized PRO RAG content."""
@@ -73,7 +73,7 @@ def build_pro_context_pack(
     # 4. Construct Pack
     return {
         "token": token_u,
-        "horizon": HORIZON_LABEL,
+        "horizon": "2-6 Weeks",
         "market": {
             "price": market_daily.get("price"),
             "change_24h": market_daily.get("change_24h"),

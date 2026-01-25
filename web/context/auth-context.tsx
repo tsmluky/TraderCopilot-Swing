@@ -4,15 +4,13 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useCa
 import { apiFetch, AuthError } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 
-// --- Types (tolerant) ---
-
 interface User {
     id: number;
     email: string;
     name: string;
     role: string;
     plan: string;
-    allowed_tokens?: string[]; // legacy
+    allowed_tokens?: string[];
     plan_expires_at?: string | null;
     timezone?: string | null;
     telegram_chat_id?: string | null;
@@ -66,8 +64,7 @@ function getCookie(name: string): string | null {
 
 function setTokenCookie(token: string) {
     if (typeof document === "undefined") return;
-
-    const maxAge = 60 * 60 * 24 * 7; // 7 días
+    const maxAge = 60 * 60 * 24 * 7;
     const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
 }
@@ -80,11 +77,9 @@ function clearTokenCookie() {
 function pickBooleanEntitlement(ent: Entitlements | null, key: string): boolean {
     if (!ent) return false;
 
-    // Direct boolean
     const top = (ent as any)[key];
     if (typeof top === "boolean") return top;
 
-    // Feature object
     if (!ent.features) return false;
 
     const f = ent.features[key];
@@ -110,22 +105,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUserData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
+
+        const isBillingSuccess =
+            typeof window !== "undefined" &&
+            new URLSearchParams(window.location.search).get("billing") === "success";
+
         try {
             const [userData, entData] = await Promise.all([
                 apiFetch<User>("/auth/users/me"),
                 apiFetch<Entitlements>("/auth/me/entitlements"),
             ]);
 
+            // If trial expired but we just returned from Stripe,
+            // attempt a billing sync before redirecting to /trial-expired.
+            if (entData?.is_trial_expired && isBillingSuccess) {
+                try {
+                    await apiFetch("/billing/sync", { method: "POST" });
+
+                    const [user2, ent2] = await Promise.all([
+                        apiFetch<User>("/auth/users/me"),
+                        apiFetch<Entitlements>("/auth/me/entitlements"),
+                    ]);
+
+                    setUser(user2);
+                    setEntitlements(ent2);
+
+                    if (ent2?.is_trial_expired) {
+                        router.push("/trial-expired");
+                    } else {
+                        // remove query param to avoid looping sync
+                        router.replace("/dashboard");
+                    }
+                } catch (e) {
+                    // If sync fails, fallback to original behavior
+                    setUser(userData);
+                    setEntitlements(entData);
+                    router.push("/trial-expired");
+                }
+                return;
+            }
+
             setUser(userData);
             setEntitlements(entData);
 
-            // Si el backend marca trial expirado, manda a la pantalla dedicada
             if (entData?.is_trial_expired) {
                 router.push("/trial-expired");
             }
         } catch (err: any) {
             if (err instanceof AuthError) {
-                // token invalid/expired - Silent cleanup
                 if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
                 clearTokenCookie();
                 setToken(null);
@@ -141,7 +168,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [router]);
 
-    // Load token from storage/cookie on mount
     useEffect(() => {
         const storedToken =
             (typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null) ||

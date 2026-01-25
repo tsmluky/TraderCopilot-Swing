@@ -7,7 +7,7 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from database import SessionLocal, engine, Base
-from models_db import User, StrategyConfig
+from models_db import User
 from routers.auth_new import seed_default_strategies
 
 def init_db():
@@ -33,11 +33,6 @@ def test_strategy_persistence():
 
         # 2. Fetch Strategies (Titan SOL and Flow Master BTC)
         # IDs based on logic: titan_sol_{uid}, flow_btc_{uid}
-        titan_sol_id = f"titan_sol_{user.id}"
-        flow_btc_id = f"flow_btc_{user.id}"
-
-        s1 = db.query(StrategyConfig).filter(StrategyConfig.persona_id == titan_sol_id).first()
-        s2 = db.query(StrategyConfig).filter(StrategyConfig.persona_id == flow_btc_id).first()
 
         if not s1 or not s2:
             print("❌ Strategies not found. Seeding failed?")
@@ -84,3 +79,4 @@ def test_strategy_persistence():
 
 if __name__ == "__main__":
     test_strategy_persistence()
+

@@ -1,479 +1,112 @@
-# backend/routers/strategies.py
+﻿# backend/routers/strategies.py
 """
-End-to-End Strategy Management via PostgreSQL.
-Single Source of Truth: 'strategy_configs' table.
+End-to-End Strategy Management via Entitlements.
+Refactored (2026-01-25): No longer uses StrategyConfig for entitlements.
+Uses core.entitlements + Plan logic.
 """
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
-import json as json_lib
-import re
-
 
 from database import get_db
-from models_db import StrategyConfig, User, Signal, SignalEvaluation
-from pydantic import BaseModel
+from models_db import User, Signal
 from routers.auth_new import get_current_user
-from dependencies import require_plan
-
-
-# === Dependency ===
-
-
+from core.entitlements import get_user_entitlements
 
 router = APIRouter(tags=["strategies"])
 
-# === Models ===
-
-
-class StrategyCreate(BaseModel):
-    name: str  # e.g. "My Custom Strat"
-    symbol: str  # e.g. "BTC"
-    timeframe: str  # e.g. "1h"
-    strategy_id: str  # e.g. "donchian_v2" (Logic)
-    description: str
-    risk_level: str
-    expected_roi: str
-    win_rate: str
-    frequency: str
-
-
-class PersonaResponse(BaseModel):
-    id: str
-    name: str
-    symbol: str
-    timeframes: List[str]  # Changed to list
-    strategy_id: str
-    description: str
-    risk_level: str
-    expected_roi: str
-    win_rate: str
-    frequency: str
-    color: str
-    is_active: bool
-    is_custom: bool
-    is_public: bool
-    icon: str
-
-
 # === Endpoints ===
 
-
-@router.get("/marketplace", response_model=List[Dict[str, Any]])
+@router.get("/marketplace", response_model=Dict[str, List[Any]])
 async def get_marketplace(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """
-    Retorna todas las estrategias visualizables (Personas).
-    Combina:
-    1. Estrategias PÃºblicas (Sistema)
-    2. Estrategias Privadas del Usuario (si estÃ¡ logueado - TODO)
+    Returns Strategy Offerings based on User's Plan.
+    Returns:
+       offerings: List of active strategies (Active)
+       locked_offerings: List of visible but locked strategies (Upsell)
     """
-    # For now, return ALL Public + ALL Private (Admin view) or just Public?
-    # Let's fetch all Public + User's own.
-    # Since we might not have user context if public page...
-    # Filter: System Strategies (user_id is None) OR User's own strategies
-    # Need to handle case where current_user might be implicit if we want public access,
-    # but for consistent dashboard, we likely have a user.
-    # To be safe, we'll fetch all public (system) + private if user matches.
-
-    # [ISO-STRAT] Strict Isolation Logic
-    # 1. Fetch User's Private Strategies
-    query = db.query(StrategyConfig).filter(StrategyConfig.user_id == current_user.id)
-    configs = query.all()
-
-    # 2. Smart Seeding (Migration for existing users & updates)
-    from marketplace_config import SYSTEM_PERSONAS
+    # 1. Calculate Entitlements / Offerings
+    offerings_data = get_user_entitlements(current_user)
     
-    # Check for missing system strategies
-    expected_ids = {f"{p['id']}_{current_user.id}" for p in SYSTEM_PERSONAS}
-    existing_ids = {c.persona_id for c in configs}
-    missing_ids = expected_ids - existing_ids
-
-    if missing_ids:
-        print(f"[MARKETPLACE] Found {len(missing_ids)} missing strategies (Updates). Seeding...")
-        from routers.auth_new import seed_default_strategies
-        seed_default_strategies(db, current_user)
-        # Re-fetch after seeding
-        configs = db.query(StrategyConfig).filter(StrategyConfig.user_id == current_user.id).all()
-
-    # 3. Migration / Cleanup for Multi-Timeframe Architecture
-    # Goal: Reset legacy strategies to their canonical timeframe if a specific strategy 
-    # now exists for the user's current overridden timeframe.
-    try:
-        migrated = False
-        for c in configs:
-            # Identify System Persona Base ID
-            # Our private IDs are "{system_id}_{user_id}"
-            base_id = c.persona_id.replace(f"_{current_user.id}", "")
-            
-            # Find the System Definition
-            system_p = next((p for p in SYSTEM_PERSONAS if p["id"] == base_id), None)
-            if not system_p:
-                continue
-
-            canonical_tf = system_p["timeframe"]
-            
-            # Get Current Configured Timeframe
-            try:
-                current_tf = json_lib.loads(c.timeframes)[0]
-            except Exception:
-                current_tf = c.timeframes
-
-            # If user has changed timeframe (e.g. titan_btc 1d -> 4h) - Case Insensitive Check
-            if current_tf.lower() != canonical_tf.lower():
-                # Check if there is a BETTER candidate for this timeframe
-                # i.e. Another system persona with same Name+Symbol but naturally defaults to current_tf
-                better_candidate = next(
-                    (
-                        p
-                        for p in SYSTEM_PERSONAS
-                        if p["name"] == system_p["name"]
-                        and p["symbol"] == system_p["symbol"]
-                        and p["timeframe"].lower() == current_tf.lower()
-                    ),
-                    None,
-                )
-                
-                # OR: If no "better candidate" exists, but we are a System Strategy, 
-                # we should probably strictly enforce our canonical timeframe if we are now in a multi-timeframe world?
-                # No, let's stick to the "collision avoidance" logic: 
-                # only reset if we are colliding with a dedicated strategy.
-                
-                if better_candidate:
-                    print(
-                        f"[MIGRATION] Resetting {c.persona_id} from {current_tf} to {canonical_tf} "
-                        f"because {better_candidate['id']} exists."
-                    )
-                    c.timeframes = json_lib.dumps([canonical_tf])
-                    db.add(c)
-                    migrated = True
-        
-        if migrated:
-            db.commit()
-            # Refetch to get updates
-            configs = db.query(StrategyConfig).filter(StrategyConfig.user_id == current_user.id).all()
-            
-    except Exception as e:
-        print(f"[MIGRATION ERROR] Failed to migrate strategies: {e}")
-
-    personas = []
-    for c in configs:
-        # Determine strict "is_custom" bool based on user_id presence
-        is_custom = c.user_id is not None
-
-        # Parse JSON lists safely
-        try:
-            tokens = json_lib.loads(c.tokens)[0] if c.tokens else "Unknown"
-        except Exception:
-            tokens = c.tokens
-
-        # Timeframes: Always return a list
-        try:
-            tf_list = json_lib.loads(c.timeframes) if c.timeframes else ["1d"]
-            # Ensure it is a list
-            if not isinstance(tf_list, list):
-               tf_list = [str(tf_list)]
-        except Exception:
-             # Fallback if raw string
-            tf_list = [c.timeframes] if c.timeframes else ["1d"]
-
-        # Stats Real (if signals exist)
-        # Fix: Calculate Win Rate dynamically to ensure accuracy
-        target_source = f"Marketplace:{c.persona_id}"
-        real_wr = 0.0
-        try:
-            # Count evaluated wins
-            wins = (
-                db.query(SignalEvaluation)
-                .join(Signal)
-                .filter(
-                    Signal.source == target_source, SignalEvaluation.result == "WIN"
-                )
-                .count()
-            )
-
-            # Count total evaluations
-            total_evals = (
-                db.query(SignalEvaluation)
-                .join(Signal)
-                .filter(Signal.source == target_source)
-                .count()
-            )
-
-            if total_evals > 0:
-                real_wr = (wins / total_evals) * 100
-
-            # Valid commit happens outside loop if we want, or transient update
-            c.win_rate = real_wr
-            c.total_signals = total_evals
-        except Exception as e:
-            print(f"[STATS] Error calculating stats for {c.persona_id}: {e}")
-            real_wr = c.win_rate or 0.0
-
-        # Frequency (Static if in config, else inferred)
-        freq_label = "Medium"
-        if c.interval_seconds < 900:
-            freq_label = "High"
-        elif c.interval_seconds > 14400:
-            freq_label = "Low"
-
-        if c.config_json:
-            try:
-
-
-                conf = json_lib.loads(c.config_json)
-                if "frequency" in conf:
-                    freq_label = conf["frequency"]
-            except Exception:
-                pass
-
-        personas.append(
-            {
-                "id": c.persona_id,
-                "name": c.name,
-                "symbol": tokens,
-                "timeframes": tf_list, # Return List
-                "strategy_id": c.strategy_id,
-                "description": c.description,
-                "risk_level": c.risk_profile,
-                "expected_roi": c.expected_roi or "N/A",
-                "win_rate": f"{int(real_wr)}%",  # Calculated Live
-                "frequency": freq_label,
-                "color": c.color,
-                "is_active": c.enabled == 1,
-                "is_custom": is_custom,
-                "is_public": c.is_public == 1,
-                "icon": c.icon,
-            }
-        )
-
-    return personas
-
-
-@router.post("/marketplace/create")
-async def create_persona(
-    config: StrategyCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_plan("TRADER")),
-):
-    """Crea una nueva estrategia personalizada en DB."""
-
-    # 1. Generate ID
-    safe_name = re.sub(r"[^a-z0-9]+", "_", config.name.lower()).strip("_")
-    new_id = f"{safe_name}_{config.symbol.lower()}"
-
-    # Check duplication
-    exists = (
-        db.query(StrategyConfig).filter(StrategyConfig.persona_id == new_id).first()
-    )
-    if exists:
-        import random
-
-        new_id = f"{new_id}_{random.randint(1000, 9999)}"
-
-    # 2. Create DB Entry
-    new_strat = StrategyConfig(
-        persona_id=new_id,
-        strategy_id=config.strategy_id,
-        name=config.name,
-        description=config.description,
-        tokens=json_lib.dumps([config.symbol]),
-        timeframes=json_lib.dumps([config.timeframe]),
-        risk_profile=config.risk_level,
-        expected_roi=config.expected_roi,
-        # Default user settings
-        color="indigo",
-        is_public=0,
-        user_id=current_user.id,
-        enabled=1,
-        total_signals=0,
-        win_rate=0.0,
-    )
-
-    db.add(new_strat)
-    db.commit()
-    db.refresh(new_strat)
-
-    return {"status": "ok", "id": new_id, "msg": "Strategy created successfully"}
-
-
-@router.patch("/marketplace/{persona_id}/toggle")
-async def toggle_strategy(
-    persona_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Activa/Desactiva una estrategia."""
-    strat = (
-        db.query(StrategyConfig).filter(StrategyConfig.persona_id == persona_id).first()
-    )
-    if not strat:
-        raise HTTPException(status_code=404, detail="Strategy not found")
-
-    # Security Check: Owner or Admin
-    if strat.user_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(
-            status_code=403, detail="Not authorized to toggle this strategy"
-        )
-
-    # Toggle (0 -> 1, 1 -> 0)
-    strat.enabled = 0 if strat.enabled == 1 else 1
-    db.commit()
-
-    return {"status": "ok", "enabled": strat.enabled == 1}
-
-
-class StrategyUpdate(BaseModel):
-    timeframe: str | None = None
-    risk_profile: str | None = None
-
-@router.patch("/marketplace/{persona_id}/update")
-async def update_strategy(
-    persona_id: str,
-    update: StrategyUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Actualiza configuración de la estrategia (Timeframe, Risk)."""
-    strat = db.query(StrategyConfig).filter(StrategyConfig.persona_id == persona_id).first()
-    if not strat:
-        raise HTTPException(status_code=404, detail="Strategy not found")
-
-    if strat.user_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    if update.timeframe:
-        # Validate/Logic check could go here
-        strat.timeframes = json_lib.dumps([update.timeframe])
+    # 2. Enrich with Stats (Win Rate, Signals, etc.) - Dynamic Calculation per Strategy Code?
+    # For MVP, we might show Global Stats per Strategy Code, or per specific Offering ID.
+    # Since existing signals have 'strategy_id' like 'titan_btc_4h', we can try to find stats.
+    # BUT, the new system uses 'strategy_code' and entitlements.
+    # Let's attach basic stats if available, or 0.
     
-    if update.risk_profile:
-        strat.risk_profile = update.risk_profile
+    # We'll just return the structure as computed by core/entitlements.
+    # The frontend expects "win_rate" etc. logic? 
+    # The previous code calculated it live. 
+    # For performance, we can skip live calc for now or do a quick aggregation if needed.
+    # Let's keep it lightweight.
+    
+    # Just return raw offering data for now. Frontend will render chips.
+    # If stats are needed, we can query `SignalEvaluation` by strategy_id matching the ID conventions.
+    
+    return offerings_data
 
-    db.commit()
-    return {"status": "ok", "msg": "Strategy updated"}
 
+# === Deprecated Endpoints ===
 
-@router.delete("/marketplace/{persona_id}")
-async def delete_persona(
-    persona_id: str,
+@router.post("/marketplace/create", include_in_schema=False)
+async def create_persona(payload: Dict[str, Any]):
+    raise HTTPException(status_code=410, detail="Feature Deprecated: Strategies are now plan-based.")
+
+@router.patch("/marketplace/{id}/toggle", include_in_schema=False)
+async def toggle_strategy(id: str):
+    # Mock success to avoid breaking legacy frontend if it calls this
+    return {"status": "ok", "enabled": True, "msg": "Deprecated: Strategies are managed by Plan."}
+
+@router.delete("/marketplace/{id}", include_in_schema=False)
+async def delete_persona(id: str):
+     raise HTTPException(status_code=410, detail="Feature Deprecated.")
+
+@router.patch("/marketplace/{id}/update", include_in_schema=False)
+async def update_strategy(id: str, payload: Dict[str, Any]):
+    # Mock success
+    return {"status": "ok", "msg": "Deprecated: Settings are fixed by Plan."}
+
+@router.get("/marketplace/{id}/history")
+async def get_persona_history(
+    id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user)
 ):
-    """Elimina una estrategia (Solo si eres el dueÃ±o)."""
-    strat = (
-        db.query(StrategyConfig).filter(StrategyConfig.persona_id == persona_id).first()
-    )
-    if not strat:
-        raise HTTPException(status_code=404, detail="Strategy not found")
-
-    # Check ownership (unless admin)
-    if strat.user_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(
-            status_code=403, detail="Not authorized to delete this strategy"
-        )
-
-    # Prevent deleting System strategies (user_id is Null)
-    if strat.user_id is None and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Cannot delete System strategies")
-
-    # --- CASCADE DELETE SIGNALS & EVALUATIONS ---
-    # Delete signals generated by this specific persona instance
-    target_source = f"Marketplace:{persona_id}"
-
-    # First delete evaluations linked to these signals
-    # We do a subquery deletion or fetch-then-delete.
-    # For SQLite compatibility/simplicity:
-    signals_to_delete = db.query(Signal.id).filter(Signal.source == target_source).all()
-    sig_ids = [s[0] for s in signals_to_delete]
-
-    deleted_evals = 0
-    if sig_ids:
-        deleted_evals = (
-            db.query(SignalEvaluation)
-            .filter(SignalEvaluation.signal_id.in_(sig_ids))
-            .delete(synchronize_session=False)
-        )
-
-    deleted_signals = (
-        db.query(Signal)
-        .filter(Signal.source == target_source)
-        .delete(synchronize_session=False)
-    )
-
-    # Also delete any signals that might have been attributed directly to the
-    # strategy_id
-    # IF this is a custom strategy and we want to be aggressive about cleanup.
-    # However, 'target_source' is the strict link for persona execution.
-
-    print(
-        f"🗑️ Deleting Persona {persona_id}: Metadata + "
-        f"{deleted_signals} Signals + {deleted_evals} Evaluations."
-    )
-
-    db.delete(strat)
-    db.commit()
-    return {
-        "status": "ok",
-        "msg": f"Strategy deleted. Cleared {deleted_signals} signals.",
-    }
-
-
-@router.get("/marketplace/{persona_id}/history")
-async def get_persona_history(persona_id: str, db: Session = Depends(get_db)):
-    """Historial de seÃ±ales para una Persona."""
-
-    # 1. Resolve strategy to ensure it exists
-    # strat = db.query(StrategyConfig).filter(
-    #     StrategyConfig.persona_id == persona_id
-    # ).first()
-    # if not strat: raise 404... (Optional, strictness)
-
-    target_source = f"Marketplace:{persona_id}"
-
+    """
+    Returns signal history for a specific offering ID (e.g. TITAN_BREAKOUT_4H).
+    Query logic: Find signals with strategy_id = id OR (strategy_code + timeframe match).
+    New system might not tag signals with 'TITAN_BREAKOUT_4H' yet. 
+    Legacy signals were 'titan_btc_4h'. 
+    We need to handle the ID transition or just query somewhat loosely?
+    
+    For now, assume Signals will be tagged with the Offering ID or we query by properties.
+    """
+    
+    # Try exact match first
     signals = (
         db.query(Signal)
-        .filter(Signal.source == target_source)
+        .filter(Signal.strategy_id == id) # e.g. TITAN_BREAKOUT_4H
         .order_by(Signal.timestamp.desc())
-        .limit(100)
+        .limit(50)
         .all()
     )
-
+    
+    # Format
     history = []
     for sig in signals:
-        eval_data = None
-        if sig.evaluation:
-            eval_data = {
-                "result": sig.evaluation.result,
-                "pnl_r": sig.evaluation.pnl_r,
-                "exit_price": sig.evaluation.exit_price,
-                "closed_at": sig.evaluation.evaluated_at,
-            }
-
-        history.append(
-            {
-                "id": sig.id,
-                "timestamp": sig.timestamp,
-                "token": sig.token,
-                "direction": sig.direction,
-                "entry": sig.entry,
-                "tp": sig.tp,
-                "sl": sig.sl,
-                "mode": sig.mode,
-                "confidence": sig.confidence,
-                "rationale": sig.rationale,
-                "result": eval_data,
-            }
-        )
-
+         history.append({
+            "id": sig.id,
+            "timestamp": sig.timestamp,
+            "token": sig.token,
+            "direction": sig.direction,
+            "entry": sig.entry,
+            "tp": sig.tp,
+            "sl": sig.sl,
+            "result": sig.evaluation.result if sig.evaluation else None,
+            "pnl": sig.evaluation.pnl_r if sig.evaluation else None
+         })
+         
     return history
-
-
-# === Registry & Metadata (Legacy/Internal) ===
-
-
-@router.get("/", include_in_schema=False)
-async def list_strategies_internal(db: Session = Depends(get_db)):
-    """Legacy endpoint, redirected to marketplace logic."""
-    return await get_marketplace(db)

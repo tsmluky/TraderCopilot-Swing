@@ -31,8 +31,9 @@ def db_session():
     
     db = TestingSessionLocal()
     
-    # Patch main session dependency
-    with patch("database.SessionLocal", side_effect=lambda: TestingSessionLocal()):
+    # Patch main session dependency using object patching to be import-safe
+    import database
+    with patch.object(database, "SessionLocal", side_effect=lambda: TestingSessionLocal()):
         yield db
     
     db.close()
@@ -229,9 +230,8 @@ def test_concurrency_dedupe(db_session):
             timestamp=ts, token="RACE_TOKEN", direction="long", entry=10.0, timeframe="1h",
             strategy_id="conc_strat", mode="TEST", source="thread", user_id=1
         )
-        # Suppress prints
-        with patch("builtins.print"): 
-             return log_signal(sig)
+        # with patch("builtins.print"): 
+        return log_signal(sig)
 
     results = []
     # Using real log_signal with mocked push to avoid noise
@@ -262,8 +262,10 @@ def test_postgres_integration_concurrency():
     Requires running Postgres instance.
     """
     # Attempt connection or skip
-    pg_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/trader_copilot_test")
-    
+    pg_url = os.getenv("DATABASE_URL")
+    if not pg_url or not pg_url.startswith("postgresql"):
+        pytest.skip("Skipping PG test: DATABASE_URL not set to postgresql")
+
     try:
         engine = create_engine(pg_url)
         with engine.connect() as _:
@@ -285,9 +287,13 @@ def test_postgres_integration_concurrency():
         Base.metadata.create_all(bind=engine)
     finally:
         fake_sess.close()
-        
     # Patch SessionLocal to use PG
-    with patch("database.SessionLocal", side_effect=lambda: TestingSessionPG()):
+    # Use sys.modules to find the exact module object loaded by signal_logger
+    db_mod = sys.modules.get("database")
+    if not db_mod:
+        import database as db_mod
+    
+    with patch.object(db_mod, "SessionLocal", side_effect=lambda: TestingSessionPG()):
         
         # Reuse Concurrency Logic
         import concurrent.futures
@@ -300,8 +306,8 @@ def test_postgres_integration_concurrency():
                 timestamp=ts, token="PG_RACE_TOKEN", direction="long", entry=50000.0, timeframe="1h",
                 strategy_id="pg_strat", mode="TEST", source="thread_pg", user_id=1
             )
-            with patch("builtins.print"):
-                return log_signal(sig)
+            # with patch("builtins.print"):
+            return log_signal(sig)
 
         results = []
         with patch("core.signal_logger._send_push_notification"), \

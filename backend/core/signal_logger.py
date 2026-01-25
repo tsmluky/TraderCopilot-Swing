@@ -39,7 +39,7 @@ CSV_HEADERS = [
 ]
 
 
-def log_signal(signal: Signal) -> Optional[int]:
+def log_signal(signal: Signal) -> bool:
     """
     Guarda una señal en DB (Canonical) y si tiene éxito, en CSV.
 
@@ -47,27 +47,31 @@ def log_signal(signal: Signal) -> Optional[int]:
         signal: Instancia del modelo Signal unificado
 
     Returns:
-        Optional[int]: ID de la señal insertada o None si falló/duplicada.
+        bool: True si se insertó una NUEVA señal, False si era duplicada o falló.
     """
 
     mode = signal.mode.upper()
     
     # === 1. Persistir en DB (CANONICAL SOURCE OF TRUTH) ===
     # Si falla dedupe aquí, abortamos todo lo demás.
-    saved_id = _write_to_db(signal, mode)
+    saved_id, is_new = _write_to_db(signal, mode)
     
     if not saved_id:
-        return None
+        return False
+    
+    # Si ya existía, retornamos False y no hacemos CSV/Push (idempotency)
+    if not is_new:
+        return False
 
-    # === 2. Persistir en CSV (Solo si DB aceptó) ===
+    # === 2. Persistir en CSV (Solo si es nueva) ===
     token_lower = signal.token.lower()
     _write_to_csv(signal, mode, token_lower)
     
     # === 3. Push Notification (Mobile) ===
-    # Solo si es nueva.
     _send_push_notification(signal)
     
-    return saved_id
+    return True
+
 
 
 def _snap_to_grid(dt: datetime, tf_str: str) -> datetime:
@@ -100,33 +104,33 @@ def _snap_to_grid(dt: datetime, tf_str: str) -> datetime:
     return dt
 
 
-def _write_to_db(signal: Signal, mode: str) -> Optional[int]:
+def _write_to_db(signal: Signal, mode: str) -> tuple[Optional[int], bool]:
     """
-    Escritura exclusiva de DB para una señal.
-    Retorna ID si insertó, None si duplicado/error.
+    Retorna (id, is_new).
+    is_new=True si se hizo INSERT.
+    is_new=False si ya existía (deduplicado).
     """
     try:
         from database import SessionLocal
-        from models_db import Signal as SignalDB  # Explicit import from backend package
-        from sqlalchemy.exc import IntegrityError 
+        from models_db import Signal as SignalDB
+        from sqlalchemy.exc import IntegrityError
 
-        # 1. Normalize Timestamp (Canonical)
+        # 1) Normalize timestamp al inicio de vela (canonical)
         ts_normalized = _snap_to_grid(signal.timestamp, signal.timeframe)
         ts_iso = ts_normalized.isoformat()
-        
-        # 2. Compute Idempotency Key
-        # Includes DIRECTION to allow hedging (Long+Short in same candle if logic permits)
+
+        # 2) Idempotency key (estable)
         idem_key = (
             f"{signal.strategy_id}|{signal.token.upper()}|{signal.timeframe}|"
             f"{ts_iso}|{signal.direction.lower()}|{signal.user_id}|{signal.mode}"
         )
 
-        # 3. Preparar datos para el modelo DB
+        # 3) Construir fila DB
         db_signal = SignalDB(
-            timestamp=ts_normalized, # STORE NORMALIZED TS
+            timestamp=ts_normalized,
             token=signal.token.upper(),
             timeframe=signal.timeframe,
-            direction=signal.direction.lower(), # Normalize direction
+            direction=signal.direction.lower(),
             entry=signal.entry,
             tp=signal.tp if signal.tp else 0.0,
             sl=signal.sl if signal.sl else 0.0,
@@ -139,40 +143,46 @@ def _write_to_db(signal: Signal, mode: str) -> Optional[int]:
             idempotency_key=idem_key,
             user_id=signal.user_id,
         )
-        
-        # Check dynamic attr from scheduler
-        if hasattr(signal, "is_saved"):
+
+        # Campo opcional (si existe en schema)
+        if hasattr(signal, "is_saved") and hasattr(db_signal, "is_saved"):
             db_signal.is_saved = getattr(signal, "is_saved")
 
         db = SessionLocal()
         try:
             db.add(db_signal)
             db.commit()
-            db.refresh(db_signal) # Refresh to get ID
+            db.refresh(db_signal)
             print(f"[DB] ✅ INSERT: {signal.token} {signal.direction} @ {ts_normalized} ID={db_signal.id}")
-            return db_signal.id
+            return db_signal.id, True
 
         except IntegrityError:
+            # Duplicado por idempotency_key: devolvemos el ID existente
             db.rollback()
-            # Silent Duplicate Skip
-            return None
+            try:
+                existing = db.query(SignalDB).filter(SignalDB.idempotency_key == idem_key).first()
+                if existing:
+                    return existing.id, False
+            except Exception:
+                pass
+            return None, False
 
         except Exception as db_err:
             print(f"[DB] ❌ Error Insert: {db_err}")
             db.rollback()
-            return None
+            return None, False
+
         finally:
             db.close()
 
     except ImportError as imp_err:
         print(f"[DB] ⚠️  Import Error: {imp_err}")
-        return None
+        return None, False
     except Exception as e:
         print(f"[DB] ⚠️  Unexpected Error: {e}")
         import traceback
         traceback.print_exc()
-        return None
-
+        return None, False
 
 def _write_to_csv(signal: Signal, mode: str, token_lower: str) -> None:
     """
@@ -268,3 +278,8 @@ def signal_from_dict(data: Dict[str, Any], mode: str, strategy_id: str) -> Signa
         source=data.get("source", "UNKNOWN"),
         extra=data.get("extra"),
     )
+
+
+
+
+

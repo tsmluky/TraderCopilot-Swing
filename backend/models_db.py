@@ -1,4 +1,4 @@
-from sqlalchemy import (
+﻿from sqlalchemy import (
     Column,
     Integer,
     String,
@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
 )
+
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -15,7 +16,6 @@ from database import Base
 
 class Signal(Base):
     __tablename__ = "signals"
-    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
@@ -55,13 +55,11 @@ class Signal(Base):
         UniqueConstraint(
             "strategy_id", "token", "timestamp", "direction", name="uq_signal_dedup"
         ),
-        {"extend_existing": True},
     )
 
 
 class SignalEvaluation(Base):
     __tablename__ = "signal_evaluations"
-    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     signal_id = Column(Integer, ForeignKey("signals.id"))
@@ -77,106 +75,120 @@ class SignalEvaluation(Base):
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
-    email = Column(String, unique=True)
-    name = Column(String)
+    email = Column(String, unique=True, index=True)
+    name = Column(String(120), nullable=True)
     hashed_password = Column(String)
-    role = Column(String, default="user")  # Permissions: user, admin
+    role = Column(String, default="user")  # admin, user
+    created_at = Column(DateTime, default=datetime.utcnow)
 
-    # Monetization / Entitlements
+    # Plans / Entitlements
     plan = Column(String, default="FREE")  # FREE, PRO, OWNER
-    plan_status = Column(String, default="active")  # active, inactive
     plan_expires_at = Column(DateTime, nullable=True)
 
-    # Notifications
-    telegram_chat_id = Column(String, nullable=True)  # User's personal Chat ID
-    telegram_username = Column(String, nullable=True)  # User's Telegram Handle (@username)
-    timezone = Column(String, default="UTC")  # User's preferred timezone
+    # ---------------------------
+    # Billing / Stripe
+    # ---------------------------
+    billing_provider = Column(String, nullable=True)          # e.g. "stripe"
+    stripe_customer_id = Column(String, nullable=True, index=True)        # cus_...
+    stripe_subscription_id = Column(String, nullable=True, index=True)    # sub_...
+    stripe_price_id = Column(String, nullable=True)           # price_...
+    plan_status = Column(String, nullable=True)               # active/inactive/canceled, etc.
+    # Optional owner checks / integrations
+    telegram_chat_id = Column(String, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
+    # Relationship to signals
+    signals = relationship(lambda: Signal, backref="user")
 class StrategyConfig(Base):
-    """
-    Configuración de estrategias 24/7 para el scheduler.
-
-    Cada registro representa una estrategia que puede ejecutarse
-    automáticamente en el backend.
-    """
-
     __tablename__ = "strategy_configs"
-    __table_args__ = {"extend_existing": True}
+    tokens = Column(Text, nullable=True)  # JSON list as string
+    timeframes = Column(Text, nullable=True)  # JSON list as string
+
+
+
+
+
+
+
+
+
+
 
     id = Column(Integer, primary_key=True)
-    strategy_id = Column(
-        String
-    )  # ej: "rsi_macd_v1" (Logic Class ID) - NOT UNIQUE anymore
-    persona_id = Column(
-        String, unique=True, nullable=True
-    )  # ej: "trend_king_sol" (Instance ID)
 
-    name = Column(String)  # Nombre legible
+
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+
+
+
+
+    # Strategy enabling + params
+
+
+    strategy_id = Column(String)
+
+
+    persona_id = Column(String(128), index=True, nullable=True)
+
+    # Display / Metadata
+    name = Column(String, nullable=True)
     description = Column(Text, nullable=True)
-    version = Column(String, default="1.0.0")
-
-    # Ownership & Marketplace
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # None = System
-    is_public = Column(Integer, default=0)  # 0=Private, 1=Public
-    color = Column(String, default="indigo")
-    icon = Column(String, default="Cpu")
+    risk_profile = Column(String, nullable=True)
     expected_roi = Column(String, nullable=True)
+    color = Column(String, default="indigo")
+    icon = Column(String, default="Zap") # lucide icon name
+    is_public = Column(Integer, default=0) # 0=Private, 1=Public
 
-    # Configuración operativa
-    enabled = Column(Integer, default=1)  # 1 = activa, 0 = pausada
-    interval_seconds = Column(
-        Integer, default=300
-    )  # Cada cuánto ejecutar (5 min default)
-    tokens = Column(String)  # JSON array: ["ETH", "BTC", "SOL"]
-    timeframes = Column(String)  # JSON array: ["30m", "1h"]
-
-    # Metadatos
-    risk_profile = Column(String, default="medium")  # low | medium | high
-    mode = Column(String, default="CUSTOM")  # LITE | PRO | CUSTOM
-    source_type = Column(String, default="ENGINE")  # ENGINE | LLM | HYBRID
-
-    # Estadísticas (actualizadas por evaluaciones)
+    enabled = Column(Integer, default=1)  # bool as int
     total_signals = Column(Integer, default=0)
     win_rate = Column(Float, default=0.0)
-    avg_confidence = Column(Float, default=0.0)
-    last_execution = Column(DateTime, nullable=True)
 
-    # Config JSON (parámetros específicos de la estrategia)
-    config_json = Column(Text, nullable=True)  # JSON: {"rsi_period": 14, ...}
+    params_json = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+
+
+    __table_args__ = (
+
+
+        UniqueConstraint("user_id", "persona_id", name="uq_user_persona"),
+
+
+    )
+
+
+
+
+
+
 
 
 class PushSubscription(Base):
     __tablename__ = "push_subscriptions"
-    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
-    endpoint = Column(String, unique=True)
-    p256dh = Column(String)
-    auth = Column(String)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    endpoint = Column(Text)
+    p256dh = Column(Text)
+    auth = Column(Text)
+
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "endpoint", name="uq_user_endpoint"),
+    )
 
 
 class SchedulerLock(Base):
-    """
-    Lock distribuido para evitar múltiples instancias del scheduler.
-    """
+    __tablename__ = "scheduler_locks"
 
-    __tablename__ = "scheduler_lock"
-    __table_args__ = {"extend_existing": True}
-
-    lock_name = Column(String, primary_key=True)  # "main_scheduler"
-    owner_id = Column(String)  # UUID de la instancia
-    expires_at = Column(DateTime)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    lock_name = Column(String, unique=True, index=True)
+    acquired_at = Column(DateTime, default=datetime.utcnow)
 
 
 class AdminAuditLog(Base):
@@ -186,7 +198,6 @@ class AdminAuditLog(Base):
     """
 
     __tablename__ = "admin_audit_logs"
-    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     admin_id = Column(Integer, ForeignKey("users.id"))
@@ -201,86 +212,56 @@ class AdminAuditLog(Base):
 class DailyUsage(Base):
     """
     Control de cuotas diarias por usuario.
-    Clave compuesta única: (user_id, feature, date).
+    Clave compuesta Ãºnica: (user_id, feature, date).
     """
 
     __tablename__ = "daily_usage"
-    __table_args__ = (
-        UniqueConstraint("user_id", "feature", "date", name="uq_user_feature_date"),
-        {"extend_existing": True},
-    )
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(
-        Integer, ForeignKey("users.id")
-    )  # index=True removed to prevent duplicate metadata crash
+    user_id = Column(Integer, ForeignKey("users.id"))
     feature = Column(String)
     date = Column(String)  # YYYY-MM-DD
     count = Column(Integer, default=0)
 
-    # Unique constraint to prevent race conditions (handled by DB logic usually,
-    # but index helps). In Postgres we'd use a UniqueConstraint.
-    # For now, we rely on the application logic 'check_and_increment' doing a localized lock
+    __table_args__ = (
+        UniqueConstraint("user_id", "feature", "date", name="uq_user_feature_date"),
+    )
 
 
 class CopilotProfile(Base):
-    """
-    Perfil de preferencias del Copilot para personalización.
-    Relación 1:1 con User.
-    """
-
     __tablename__ = "copilot_profiles"
-    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, index=True)
 
-    # Preferencias
-    trader_style = Column(String, default="BALANCED")  # SCALPER, SWING, DAY, BALANCED
-    risk_tolerance = Column(String, default="MEDIUM")  # LOW, MEDIUM, HIGH, DEGEN
-    time_horizon = Column(
-        String, default="INTRADAY"
-    )  # SCALP, INTRADAY, SWING, LONG_TERM
+    # Minimal profile fields for Advisor
+    trader_style = Column(String, nullable=True, default="BALANCED")
+    risk_tolerance = Column(String, nullable=True, default="MODERATE")
+    time_horizon = Column(String, nullable=True, default="SWING")
+    custom_instructions = Column(Text, nullable=True)
+    
+    # Legacy fields mapping if needed, or just clean replacement
+    # notes = Column(Text, nullable=True)
 
-    # Contexto libre
-    custom_instructions = Column(Text, nullable=True)  # "Prefiero evitar meme coins..."
-
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relación simple
-    user = relationship("User")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
 
 class WatchAlert(Base):
-    """
-    Alertas de precio basadas en Watchlist Items (Near-Setups).
-    Trigger: High >= Price (Long) or Low <= Price (Short).
-    TTL: Expira automáticamente según timeframe.
-    """
     __tablename__ = "watch_alerts"
-    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    
-    # Context
-    token = Column(String)
-    timeframe = Column(String)
-    strategy_id = Column(String)
-    side = Column(String)  # LONG, SHORT
-    
-    # Conditions
-    trigger_price = Column(Float)
-    distance_atr = Column(Float)
-    
-    # Lifecycle
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    token = Column(String, index=True)
+    timeframe = Column(String, index=True)
+    direction = Column(String, nullable=True)
+    condition = Column(Text, nullable=True)  # JSON/text rule
+
+    enabled = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime)
-    status = Column(String, default="PENDING")  # PENDING, TRIGGERED, EXPIRED, CANCELED
-    
-    # Execution
-    fired_at = Column(DateTime, nullable=True)
-    last_check_at = Column(DateTime, nullable=True)
-    
-    # Metadata
-    payload = Column(Text, nullable=True)  # JSON: reason, invalidations, etc.
+
+
+
+
+
+

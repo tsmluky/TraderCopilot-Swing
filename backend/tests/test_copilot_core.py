@@ -1,15 +1,11 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 
 
 
 
-from main import app, get_db
-from database import Base
+from main import app
 from models_db import User
 from core.brand_guard import check_brand_safety
 
@@ -18,42 +14,23 @@ from core.brand_guard import check_brand_safety
 # Import dependency from the MODULE THAT USES IT to ensure key match
 from routers.advisor import get_current_user
 
-# Setup In-Memory DB for testing
-SQLALCHEMY_DATABASE_URL = "sqlite://"
+@pytest.fixture(scope="module", autouse=True)
+def mock_current_user():
+    """
+    Override get_current_user ONLY for this module.
+    """
+    def _mock_user():
+        return User(id=1, email="test@example.com", plan="PRO")
+    
+    app.dependency_overrides[get_current_user] = _mock_user
+    yield
+    # Restore original (or remove override)
+    app.dependency_overrides.pop(get_current_user, None)
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-# Mock user
-def override_get_current_user():
-    return User(id=1, email="test@example.com", plan="PRO")
-
-
-app.dependency_overrides[get_db] = override_get_db
-app.dependency_overrides[get_current_user] = override_get_current_user
+# Ensure DB tables exist (globally handled by conftest, but if we need specific state...)
+# conftest.py setup_test_db handles creation.
 
 client = TestClient(app)
-
-
-@pytest.fixture(scope="module", autouse=True)
-def setup_db():
-    print(f"[TEST DEBUG] Creating tables. Registered: {Base.metadata.tables.keys()}")
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
 
 
 # === Brand Guard Tests ===

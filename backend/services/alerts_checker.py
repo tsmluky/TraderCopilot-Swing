@@ -6,12 +6,19 @@ from database import SessionLocal
 from models_db import WatchAlert, User
 from core.market_data_api import get_current_price
 from services.telegram_bot import bot
+from core.entitlements import get_user_entitlements
+
+# -----------------------------------------------------------------------------
+# Watchlist / Entitlement-based Alert Checker
+# -----------------------------------------------------------------------------
 
 async def check_watch_alerts():
     """
     Periodic job to check Watchlist Alerts.
     Checks: PENDING alerts -> trigger vs price.
     Action: Send Telegram & Update DB.
+    
+    [SECURED] filtering by Entitlements (no alerts if plan expired or token not allowed).
     """
     db = SessionLocal()
     try:
@@ -34,15 +41,13 @@ async def check_watch_alerts():
         if not active:
             return
 
-        # Optimization: Group by Token to fetch price once
+        # Optimization: Fetch prices once per token
         tokens_to_fetch = set(a.token for a in active)
         prices = {}
         
-        # [FIX] Run blocking network calls in ThreadPool to avoid freezing FastAPI
-        # Fetch prices in parallel for speed
         async def fetch_price_safe(t):
             try:
-                # Use asyncio.to_thread for blocking Sync IO
+                # Assuming get_current_price is blocking I/O
                 return t, await asyncio.to_thread(get_current_price, t)
             except Exception as e:
                 print(f"[ALERTS] Error fetching price for {t}: {e}")
@@ -58,15 +63,41 @@ async def check_watch_alerts():
         triggered_count = 0
         
         for alert in active:
+            # 2a. Entitlement Check
+            # We must load the user to verify if they still have access to this token/timeframe
+            # Optimization: could cache user entitlements, but for safety lets check.
+            user = db.query(User).filter(User.id == alert.user_id).first()
+            if not user:
+                continue
+                
+            # Verify Entitlements
+            entitlements = get_user_entitlements(user)
+            offerings = entitlements.get("offerings", [])
+            
+            # Check if ANY offering covers this token + timeframe?
+            # WatchAlert has 'token' and 'timeframe'.
+            # We need to see if user has an ACTIVE offering that includes this token.
+            
+            # Helper: Is (token, timeframe) in offerings?
+            is_allowed = False
+            for off in offerings:
+                # off['tokens'] is list of strings, off['timeframe'] is string
+                if (alert.timeframe == off["timeframe"]) and (alert.token in off["tokens"]):
+                    is_allowed = True
+                    break
+            
+            if not is_allowed:
+                # Silent skip, or expire? 
+                # If plan downgraded, maybe we shouldn't alert.
+                # print(f"[ALERTS] Skip {alert.id}: User {alert.user_id} lost entitlement for {alert.token} {alert.timeframe}")
+                continue
+
+            # 2b. Price Check
             current_price = prices.get(alert.token)
             if not current_price:
                 continue
                 
             is_triggered = False
-            
-            # TRIGGER LOGIC
-            # Long: Price >= Trigger
-            # Short: Price <= Trigger
             if alert.side.upper() == "LONG":
                 if current_price >= alert.trigger_price:
                     is_triggered = True
@@ -80,24 +111,19 @@ async def check_watch_alerts():
                     f"(Target: {alert.trigger_price})"
                 )
                 
-                # Retrieve User for Chat ID
-                user = db.query(User).filter(User.id == alert.user_id).first()
-                chat_id = user.telegram_chat_id if user else None
-                
-                # Fallback to default channel if no user chat_id (or for testing)
-                # But typically WatchAlerts are personal. If no chat_id, we can't notify personally.
-                # using env var fallback:
+                chat_id = user.telegram_chat_id 
+                # Fallback for dev/testing
                 if not chat_id:
                      chat_id = os.getenv("TELEGRAM_DEFAULT_CHAT_ID")
 
                 if chat_id:
                     msg = (
-                        f"🚨 <b>WATCH ALERT TRIGGERED</b>\n\n"
+                        f"🚨 <b>WATCH ALERT</b>\n\n"
                         f"🪙 <b>{alert.token} {alert.side}</b>\n"
-                        f"🎯 Trigger Reached: <b>${alert.trigger_price}</b>\n"
-                        f"📊 Current: ${current_price}\n"
-                        f"Strategy: {alert.strategy_id}\n\n"
-                        f"<i>Check your dashboard for confirmation.</i>"
+                        f"TF: {alert.timeframe}\n"
+                        f"Hit: <b>${alert.trigger_price}</b>\n"
+                        f"Current: ${current_price}\n"
+                        f"<i>Verified Entitlement ✅</i>"
                     )
                     
                     try:
@@ -108,8 +134,6 @@ async def check_watch_alerts():
                     except Exception as e:
                         print(f"[ALERTS] Failed to send Telegram to {chat_id}: {e}")
                 else:
-                    # Mark triggered anyway so we don't loop forever, or keep pending?
-                    # Let's mark triggered to indicate the event happened.
                     alert.status = "TRIGGERED" 
                     alert.fired_at = datetime.utcnow()
                     triggered_count += 1

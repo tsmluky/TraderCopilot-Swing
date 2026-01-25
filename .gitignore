@@ -64,3 +64,12 @@ dist/
 # --- logs ---
 logs/
 *.log
+
+# --- Specific Backups & Runtime ---
+backups_*/
+backend/backups_*/
+*_backup_*/
+openapi.runtime.json
+backend/openapi.runtime.json
+dev_local.db*
+

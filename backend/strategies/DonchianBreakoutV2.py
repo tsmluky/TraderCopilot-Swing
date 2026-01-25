@@ -283,11 +283,11 @@ class DonchianBreakoutV2:
                 "strategy_id": self.META.id,
                 "token": token_u,
                 "timeframe": timeframe,
-                "bias": "long",
-                "trigger": "break_above_upper",
-                "distance": {"type": "atr", "value": round(dist_to_upper_atr, 3)},
-                "note": (
-                    f"Near Donchian upper. Need breakout. Dist â‰ˆ {dist_to_upper_atr:.2f} ATR. "
+                "side": "long",
+                "trigger_price": round(upper, 2),
+                "distance_atr": round(dist_to_upper_atr, 3),
+                "reason": (
+                    f"Near Donchian upper. Need breakout. Dist ≈ {dist_to_upper_atr:.2f} ATR. "
                     "Trend: bullish (above EMA200)."
                 ),
             })
@@ -300,16 +300,14 @@ class DonchianBreakoutV2:
                 "strategy_id": self.META.id,
                 "token": token_u,
                 "timeframe": timeframe,
-                "bias": "short",
-                "trigger": "break_below_lower",
-                "distance": {"type": "atr", "value": round(dist_to_lower_atr, 3)},
-                "note": (
-                    f"Near Donchian lower. Need breakdown. Dist â‰ˆ {dist_to_lower_atr:.2f} ATR. "
+                "side": "short",
+                "trigger_price": round(lower, 2),
+                "distance_atr": round(dist_to_lower_atr, 3),
+                "reason": (
+                    f"Near Donchian lower. Need breakdown. Dist ≈ {dist_to_lower_atr:.2f} ATR. "
                     "Trend: bearish (below EMA200)."
                 ),
             })
 
-        items = sorted(items, key=lambda x: x["distance"]["value"])
-        return items[:max_items]
 
 

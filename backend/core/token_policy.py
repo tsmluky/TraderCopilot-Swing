@@ -1,37 +1,51 @@
+﻿from __future__ import annotations
+
+from typing import List
+
 from fastapi import HTTPException
-from models_db import User
+
+from core.entitlements import TokenCatalog
+from core.trial_policy import get_access_tier
+
 
 def normalize_token(token: str) -> str:
-    return token.upper().strip()
+    return (token or "").strip().upper()
 
-def get_allowed_tokens(user: User) -> list[str]:
-    """
-    Returns list of allowed tokens based on user plan.
-    """
-    plan = user.plan.upper()
-    
-    # OWNER / PRO / TRADER -> All Tokens (for now)
-    if plan in ["OWNER", "PRO", "TRADER"]:
-        return ["BTC", "ETH", "SOL", "BNB", "XRP"]
-        
-    # FREE / TRIAL -> Restricted
-    # Trial usually allows testing the platform, but if requirements say "BNB prohibited",
-    # then Trial follows FREE constraints for tokens.
-    return ["BTC", "ETH"]
 
-def assert_token_allowed(user: User, token: str):
-    """
-    Raises 403 if token is not allowed for the user's plan.
-    """
-    token_norm = normalize_token(token)
+def normalize_timeframe(timeframe: str) -> str:
+    tf = (timeframe or "").strip().upper()
+    # Normalize common variants if needed
+    tf = tf.replace(" ", "")
+    return tf
+
+
+def get_allowed_tokens(user) -> List[str]:
+    tier = get_access_tier(user)
+    return TokenCatalog.get_allowed_tokens(tier)
+
+
+def get_allowed_timeframes(user) -> List[str]:
+    tier = get_access_tier(user)
+    return TokenCatalog.get_allowed_timeframes(tier)
+
+
+def assert_token_allowed(user, token: str) -> str:
+    tok = normalize_token(token)
     allowed = get_allowed_tokens(user)
-    
-    if token_norm not in allowed:
-         raise HTTPException(
-             status_code=403, 
-             detail={
-                 "code": "TOKEN_RESTRICTED", 
-                 "message": f"Access to {token_norm} is restricted on your current plan. Upgrade to trade more assets.",
-                 "allowed": allowed
-             }
-         )
+    if tok not in allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "TOKEN_NOT_ALLOWED", "message": f"Token '{tok}' not allowed for your tier."},
+        )
+    return tok
+
+
+def assert_timeframe_allowed(user, timeframe: str) -> str:
+    tf = normalize_timeframe(timeframe)
+    allowed = get_allowed_timeframes(user)
+    if tf not in allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "TIMEFRAME_NOT_ALLOWED", "message": f"Timeframe '{tf}' not allowed for your tier."},
+        )
+    return tf

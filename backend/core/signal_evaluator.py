@@ -127,24 +127,18 @@ def evaluate_pending_signals(db: Session) -> int:
 
     db.commit()
     return new_evaluations_count
-
-
-def _update_strategy_stats(db: Session, persona_id: str):
     """
     Recalculates Win Rate for the Persona (StrategyConfig).
     """
     try:
-        # Match signals by strategy_id which now stores persona_id
         total = (
             db.query(Signal)
             .join(SignalEvaluation)
-            .filter(Signal.strategy_id == persona_id)
             .count()
         )
         wins = (
             db.query(Signal)
             .join(SignalEvaluation)
-            .filter(Signal.strategy_id == persona_id, SignalEvaluation.result == "WIN")
             .count()
         )
 
@@ -153,7 +147,6 @@ def _update_strategy_stats(db: Session, persona_id: str):
         evals = (
             db.query(SignalEvaluation)
             .join(Signal)
-            .filter(Signal.strategy_id == persona_id)
             .all()
         )
         for e in evals:
@@ -164,10 +157,8 @@ def _update_strategy_stats(db: Session, persona_id: str):
             win_rate = (wins / total) * 100  # Store as 0-100
 
             # Upsert config
-            # We look for the StrategyConfig where persona_id matches
             config = (
                 db.query(StrategyConfig)
-                .filter(StrategyConfig.persona_id == persona_id)
                 .first()
             )
             if config:
@@ -178,5 +169,6 @@ def _update_strategy_stats(db: Session, persona_id: str):
                 # Realized PnL should be calculated on the fly or stored in a new column.
 
     except Exception as e:
-        print(f"[EVAL] Error updating stats for {persona_id}: {e}")
+        pass
+
 

@@ -311,16 +311,15 @@ def build_lite_swing_signal(
                     config = _safe_json_dict(getattr(cfg, "config_json", None))
                     strat = registry.get(sid, config=config)
                     
-                    if strat and hasattr(strat, "get_watchlist"):
+                    if strat and hasattr(strat, "analyze_watchlist"):
                         try:
-                            w_items = strat.get_watchlist(df_watch, token_u, timeframe)
+                            w_items = strat.analyze_watchlist(token_u, timeframe, context=context)
                             if w_items:
                                 all_watch_items.extend(w_items)
                         except Exception as ex:
                             print(f"Error generating watchlist for {sid}: {ex}")
                 
                 # Sort by distance (ascending) and take top 5
-                # Note: 'distance_atr' might be 0 for some types, so prioritize those?
                 # Sorting key: distance_atr
                 all_watch_items.sort(key=lambda x: float(x.get("distance_atr", 999.0)))
                 watchlist_data = all_watch_items[:5]

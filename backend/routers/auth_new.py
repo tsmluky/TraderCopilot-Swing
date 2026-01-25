@@ -1,16 +1,14 @@
-from datetime import timedelta, datetime
+﻿from datetime import timedelta, datetime
 from typing import Annotated
-import json
 
 import fastapi
-from fastapi import APIRouter, HTTPException, status, Request
+from fastapi import APIRouter, HTTPException, status, Request, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
 
-from marketplace_config import SYSTEM_PERSONAS
-from models_db import StrategyConfig, User
+from models_db import User
 from pydantic import BaseModel
 from database import get_db, SessionLocal
 from core.schemas import UserCreate, UserResponse
@@ -25,12 +23,29 @@ from core.security import (
 from core.limiter import limiter
 
 # Entitlements Endpoint
-from core.entitlements import get_user_entitlements, TokenCatalog
+# ... (imports)
+from core.entitlements import get_user_entitlements, get_plan_entitlements
+from core.trial_policy import get_access_tier
+
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 # NOTE: tokenUrl is mainly for OpenAPI docs. Keeping relative is OK, but absolute is safer.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+
+
+def _safe_name(obj) -> str:
+    """
+    Compat layer: algunos esquemas/modelos en DEV pueden no tener .name.
+    Nunca debe romper auth.
+    """
+    v = getattr(obj, "name", None)
+    if v and str(v).strip():
+        return str(v).strip()
+    em = getattr(obj, "email", "") or ""
+    if "@" in em:
+        return em.split("@")[0]
+    return em or "user"
 
 
 async def get_current_user(
@@ -65,7 +80,6 @@ async def get_current_user(
 
     return user
 
-
 @router.post("/token")
 @limiter.limit("5/minute")
 async def login_for_access_token(
@@ -90,8 +104,13 @@ async def login_for_access_token(
         expires_delta=access_token_expires
     )
 
-    plan_upper = (user.plan or "FREE").upper()
-    allowed_tokens = TokenCatalog.get_allowed_tokens(plan_upper)
+    plan_upper = (getattr(user, "plan", None) or "FREE").upper()
+    tier = get_access_tier(user)
+    
+    # Get entitlements
+    entitlements = get_plan_entitlements(tier)
+    allowed_tokens = entitlements["tokens"]
+    allowed_timeframes = entitlements["timeframes"]
 
     return {
         "access_token": access_token,
@@ -99,16 +118,41 @@ async def login_for_access_token(
         "user": {
             "id": user.id,
             "email": user.email,
-            "name": user.name,
-            "role": user.role,
+            "name": _safe_name(user),
+            "role": getattr(user, "role", "user"),
             # IMPORTANT: keep uppercase canonical plan; frontend can format for display
             "plan": plan_upper,
-            "plan_status": user.plan_status,
+            "plan_status": ("expired" if tier == "TRIAL_EXPIRED" else "active"),
             "allowed_tokens": allowed_tokens,
-            "created_at": user.created_at,
+            "allowed_timeframes": allowed_timeframes,
+            "created_at": getattr(user, "created_at", None),
         },
     }
 
+@router.get("/me")
+async def get_me(current_user = Depends(get_current_user)):
+    """
+    Minimal whoami endpoint used by frontend to validate session.
+    Returns the authenticated user payload.
+    """
+    tier = get_access_tier(current_user)
+    entitlements = get_plan_entitlements(tier)
+
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "name": _safe_name(current_user),
+        "role": getattr(current_user, "role", "user"),
+        "plan": getattr(current_user, "plan", "FREE"),
+        "plan_status": ("expired" if tier == "TRIAL_EXPIRED" else "active"),
+        "allowed_tokens": entitlements["tokens"],
+        "allowed_timeframes": entitlements["timeframes"],
+        "telegram_chat_id": getattr(current_user, "telegram_chat_id", None),
+        "telegram_username": getattr(current_user, "telegram_username", None),
+        "timezone": getattr(current_user, "timezone", None),
+        "plan_expires_at": getattr(current_user, "plan_expires_at", None),
+        "created_at": getattr(current_user, "created_at", None),
+    }
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(request: Request, db: Session = fastapi.Depends(get_db)):
@@ -135,15 +179,19 @@ async def register_user(request: Request, db: Session = fastapi.Depends(get_db))
 
     # === NORMALIZATION ===
     plan_upper = "FREE"
-    plan_expires_at = datetime.utcnow() + timedelta(days=3)
+    plan_expires_at = datetime.utcnow() + timedelta(days=7)
+
+    # Compat: UserCreate puede no tener name
+    name_val = getattr(user_data, "name", None)
+    if not name_val or not str(name_val).strip():
+        # default display name: prefix del email
+        name_val = email_norm.split("@")[0]
 
     new_user = User(
         email=email_norm,
         hashed_password=hashed_pwd,
-        name=user_data.name,
-        role="user",
+        name=name_val,
         plan=plan_upper,
-        plan_status="active",
         plan_expires_at=plan_expires_at,
         created_at=datetime.utcnow(),
     )
@@ -165,18 +213,20 @@ async def register_user(request: Request, db: Session = fastapi.Depends(get_db))
                 raise HTTPException(status_code=500, detail="User lost after rollback.")
             pass
 
-        allowed = TokenCatalog.get_allowed_tokens(plan_upper)
+        tier = get_access_tier(new_user)
+        entitlements = get_plan_entitlements(tier)
 
         return {
             "id": new_user.id,
             "email": new_user.email,
-            "name": new_user.name,
-            "role": new_user.role,
+            "name": _safe_name(new_user),
+            "role": getattr(new_user, "role", "user"),
             "plan": plan_upper,
-            "allowed_tokens": allowed,
-            "telegram_chat_id": new_user.telegram_chat_id,
-            "timezone": new_user.timezone,
-            "created_at": new_user.created_at
+            "allowed_tokens": entitlements["tokens"],
+            "allowed_timeframes": entitlements["timeframes"],
+            "telegram_chat_id": getattr(new_user, "telegram_chat_id", None),
+            "timezone": getattr(new_user, "timezone", None),
+            "created_at": getattr(new_user, "created_at", None),
         }
 
     except IntegrityError:
@@ -195,45 +245,9 @@ async def register_user(request: Request, db: Session = fastapi.Depends(get_db))
             detail=f"Internal server error: {str(e)}",
         )
 
+# ... (seed_default_strategies)
 
-def seed_default_strategies(db: Session, user: User):
-    """
-    Crea copias privadas de las estrategias del sistema para un nuevo usuario.
-    Esto permite toggling independiente (isolation).
-    """
-    print(f"[AUTH] Seeding strategies for user {user.email}...")
-    try:
-        for p in SYSTEM_PERSONAS:
-            private_id = f"{p['id']}_{user.id}"
-
-            exists = db.query(StrategyConfig).filter(StrategyConfig.persona_id == private_id).first()
-            if exists:
-                continue
-
-            new_conf = StrategyConfig(
-                persona_id=private_id,
-                strategy_id=p["strategy_id"],
-                name=p["name"],
-                description=p["description"],
-                tokens=json.dumps([p["symbol"]]),
-                timeframes=json.dumps([p["timeframe"]]),
-                risk_profile=p["risk_level"],
-                expected_roi=p["expected_roi"],
-                color=p["color"],
-                icon=p.get("icon", "Cpu"),
-                is_public=0,
-                user_id=user.id,
-                enabled=1,  # Default ACTIVE
-                total_signals=0,
-                win_rate=0.0
-            )
-            db.add(new_conf)
-
-        db.commit()
-        print(f"[AUTH] Seeded {len(SYSTEM_PERSONAS)} system strategies for user {user.id}")
-    except Exception as e:
-        db.rollback()
-        print(f"[AUTH ERROR] Failed to seed strategies: {e}")
+# ... (get_sync_db)
 
 
 def get_sync_db():
@@ -252,7 +266,21 @@ def read_my_entitlements(
     """
     Diagnóstico de límites y cuotas.
     """
-    return get_user_entitlements(db, current_user)
+    ent = get_user_entitlements(current_user)
+    
+    # [FIX] Inject flat list of allowed timeframes for frontend (useAuth hook)
+    tier = get_access_tier(current_user)
+    plan_ent = get_plan_entitlements(tier)
+    
+    ent["allowed_timeframes"] = plan_ent["timeframes"]
+    ent["allowed_tokens"] = plan_ent["tokens"] # backup
+    
+    # Feature flags
+    from core.entitlements import can_access_telegram, can_use_advisor
+    ent["telegram_access"] = can_access_telegram(current_user)
+    ent["advisor_access"] = can_use_advisor(current_user)
+
+    return ent
 
 
 @router.get("/users/me", response_model=UserResponse)
@@ -260,19 +288,21 @@ async def read_users_me(current_user: User = fastapi.Depends(get_current_user)):
     """
     Get current user profile (synced with frontend requirements).
     """
-    plan_upper = (current_user.plan or "FREE").upper()
-    allowed_tokens = TokenCatalog.get_allowed_tokens(plan_upper)
+    plan_upper = (getattr(current_user, "plan", None) or "FREE").upper()
+    tier = get_access_tier(current_user)
+    entitlements = get_plan_entitlements(tier)
 
     return {
         "id": current_user.id,
         "email": current_user.email,
-        "name": current_user.name,
-        "role": current_user.role,
+        "name": _safe_name(current_user),
+        "role": getattr(current_user, "role", "user"),
         "plan": plan_upper,
-        "allowed_tokens": allowed_tokens,
-        "telegram_chat_id": current_user.telegram_chat_id,
-        "timezone": current_user.timezone,
-        "created_at": current_user.created_at,
+        "allowed_tokens": entitlements["tokens"],
+        "allowed_timeframes": entitlements["timeframes"],
+        "telegram_chat_id": getattr(current_user, "telegram_chat_id", None),
+        "timezone": getattr(current_user, "timezone", None),
+        "created_at": getattr(current_user, "created_at", None) or datetime.utcnow(),
     }
 
 
@@ -432,3 +462,31 @@ async def reset_password(
     db.commit()
 
     return {"message": "Password updated successfully."}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
