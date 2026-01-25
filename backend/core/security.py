@@ -22,21 +22,22 @@ else:
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 1 semana para MVP
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Configure bcrypt with auto-truncation to handle 72-byte limit
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__truncate_error=False  # Auto-truncate passwords >72 bytes
+)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica si la contraseña plana coincide con el hash."""
-    # Bcrypt has a 72-byte limit, truncate if needed
-    password_bytes = plain_password.encode('utf-8')[:72]
-    return pwd_context.verify(password_bytes, hashed_password)
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Genera el hash de una contraseña."""
-    # Bcrypt has a 72-byte limit, truncate to prevent errors
-    password_bytes = password.encode('utf-8')[:72]
-    return pwd_context.hash(password_bytes)
+    return pwd_context.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
