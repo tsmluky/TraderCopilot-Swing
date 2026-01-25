@@ -294,7 +294,8 @@ class TrendFollowingNative:
                 "timeframe": timeframe,
                 "side": bias,
                 "trigger_price": round(es, 2),
-                "distance_atr": round(gap * 100, 2), # Show gap as %-ish or raw? Frontend expects 'ATR'. Let's use gap (rel) as 'distance_atr' proxy for now or 0.0
+                # Gap shown as % (frontend expects 'distance_atr')
+                "distance_atr": round(gap * 100, 2),
                 "reason": (
                     f"EMAs converging. Gap ≈ {gap:.4f} of price. "
                     f"ADX {adx:.1f} suggests trend strength building."

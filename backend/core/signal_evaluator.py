@@ -121,9 +121,9 @@ def evaluate_pending_signals(db: Session) -> int:
                 new_evaluations_count += 1
 
                 # Update Strategy Stats
-                if sig.strategy_id:
-                    # sig.strategy_id NOW holds the PERSONA ID (e.g. "1234"), thanks to scheduler fix.
-                    _update_strategy_stats(db, sig.strategy_id)
+                # TODO: Re-enable when _update_strategy_stats is implemented
+                # if sig.strategy_id:
+                #     _update_strategy_stats(db, sig.strategy_id)
 
     db.commit()
     return new_evaluations_count
