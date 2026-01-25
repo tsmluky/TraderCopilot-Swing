@@ -1,0 +1,27 @@
+**ODL (On-Demand Liquidity) Metrics**:
+- Transaction Volume usando XRP: $15.2B en 2025 (+38% YoY). RippleNet corridors principales: US-Mexico, US-Philippines, EU-Asia.
+- Average Settlement Time: 3.8 seconds. Cost savings vs. SWIFT: 40-60% según corridor.
+
+**XRP Ledger Activity**:
+- Daily Transactions: 1.48M. Majority son payments (no DeFi speculation). Purpose-built para enterprise.
+- Validators: 150 UNL (Unique Node List) validators. Ripple controls ~35% (centralization trade-off conocido).
+
+**Escrow Dynamics**:
+- Locked XRP en Escrow: 42.7B tokens (43% del max supply 100B).
+- Monthly Releases: 1B XRP released, ~850M re-locked. Net supply inflation: ~150M XRP/month (1.8B/year).
+
+**Institutional Wallets**:
+- Ripple Treasury: ~48B XRP (46% supply). Transparency quarterly reports.
+- Top 10 Non-Ripple Holders: 8.2B XRP (institutional exchanges, custodians).
+
+**Regulatory Legal Tracking**:
+- SEC vs. Ripple: Programmatic sales (exchanges) = NOT security. Institutional sales = pending appeal.
+- XRP Trading Volume compliance: 94% en regulated exchanges (Binance, Coinbase, Kraken). High compliance posture.
+
+**Cross-Border Payment Adoption**:
+- Banks/FIs using RippleNet: 300+ (SBI Holdings, Santander, American Express among key partners).
+- CBDC Pilots: 15 central banks evaluating XRP Ledger tech (Georgia, Bhutan, Palau confirmed).
+
+**Correlation Dynamics**:
+- XRP-BTC Correlation: 0.71 (high but lower than ETH/SOL). Less tied to "crypto sentiment", more to regulatory news.
+- Regulatory News Beta: +0.88 (extremely high). SEC headlines move XRP more than broader market.

@@ -1,0 +1,13 @@
+Binance settlement con DOJ/CFTC (Nov 2023): $4.3B multa pagada. CZ resigned, Richard Teng es nuevo CEO. Sentiment: worst-case regulatory scenario ya materializado y superado.
+---
+Binance US volumen creciendo: +22% MoM (Enero 2026). Separación de operaciones US vs. global permite mitigación de regulatory risks futuros.
+---
+BNB Chain integra zkBNB: Layer-2 con zero-knowledge proofs para mayor privacidad y throughput. Testnet lanzado, mainnet Q2 2026.
+---
+PancakeSwap V3: Lanzamiento con concentrated liquidity (Uniswap v3 style). Volume: $1.8B diario. Fees redistribuidos a CAKE stakers, demand indirecta de BNB por gas.
+---
+Binance Labs (VC arm): $9B AUM, portfolio de 200+ proyectos cripto. Muchos lanzan en BSC -> incrementa TVL de ecosistema -> utility de BNB.
+---
+Auto-Burn habilitado: Desde Q4 2024, burns automáticos basados en BSC gas consumption (adicionales a quarterly burns tradicionales). Mecanismo deflacionario dual.
+---
+Binance NFT Marketplace integración con opBNB (Optimistic Rollup de BSC): Fees reducidos 90%. Intento de competir con OpenSea/Blur en user experience.

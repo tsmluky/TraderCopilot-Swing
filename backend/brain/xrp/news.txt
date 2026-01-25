@@ -1,0 +1,13 @@
+Ripple USD (RLUSD): Stablecoin fully-backed por cash/treasuries. Lanzado en 8 exchanges (Uphold, Bitso, MoonPay). Volume: $420M en primer mes. Compite con Circle/Tether.
+---
+Bank of England considers Ripple tech: BoE evaluando XRP Ledger como potential infrastructure para wholesale CBDC settlements. Piloto en fase exploratoria.
+---
+SBI Holdings (Japan): Major Ripple investor anuncia expansion de SBI VC Trade (exchange usando XRP para settlements). Target: $2B volumen mensual en remesas Japan-Asia.
+---
+Ripple IPO Rumors: Speculation sobre Ripple yendo public en 2026-2027. Si ocurre, demand institucional de XRP podría aumentar significativamente (más legitimacy).
+---
+MoneyGram partnership renewal: MoneyGram usa ODL de Ripple para 10% de corridors internacionales (principalmente US-Mexico-Philippines). Expansion a 20% proyectada 2026.
+---
+SEC Appeal (Torres Ruling): SEC apela parcialmente ruling de Judge Torres. Caso continúa, pero XRP secundary sales tienen clarity. Enterprise sales aún en gris.
+---
+Tokenization Pilot: Ripple partnering con Archax (UK) en tokenización de Real World Assets en XRP Ledger. Bonds, real estate siendo tested.

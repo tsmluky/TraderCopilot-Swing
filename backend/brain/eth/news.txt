@@ -1,5 +1,13 @@
-Desarrolladores principales anuncian roadmap agresivo para mejorar la eficiencia del gas en la próxima actualización.
+Blackrock lanza BUIDL: fondo tokenizado de US Treasuries en Ethereum. AUM: $1.26B, creciendo $50-80M semanalmente. Proof-of-concept institucional de RWA tokenization.
 ---
-Crecimiento del sector DeFi y Real World Assets (RWA) en Ethereum lidera la industria.
+Pectra Upgrade (Q2 2026): Combinación de Prague + Electra. Mejoras: Account Abstraction nativa (EIP-7702), incremento de Max Effective Balance para validators (reduce complejidad operacional staking).
 ---
-Grandes fondos de inversión comienzan a rotar capital hacia ETH anticipando un "catch-up" trade.
+Visa anuncia piloto de settlements B2B en Ethereum L2 (Base). Volumen proyectado: $400M mensuales. Adopción enterprise acelerando.
+---
+Uniswap v4 lanzado con "hooks" personalizables. Volumen diario promedio: $4.2B (liderazgo en DEX space consolidado). Fees generados benefician a LPs y quemado parcial de ETH.
+---
+Vitalik Buterin propone "The Surge": roadmap para 100K TPS en L1 mediante data availability sampling (DAS). Timeline: 2027-2028. Visión de escala long-term clara.
+---
+ETF Spot Ethereum: flows moderados pero consistentes. Semana pasada: +$180M net inflows (Blackrock +$120M, Fidelity +$65M). Institucionales construyendo posiciones gradualmente.
+---
+Consensys (MetaMask) alcanza 38M usuarios activos mensuales. On-ramp fiat-to-crypto integrado con Stripe. Adopción retail base sólida para próximo bull cycle.

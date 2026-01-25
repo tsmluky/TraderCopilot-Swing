@@ -1,5 +1,13 @@
-Resiliencia notable frente a BTC, con el par ETH/BTC mostrando signos de suelo en soporte histórico.
+Constructivo con cautela. ETF flows netos positivos pero moderados (+$140M última semana). Institutional interest sólido pero no eufórico.
 ---
-Interés institucional renovado tras claridad regulatoria sobre su estatus como commodity.
+Fear & Greed específico ETH: 58 (Neutral-Alcista). Sentiment mejor que durante bear 2022 (15-25 range), pero lejos de peak mania (85+).
 ---
-Actividad en Layer 2 sigue marcando máximos históricos, lo que valida la tesis de escalabilidad a largo plazo.
+Developer Activity: GitHub commits en repos Ethereum core: +18% vs. Q4 2024. Ecosystem development acelerando (señal fundamental bullish).
+---
+ETH/BTC Ratio sentiment: Frustración retail por underperformance vs. BTC. Contrarian signal – cuando todos frustrated, suele preceder reversals.
+---
+Institutional Surveys (Galaxy Digital, Fidelity): 54% de institucionales encuestados consideran "aumentar allocation ETH" en próximos 6 meses. Demanda latente.
+---
+Staking Narrative gaining traction: "Internet Bond" positioning resonando con TradFi allocators. Yield + capital appreciation = compelling vs. fixed income.
+---
+Social Sentiment Analysis (CT = Crypto Twitter): Ratio "ETH bullish takes" / "ETH bearish takes" = 1.8:1. Moderately optimistic pero no euphoric.

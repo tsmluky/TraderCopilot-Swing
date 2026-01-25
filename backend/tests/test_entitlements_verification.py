@@ -55,7 +55,7 @@ class TestEntitlements(unittest.TestCase):
         self.assertEqual(len(offerings), 0)
         
         # Locked offerings should contain the Trial stuff
-        reasons = [l["locked_reason"] for l in locked]
+        reasons = [offering["locked_reason"] for offering in locked]
         self.assertIn("TRIAL_EXPIRED", reasons)
 
     def test_user_entitlements_pro(self):
@@ -89,7 +89,8 @@ class TestEntitlements(unittest.TestCase):
         self.assertTrue(can_use_advisor(user_pro))
         
         # 2. Telegram (Active plan)
-        self.assertTrue(can_access_telegram(user_free)) # FREE gets alerts in this logic (if not expired) (wait, logic says FREE/TRIAL if not expired)
+        # Note: Logic depends on plan type for telegram access
+        self.assertTrue(can_access_telegram(user_free))
         
         user_expired = User(id=3, plan="TRIAL", plan_expires_at=datetime.utcnow() - timedelta(days=1))
         self.assertFalse(can_access_telegram(user_expired))

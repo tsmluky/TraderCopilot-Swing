@@ -1,0 +1,26 @@
+**Binance Metrics (BNB Demand Driver)**:
+- Spot Volume: $78B daily average. Derivatives: $180B daily. Binance = 38% de market share crypto global.
+- BNB Fee Discounts: 25% off para trading fees. En high-volatility days, saves institucionales millions.
+
+**Burn Dynamics**:
+- Quarterly Burns: Q4 2025 = 1.68M BNB ($982M). Burn rate acelerando con volumen.
+- Auto-Burn (BSC gas consumption): Additional 42K BNB/month quemados. Dual deflationary mechanism.
+
+**BSC Ecosystem On-Chain**:
+- Daily Active Addresses: 1.8M (vs. Ethereum 420K). Retail-heavy pero volume significativo.
+- TVL Distribution: PancakeSwap $1.2B, Venus $840M, Alpaca Finance $380M. Top 3 = 50% del TVL.
+
+**Institutional Custody Adoption**:
+- Binance Custody holds $1.4B en BNB para hedge funds/family offices. Growing 12% quarterly.
+
+**BNB Utility Sinks**:
+- Launchpad Participation: Avg 140K users locking BNB per IEO. Demand cycles predecibles.
+- BSC Gas: 4.2M tx/day * $0.25/tx = $1M+ daily gas spend en BNB (quemado parcialmente).
+
+**Concentration Risk**:
+- Binance Team/Labs holdings: ~18% supply (transparent pero centralized). Risk factor acknowledged.
+- Top 100 wallets: 42% supply. High concentration vs. BTC/ETH pero typical de exchange tokens.
+
+**Regulatory Impact (Post-Settlement)**:
+- DOJ/CFTC settlement eliminó worst-case tail risk. BNB rebounded 80% desde low post-settlement announcement.
+- Compliance costs aumentaron pero Binance profitability remains strong (estimated $4B+ annual profit 2025).

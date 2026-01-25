@@ -1,5 +1,13 @@
-El ecosistema Solana sigue atrayendo volumen DEX récord, superando a competidores en métricas de actividad diaria.
+Firedancer Client (Jump Crypto): Implementación alternativa de Solana validator en C (vs. Rust original). Beta testing en mainnet. Objetivo: 1M+ TPS capability. Lanzamiento completo: Q3 2026.
 ---
-Rumores sobre nuevas integraciones institucionales están impulsando la narrativa de adopción masiva a corto plazo.
+Saga Chapter 2 (Solana Mobile): 250K pre-orders confirmadas. Incluye Seed Vault (hardware wallet integrado), Solana dApp Store, y Solana Pay nativo. Ship date: Mayo 2026.
 ---
-La reciente actualización de la red ha mejorado la estabilidad, aumentando la confianza de los validadores y desarrolladores.
+Visa anuncia partnership con Solana Pay para settlements stablecoin en puntos de venta. Piloto con merchants en Miami y Austin. Potencial mass-adoption de USDC-on-Solana.
+---
+Pyth Network (oracle descentralizado nativo de Solana) integra 400+ price feeds. Usado por protocolos en Solana, Ethereum, Avalanche. Cross-chain value accrual para ecosistema SOL.
+---
+Jupiter DEX Aggregator: Volumen mensual supera $50B. Launchpad de tokens (JUP) redistributing fees a stakers. Model de value accrual vs. pure utility tokens.
+---
+DePIN Narrative: Helium migró a Solana (Ago 2023). Render Network, Hivemapper también en SOL. "State Compression" permite DePIN apps escalar a millions de devices económicamente.
+---
+VanEck Solana ETF application: Submitted Dic 2025. SEC review en progreso. Aprobación proyectada H2 2026 (siguiendo precedente de ETH ETF). Institucionales anticipating.

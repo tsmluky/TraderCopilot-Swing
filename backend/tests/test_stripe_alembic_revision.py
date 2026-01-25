@@ -33,7 +33,10 @@ def _parse_assignment(text: str, name: str):
 
 def test_alembic_stripe_migration_exists_and_has_down_revision():
     files = _find_stripe_migration_files()
-    assert files, "No se encontró ninguna migración Alembic con campos Stripe (stripe_customer_id/stripe_subscription_id)."
+    assert files, (
+        "No se encontró ninguna migración Alembic con campos Stripe "
+        "(stripe_customer_id/stripe_subscription_id)."
+    )
 
     ok_any = False
     problems = []
