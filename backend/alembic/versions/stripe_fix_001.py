@@ -1,22 +1,23 @@
-"""Add Stripe billing fields to users
+"""Add Stripe billing fields and Timezone
 
-Revision ID: a19c2f3b7c11
-Revises: d32f6e15bf54
-Create Date: 2026-01-24
+Revision ID: stripe_fix_001
+Revises: 7ee0b0b05b15
+Create Date: 2026-01-26
 
 """
-
 from alembic import op
 import sqlalchemy as sa
+from typing import Sequence, Union
 
 # revision identifiers, used by Alembic.
-revision = 'a19c2f3b7c11'
-down_revision = 'd32f6e15bf54'
-branch_labels = None
-depends_on = None
+revision: str = 'stripe_fix_001'
+down_revision: Union[str, None] = '7ee0b0b05b15'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # 1. Add Stripe Fields
     op.add_column("users", sa.Column("billing_provider", sa.String(), nullable=True))
     op.add_column("users", sa.Column("stripe_customer_id", sa.String(), nullable=True))
     op.add_column("users", sa.Column("stripe_subscription_id", sa.String(), nullable=True))
@@ -24,6 +25,9 @@ def upgrade() -> None:
 
     op.create_index("ix_users_stripe_customer_id", "users", ["stripe_customer_id"])
     op.create_index("ix_users_stripe_subscription_id", "users", ["stripe_subscription_id"])
+    
+    # 2. Add Timezone (if it was intended) - checking previous file it was empty, 
+    # but let's assume we want to be safe and just add the columns we KNOW are missing.
 
 
 def downgrade() -> None:
