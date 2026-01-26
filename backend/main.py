@@ -151,10 +151,19 @@ def on_startup():
         if versions_dir.exists():
             files = [f.name for f in versions_dir.iterdir()]
             LOG.info(f"Alembic Versions found: {files}")
+            
+            # NUKE: Clear __pycache__ to prevent ghost revisions
+            import shutil
+            for pyc in versions_dir.glob("**/__pycache__"):
+                shutil.rmtree(pyc, ignore_errors=True)
+                LOG.info("Purged __pycache__")
         else:
             LOG.error(f"Alembic Versions dir NOT found: {versions_dir}")
             
-        command.upgrade(alembic_cfg, "head")
+        # FIX: Force explicit path to the latest migration instead of generic 'head'
+        # This forces Alembic to calculate the path or die trying.
+        LOG.info("Forcing upgrade to '888888888888'...")
+        command.upgrade(alembic_cfg, "888888888888")
         LOG.info("Alembic Migrations completed successfully.")
     except Exception:
         LOG.exception("Alembic Migrations failed!")
