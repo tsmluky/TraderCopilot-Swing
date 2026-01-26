@@ -62,8 +62,16 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    configuration = config.get_section(config.config_ini_section, {})
+    
+    # FIX: Force DB URL from env if present (Crucial for Production)
+    # This overrides alembic.ini's sqlite default
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        configuration["sqlalchemy.url"] = db_url
+
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
