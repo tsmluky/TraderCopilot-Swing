@@ -143,7 +143,17 @@ def on_startup():
              alembic_cfg.set_main_option("sqlalchemy.url", db_url)
         
         # Point to the script location explicitly to be safe
-        alembic_cfg.set_main_option("script_location", str(Path(__file__).parent / "alembic"))
+        alembic_dir = Path(__file__).parent / "alembic"
+        alembic_cfg.set_main_option("script_location", str(alembic_dir))
+        
+        # DEBUG: List versions directory to confirm deployment
+        versions_dir = alembic_dir / "versions"
+        if versions_dir.exists():
+            files = [f.name for f in versions_dir.iterdir()]
+            LOG.info(f"Alembic Versions found: {files}")
+        else:
+            LOG.error(f"Alembic Versions dir NOT found: {versions_dir}")
+            
         command.upgrade(alembic_cfg, "head")
         LOG.info("Alembic Migrations completed successfully.")
     except Exception:
