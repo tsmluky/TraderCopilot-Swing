@@ -182,7 +182,10 @@ def on_startup():
             # Postgres supports IF NOT EXISTS for columns in newer versions, 
             # but to be safe for all versions, we trap errors or do nothing.
             
-            sql_check = text("SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name='billing_provider'")
+            sql_check = text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='users' AND column_name='billing_provider'"
+            )
             res = conn.execute(sql_check).scalar()
             
             if not res:
@@ -191,8 +194,14 @@ def on_startup():
                 conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR"))
                 conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR"))
                 conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_price_id VARCHAR"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id ON users (stripe_customer_id)"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_subscription_id ON users (stripe_subscription_id)"))
+                
+                conn.execute(text(
+                    "CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id ON users (stripe_customer_id)"
+                ))
+                conn.execute(text(
+                    "CREATE INDEX IF NOT EXISTS ix_users_stripe_subscription_id ON users (stripe_subscription_id)"
+                ))
+                
                 conn.commit()
                 LOG.info("Emergency Schema Patch APPLIED.")
             else:
