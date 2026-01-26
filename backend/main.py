@@ -168,6 +168,39 @@ def on_startup():
     except Exception:
         LOG.exception("Alembic Migrations failed!")
 
+    # 2) EMERGENCY PATCH: Raw SQL Fallback (Self-Healing)
+    # If Alembic failed or didn't run, we MUST ensure columns exist to prevent 500s.
+    try:
+        LOG.info("Running Emergency Schema Patch (Raw SQL)...")
+        with engine.connect() as conn:
+            # Check if columns exist
+            # Note: Postgres specific information_schema check, or just try/except allow failure?
+            # Safer to just look at error logs? No, better to check.
+            # Simple approach: Try selecting the column, if error, add it.
+            # OR better: separate `ALTER TABLE users ADD COLUMN IF NOT EXISTS`
+            
+            # Postgres supports IF NOT EXISTS for columns in newer versions, 
+            # but to be safe for all versions, we trap errors or do nothing.
+            
+            sql_check = text("SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name='billing_provider'")
+            res = conn.execute(sql_check).scalar()
+            
+            if not res:
+                LOG.warning("Column 'billing_provider' MISSING. Applying Raw SQL Patch...")
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_provider VARCHAR"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_price_id VARCHAR"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id ON users (stripe_customer_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_subscription_id ON users (stripe_subscription_id)"))
+                conn.commit()
+                LOG.info("Emergency Schema Patch APPLIED.")
+            else:
+                LOG.info("Schema integrity check passed (Stripe columns exist).")
+                
+    except Exception:
+        LOG.exception("Emergency Schema Patch failed")
+
     Base.metadata.create_all(bind=engine)
 
     # Ensure registry is loaded for any endpoints relying on it
