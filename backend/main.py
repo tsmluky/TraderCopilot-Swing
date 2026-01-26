@@ -34,7 +34,6 @@ from routers.advisor import router as advisor_router
 from core.entitlements import get_user_entitlements
 from core.trial_policy import get_access_tier
 from strategies.registry import load_default_strategies
-from telegram_listener import start_telegram_polling
 
 load_dotenv()
 
