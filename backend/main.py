@@ -136,6 +136,12 @@ def on_startup():
         LOG.info("Running Alembic Migrations...")
         alembic_ini_path = Path(__file__).parent / "alembic.ini"
         alembic_cfg = Config(str(alembic_ini_path))
+        
+        # FIX: Force DB URL from env if present (Crucial for Production)
+        db_url = os.getenv("DATABASE_URL")
+        if db_url:
+             alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+        
         # Point to the script location explicitly to be safe
         alembic_cfg.set_main_option("script_location", str(Path(__file__).parent / "alembic"))
         command.upgrade(alembic_cfg, "head")
