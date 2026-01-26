@@ -128,8 +128,8 @@ app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
 
 # ====== Database init ======
 @app.on_event("startup")
-def on_startup():
-    LOG.info("API startup: init DB + seed strategies (no worker auto-start by default)")
+async def on_startup():
+    LOG.info("API startup: init DB + seed strategies")
 
     # 1) Run Alembic Migrations (Auto-Heal Schema)
     try:
@@ -221,7 +221,8 @@ def on_startup():
     # Telegram listener (dev/prod opt-in)
     if os.getenv("TELEGRAM_LISTENER_ENABLED", "false").lower() in ("1", "true", "yes"):
         try:
-            start_telegram_polling()
+            from telegram_listener import start_telegram_bot_async
+            await start_telegram_bot_async()
             LOG.info("Telegram listener started")
         except Exception:
             LOG.exception("Telegram listener failed to start")
