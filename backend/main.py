@@ -161,8 +161,8 @@ async def on_startup():
             
         # FIX: Force explicit path to the latest migration instead of generic 'head'
         # This forces Alembic to calculate the path or die trying.
-        LOG.info("Forcing upgrade to '888888888888'...")
-        command.upgrade(alembic_cfg, "888888888888")
+        LOG.info("Forcing upgrade to '999999999999'...")
+        command.upgrade(alembic_cfg, "999999999999")
         LOG.info("Alembic Migrations completed successfully.")
     except Exception:
         LOG.exception("Alembic Migrations failed!")
