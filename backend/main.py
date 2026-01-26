@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 import threading
+from alembic import command
+from alembic.config import Config
 
 from database import SessionLocal, engine, Base, get_db
 from models_db import User, Signal, SignalEvaluation
@@ -128,6 +130,19 @@ app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
 @app.on_event("startup")
 def on_startup():
     LOG.info("API startup: init DB + seed strategies (no worker auto-start by default)")
+
+    # 1) Run Alembic Migrations (Auto-Heal Schema)
+    try:
+        LOG.info("Running Alembic Migrations...")
+        alembic_ini_path = Path(__file__).parent / "alembic.ini"
+        alembic_cfg = Config(str(alembic_ini_path))
+        # Point to the script location explicitly to be safe
+        alembic_cfg.set_main_option("script_location", str(Path(__file__).parent / "alembic"))
+        command.upgrade(alembic_cfg, "head")
+        LOG.info("Alembic Migrations completed successfully.")
+    except Exception:
+        LOG.exception("Alembic Migrations failed!")
+
     Base.metadata.create_all(bind=engine)
 
     # Ensure registry is loaded for any endpoints relying on it
