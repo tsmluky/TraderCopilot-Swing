@@ -218,7 +218,10 @@ async def on_startup():
         LOG.exception("Failed loading default strategies")
 
     # Telegram listener (dev/prod opt-in)
-    if os.getenv("TELEGRAM_LISTENER_ENABLED", "false").lower() in ("1", "true", "yes"):
+    tg_enabled = os.getenv("TELEGRAM_LISTENER_ENABLED", "false")
+    LOG.info(f"Checking Telegram Listener flag: {tg_enabled}")
+    
+    if tg_enabled.lower() in ("1", "true", "yes"):
         try:
             from telegram_listener import start_telegram_bot_async
             await start_telegram_bot_async()
