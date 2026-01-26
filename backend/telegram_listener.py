@@ -92,17 +92,19 @@ async def start_telegram_bot_async():
     # Register Handlers
     telegram_app.add_handler(CommandHandler("start", start_command))
 
-    # Initialize and Start
+    # Initialize
     await telegram_app.initialize()
+    
+    # CRITICAL: Delete any existing webhook to allow polling to work
+    try:
+        LOG.info("[TELEGRAM] Clearing existing webhooks...")
+        await telegram_app.bot.delete_webhook(drop_pending_updates=True)
+    except Exception as e:
+        LOG.warning(f"[TELEGRAM] Failed to clear webhook (might be fine): {e}")
+
     await telegram_app.start()
     
-    # Start Polling (Non-blocking way for asyncio loop)
-    # Note: execute_polling is blocking. We use start_polling + manual update loop if integrated, 
-    # but since main.py is FastAPI, better to run this as a background task.
-    # HOWEVER, python-telegram-bot v20+ 'start_polling' is blocking if used directly on updater? 
-    # No, application.start() is generic. application.run_polling() is blocking.
-    # We want: updater.start_polling() (which creates a Task).
-    
+    # Start Polling (Non-blocking)
     await telegram_app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
     LOG.info(f"[TELEGRAM] Bot verified and listening (@{telegram_app.bot.username})")
 
