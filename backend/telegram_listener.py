@@ -122,12 +122,15 @@ def start_telegram_polling():
         loop = asyncio.get_running_loop()
         loop.create_task(start_telegram_bot_async())
     except RuntimeError:
-        # No loop running (e.g. called before app startup?)
-        # Start a thread? No, database access isn't thread-safe easily with asyncio mixed.
-        # Best advice: The user should define TELEGRAM_LISTENER_ENABLED=true and main.py handles it.
-        # Check main.py:
-        # if os.getenv...: start_telegram_polling()
-        # This is called inside 'on_startup', which IS async context in FastAPI? 
-        # No, 'def on_startup():' is sync. '@app.on_event("startup") async def...' is async.
-        # I should change main.py to be async startup.
         pass
+
+def get_bot_status():
+    """Diagnostic status for the bot"""
+    global telegram_app
+    return {
+        "enabled_env": os.getenv("TELEGRAM_LISTENER_ENABLED"),
+        "bot_token_set": bool(BOT_TOKEN),
+        "app_initialized": bool(telegram_app),
+        "app_running": bool(telegram_app and telegram_app.running),
+        "username": telegram_app.bot.username if telegram_app and telegram_app.bot else None
+    }

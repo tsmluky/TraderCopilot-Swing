@@ -38,3 +38,16 @@ def get_system_config():
             print(f"Error loading theme_config: {e}")
 
     return defaults
+
+
+@router.get("/telegram-debug")
+def telegram_debug_status():
+    """
+    Live diagnostic for Telegram Bot.
+    """
+    try:
+        # Lazy import to avoid circular dep issues at module level if any
+        from telegram_listener import get_bot_status
+        return get_bot_status()
+    except Exception as e:
+        return {"error": str(e), "status": "failed"}
