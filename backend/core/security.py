@@ -32,7 +32,11 @@ pwd_context = CryptContext(
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica si la contraseña plana coincide con el hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception as e:
+        print(f"[SECURITY ERROR] verify_password failed: {e}")
+        return False
 
 
 def get_password_hash(password: str) -> str:
