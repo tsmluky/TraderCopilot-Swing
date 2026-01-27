@@ -20,7 +20,6 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
-import pandas as pd
 from core.market_data_api import get_ohlcv_data
 
 from sqlalchemy.orm import Session
@@ -338,7 +337,6 @@ def build_lite_swing_signal(
             # SL = 1.5 ATR from price (rough heuristic if not provided)
             # TP = 2.0 ATR
             # We assume current price is entry
-            import math
             
             direction = best_watch.get("side", "long")
             # Try to get ATR from context if strategies computed it? Hard to reach back.

@@ -6,14 +6,12 @@ Refactorizado para usar CCXT (Binance) para consistencia con Trading Lab.
 
 import ccxt
 import time
+import concurrent.futures
 from typing import List, Dict, Any, Optional, Tuple, Union
 from datetime import datetime
 from core.cache import cache  # Importar Cache
 
 print("[DEBUG] LOADING MARKET_DATA_API (Scale-Ready Fix)")
-
-
-import concurrent.futures
 
 def get_ohlcv_data(
     symbol: str, timeframe: str = "30m", limit: int = 100, return_source: bool = False
@@ -77,14 +75,15 @@ def get_ohlcv_data(
 
     # 2. Parallel Race
     str_start = time.time()
-    results = []
+    # 2. Parallel Race
+    str_start = time.time()
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         future_map = {executor.submit(_fetch_worker, cfg): cfg["id"] for cfg in exchanges_config}
         
         try:
             for future in concurrent.futures.as_completed(future_map, timeout=12): # Max global wait
-                ex_id = future_map[future]
+                future_map[future] # Keep the access if needed, or just iterate
                 try:
                     data, source_id = future.result()
                     if data and len(data) > 0:

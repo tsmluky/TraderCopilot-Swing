@@ -102,7 +102,8 @@ class MeanReversionRSI:
             if df is None:
                 df = get_ohlcv(token_u, tf, limit=350)
             
-            if df is None or len(df) < 50: continue
+            if df is None or len(df) < 50:
+                continue
             
             df = df.copy().reset_index(drop=True)
             
@@ -115,9 +116,10 @@ class MeanReversionRSI:
             df['atr'] = self._atr(df)
             
             last = df.iloc[-1]
-            prev = df.iloc[-2] # Confirmation candle
+            # prev = df.iloc[-2] # Confirmation candle (Unused)
             
-            if pd.isna(last['rsi']) or pd.isna(last['upper']): continue
+            if pd.isna(last['rsi']) or pd.isna(last['upper']):
+                continue
             
             # Logic: We look for a "Rejection" that happened in the LAST CLOSED CANDLE (prev)
             # OR we can look at current live candle if we want aggressive.
@@ -145,6 +147,11 @@ class MeanReversionRSI:
                 entry = close
                 tp = entry + (self.tp_atr * atr) # Target: Rebound
                 sl = entry - (self.sl_atr * atr) # Stop: Below the wick
+                
+                rationale = (
+                    f"Mean Reversion Buy: Price rejected Lower BB ({self.bb_std} std). "
+                    f"RSI ({rsi:.1f}) is Oversold (<{self.rsi_oversold})."
+                )
                 
                 signals.append(Signal(
                     timestamp=datetime.utcnow(),
@@ -344,7 +351,4 @@ class MeanReversionRSI:
         
         return signals
 
-    def analyze_watchlist(self, token, timeframe, context=None, max_items=2, near_percent=0.01):
-        # Scan for "Near Extremes"
-        # Price within 1% of bands + RSI approaching limits
-        return [] # Implement if needed
+

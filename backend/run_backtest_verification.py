@@ -11,7 +11,6 @@ Usage:
     python run_backtest_verification.py [--sample 5] [--verbose]
 """
 
-import os
 import sys
 import pandas as pd
 from pathlib import Path
@@ -161,7 +160,7 @@ class BacktestRunner:
                             else:
                                 losses += 1
                                 net_profit -= 1.0  # Typical loss size
-                except Exception as e:
+                except Exception:
                     # Strategy might not be compatible with this interface
                     pass
         
@@ -190,7 +189,6 @@ class BacktestRunner:
         
         # Simplified: random outcome based on confidence
         # In reality, you'd calculate actual profit based on price movement
-        import random
         if hasattr(signal, 'confidence'):
             threshold = 0.7
             return 1.0 if signal.confidence > threshold else -1.0
@@ -299,14 +297,14 @@ class BacktestRunner:
             # Load expected results
             expected = self.parse_existing_result(folder, period, token, tf_file)
             if not expected:
-                print(f"  ❌ Could not load expected results")
+                print("  ❌ Could not load expected results")
                 results['errors'] += 1
                 continue
             
             # Run actual backtest
             actual = self.run_strategy_backtest(strategy_id, token, tf_code, period)
             if not actual:
-                print(f"  ⚠️  Skipped (no data or error)")
+                print("  ⚠️  Skipped (no data or error)")
                 results['errors'] += 1
                 continue
             
@@ -316,10 +314,10 @@ class BacktestRunner:
             if is_match:
                 results['verified'] += 1
                 if verbose:
-                    print(f"  ✅ MATCH")
+                    print("  ✅ MATCH")
             else:
                 results['mismatches'] += 1
-                print(f"  ⚠️  MISMATCH:")
+                print("  ⚠️  MISMATCH:")
                 for diff in differences:
                     print(f"     - {diff}")
             

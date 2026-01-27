@@ -342,7 +342,8 @@ class DonchianBreakoutV2:
             last = df.iloc[i]
             prev = df.iloc[i-1]
             
-            if pd.isna(last["atr"]) or pd.isna(last["ema200"]) or pd.isna(last["rsi"]): continue
+            if pd.isna(last["atr"]) or pd.isna(last["ema200"]) or pd.isna(last["rsi"]):
+                continue
 
             close = float(last["close"])
             atr = float(last["atr"])
@@ -354,12 +355,16 @@ class DonchianBreakoutV2:
             rsi = float(last["rsi"])
             ts = last['timestamp']
 
-            if atr <= 0: continue
+            if atr <= 0:
+                continue
 
             bull_break_strength = (close - upper) / atr 
             bear_break_strength = (lower - close) / atr 
             
-            is_bull_breakout = (float(prev["close"]) <= float(prev["donchian_high"])) and (close > float(prev["donchian_high"]))
+            is_bull_breakout = (
+                (float(prev["close"]) <= float(prev["donchian_high"])) 
+                and (close > float(prev["donchian_high"]))
+            )
             bull_trend_ok = close > ema200
             rsi_safe_long = rsi < 75 
             
@@ -374,9 +379,13 @@ class DonchianBreakoutV2:
                         direction="long", entry=entry, tp=tp, sl=sl, confidence=conf, source="BACKTEST",
                         rationale="Hist Bull Break + RSI", extra={"strength":bull_break_strength}
                     ))
-                except Exception: pass
+                except Exception:
+                    pass
 
-            is_bear_breakout = (float(prev["close"]) >= float(prev["donchian_low"])) and (close < float(prev["donchian_low"]))
+            is_bear_breakout = (
+                (float(prev["close"]) >= float(prev["donchian_low"])) 
+                and (close < float(prev["donchian_low"]))
+            )
             bear_trend_ok = close < ema200
             rsi_safe_short = rsi > 25
 
@@ -391,5 +400,6 @@ class DonchianBreakoutV2:
                         direction="short", entry=entry, tp=tp, sl=sl, confidence=conf, source="BACKTEST",
                         rationale="Hist Bear Break + RSI", extra={"strength":bear_break_strength}
                     ))
-                except Exception: pass
+                except Exception:
+                    pass
         return signals

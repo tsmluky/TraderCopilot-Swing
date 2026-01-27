@@ -14,10 +14,8 @@ Usage:
     python verify_backtest_accuracy.py [--tokens BTC ETH] [--period 2Y] [--verbose]
 """
 
-import os
 import sys
 import pandas as pd
-import numpy as np
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
@@ -386,9 +384,9 @@ def main():
             print(f"    Expected: {expected['total_trades']} trades, {expected['win_rate']}% WR, {expected['net_profit']}R")
             
             if is_match:
-                print(f"    ✅ CLOSE MATCH")
+                print("    ✅ CLOSE MATCH")
             else:
-                print(f"    ⚠️  DISCREPANCY:")
+                print("    ⚠️  DISCREPANCY:")
                 for diff in diffs:
                     print(f"       - {diff}")
             

@@ -199,10 +199,6 @@ class TrendFollowingNative:
 
             # RSI Trend Filter: Momentum alignment
             # Using adx_period (14) for RSI as standard
-            rsi_series = df["close"].diff().apply(lambda x: max(x, 0)).rolling(14).mean() / \
-                         df["close"].diff().apply(lambda x: abs(x)).rolling(14).mean() * 100
-            # Manually computing RSI here or use helper if available? 
-            # Given we are inside generate_signals and no _rsi helper exists, let's implement safe simple RSI or add helper.
             # Adding helper `_rsi` to class is better cleaner. See below.
 
             rsi = self._rsi(df).iloc[-1]
@@ -354,9 +350,11 @@ class TrendFollowingNative:
             last = df.iloc[i]
             prev = df.iloc[i-1]
             
-            if pd.isna(last["adx"]) or pd.isna(last["atr"]) or pd.isna(last["rsi"]): continue
+            if pd.isna(last["adx"]) or pd.isna(last["atr"]) or pd.isna(last["rsi"]):
+                continue
             
-            if pd.to_datetime(last['timestamp']).year < 2010: continue
+            if pd.to_datetime(last['timestamp']).year < 2010:
+                continue
 
             adx = float(last["adx"])
             atr = float(last["atr"])
@@ -375,7 +373,8 @@ class TrendFollowingNative:
                 and float(last["ema_fast"]) < float(last["ema_slow"])
             )
             
-            if adx < self.min_adx: continue
+            if adx < self.min_adx:
+                continue
             
             # Filters
             vol_ok = vol > vol_sma
@@ -395,7 +394,8 @@ class TrendFollowingNative:
                         direction="long", entry=entry, tp=tp, sl=sl, confidence=conf, source="BACKTEST",
                         rationale="Hist Bull + Vol + RSI", extra={"adx":adx}
                     ))
-                except Exception: pass
+                except Exception:
+                    pass
             
             # SHORT (RSI < 50)
             elif bearish_cross and vol_ok and rsi < 50:
@@ -408,5 +408,6 @@ class TrendFollowingNative:
                         direction="short", entry=entry, tp=tp, sl=sl, confidence=conf, source="BACKTEST",
                         rationale="Hist Bear + Vol + RSI", extra={"adx":adx}
                     ))
-                except Exception: pass
+                except Exception:
+                    pass
         return signals

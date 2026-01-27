@@ -13,19 +13,16 @@ Usage:
     python validate_strategy_data.py [--regenerate-all]
 """
 
-import os
 import sys
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple, Optional
-import json
+from typing import Dict, Tuple, Optional
 
 # Add backend to path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
 from strategies.registry import get_registry, load_default_strategies
-from strategies.base import Strategy
 
 
 # Mapping of folder names to strategy IDs

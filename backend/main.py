@@ -1,21 +1,23 @@
 ﻿import os
 import logging
+import asyncio
+import threading
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from dotenv import load_dotenv
-
-# Load env vars immediately to ensure imports (like telegram_listener) see them
-load_dotenv()
 from datetime import datetime, timedelta
+
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
-import asyncio
-import threading
 from alembic import command
 from alembic.config import Config
+
+from dotenv import load_dotenv
+
+# Load env vars immediately to ensure imports (like telegram_listener) see them
+load_dotenv()
 
 from database import SessionLocal, engine, Base, get_db
 from models_db import User, Signal, SignalEvaluation
@@ -141,7 +143,8 @@ def download_ledger(strategy_name: str, period: str, token: str, timeframe: str)
     Path: backend/data/strategies/{Strategy}/{Period}/{Token}{Timeframe}.txt
     """
     # Sanitize inputs (basic)
-    clean_strategy = strategy_name.replace(" ", "") # Titan Breakout -> TitanBreakout ? No, user directories have specific names.
+    # Sanitize inputs (basic): Titan Breakout -> TitanBreakout
+    clean_strategy = strategy_name.replace(" ", "")
     # Map UI names to Directory names if needed, but ideally they match.
     # Strategy Map:
     # "Flow Master" -> "FlowMaster"
@@ -227,8 +230,9 @@ async def on_startup():
                 res = None
 
             if not res:
-                LOG.warning("Column 'billing_provider' MISSING. Applying Raw SQL Patch...")
-                # SQLite doesn't support IF NOT EXISTS in ADD COLUMN well in old versions, but try/catch block handles it
+                LOG.warning("'billing_provider' MISSING. Applying Raw SQL Patch...")
+                # SQLite doesn't support IF NOT EXISTS in ADD COLUMN well in old versions,
+                # but try/catch block handles it
                 for col_def in [
                     "billing_provider VARCHAR",
                     "stripe_customer_id VARCHAR", 
@@ -239,15 +243,19 @@ async def on_startup():
                     "telegram_username VARCHAR"
                 ]:
                      try:
-                         col_name = col_def.split()[0]
+                         col_def.split()[0]
                          conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_def}"))
-                     except Exception as e:
+                     except Exception:
                          pass # Silent fail for duplicates
                          # LOG.warning(f"Patch column {col_name} skipped: {e}")
                 
                 try:
-                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id ON users (stripe_customer_id)"))
-                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_subscription_id ON users (stripe_subscription_id)"))
+                    conn.execute(text(
+                        "CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id ON users (stripe_customer_id)"
+                    ))
+                    conn.execute(text(
+                        "CREATE INDEX IF NOT EXISTS ix_users_stripe_subscription_id ON users (stripe_subscription_id)"
+                    ))
                 except Exception:
                     pass
                 
@@ -258,6 +266,14 @@ async def on_startup():
                 
     except Exception:
         LOG.exception("Emergency Schema Patch failed")
+
+    # 3) Start Telegram Bot (Background)
+    if os.getenv("RUN_TELEGRAM_BOT") == "true":
+        try:
+            LOG.info("Starting Telegram Bot (Polling)...")
+            threading.Thread(target=start_telegram_polling, daemon=True).start()
+        except Exception:
+            LOG.exception("Failed to start Telegram Bot")
 
     Base.metadata.create_all(bind=engine)
 
