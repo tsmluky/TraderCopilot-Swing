@@ -43,10 +43,10 @@ def get_ohlcv_data(
     
     # Priority Exchanges (Concurrent Race)
     exchanges_config = [
-        {"id": "binance", "class": ccxt.binance, "timeout": 8000},
-        {"id": "kraken", "class": ccxt.kraken, "timeout": 8000},
-        {"id": "kucoin", "class": ccxt.kucoin, "timeout": 8000},
-        {"id": "bybit", "class": ccxt.bybit, "timeout": 8000},
+        {"id": "binance", "class": ccxt.binance, "timeout": 5000},
+        {"id": "kraken", "class": ccxt.kraken, "timeout": 5000},
+        {"id": "kucoin", "class": ccxt.kucoin, "timeout": 5000},
+        {"id": "bybit", "class": ccxt.bybit, "timeout": 5000},
     ]
 
     def _fetch_worker(cfg):
@@ -55,6 +55,7 @@ def get_ohlcv_data(
             exchange = cfg["class"]({"enableRateLimit": True, "timeout": cfg["timeout"]})
             # Try Primary
             try:
+                # print(f"[{ex_id}] Fetching {ccxt_symbol}...")
                 data = exchange.fetch_ohlcv(ccxt_symbol, timeframe, limit=limit)
                 return data, ex_id
             except Exception as e:
@@ -62,19 +63,18 @@ def get_ohlcv_data(
                 alias = aliases.get(base_symbol)
                 if alias:
                     alias_sym = f"{alias}/USDT"
-                    # print(f"[{ex_id}] Trying alias {alias_sym}...")
+                    print(f"[{ex_id}] ⚠️ Retrying alias {alias_sym}...")
                     data = exchange.fetch_ohlcv(alias_sym, timeframe, limit=limit)
                     return data, ex_id
                 raise e
         except Exception as e:
-            # print(f"[{ex_id}] Failed: {e}")
+            print(f"[{ex_id}] ❌ Failed: {type(e).__name__}: {str(e)}")
             raise e
-        finally:
-             if 'exchange' in locals():
-                 exchange.close()
+        except Exception as e:
+            print(f"[{ex_id}] ❌ Failed: {type(e).__name__}: {str(e)}")
+            raise e
+        # Sync CCXT does not need close()
 
-    # 2. Parallel Race
-    str_start = time.time()
     # 2. Parallel Race
     str_start = time.time()
     
@@ -82,7 +82,7 @@ def get_ohlcv_data(
         future_map = {executor.submit(_fetch_worker, cfg): cfg["id"] for cfg in exchanges_config}
         
         try:
-            for future in concurrent.futures.as_completed(future_map, timeout=12): # Max global wait
+            for future in concurrent.futures.as_completed(future_map, timeout=10): # Max global wait
                 future_map[future] # Keep the access if needed, or just iterate
                 try:
                     data, source_id = future.result()
@@ -111,10 +111,11 @@ def get_ohlcv_data(
                             return ohlcv, source_id
                         return ohlcv
                         
-                except Exception:
-                    continue # Try next finished future
+                except Exception as e:
+                    # captured by _fetch_worker print
+                    continue 
         except Exception as e:
-            print(f"[MARKET DATA] Race Error: {e}")
+            print(f"[MARKET DATA] Race Error (Main Thread): {e}")
 
     # 3. Last Resort
     print("[MARKET DATA] 🚨 All exchanges failed. Returning EMPTY.")
