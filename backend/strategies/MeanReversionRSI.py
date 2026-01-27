@@ -62,13 +62,16 @@ class MeanReversionRSI:
 
     def _df_from_context(self, token: str, context: Optional[Dict[str, Any]]) -> Optional[pd.DataFrame]:
         try:
-            if not context: return None
+            if not context:
+                return None
             data = context.get("data") or {}
             rows = data.get(token)
-            if not rows: return None
+            if not rows:
+                return None
             df = pd.DataFrame(rows)
             for col in ["open", "high", "low", "close", "volume"]:
-                if col not in df.columns: return None
+                if col not in df.columns:
+                    return None
             df = df.copy().reset_index(drop=True)
             df[["open", "high", "low", "close", "volume"]] = df[["open", "high", "low", "close", "volume"]].astype(float)
             return df
@@ -211,7 +214,8 @@ class MeanReversionRSI:
         if df is None:
             df = get_ohlcv(token_u, tf, limit=350)
         
-        if df is None or len(df) < 50: return []
+        if df is None or len(df) < 50:
+            return []
         
         df = df.copy().reset_index(drop=True)
         # Indicators
@@ -223,7 +227,8 @@ class MeanReversionRSI:
         df['atr'] = self._atr(df)
         
         last = df.iloc[-1]
-        if pd.isna(last['rsi']) or pd.isna(last['upper']): return []
+        if pd.isna(last['rsi']) or pd.isna(last['upper']):
+            return []
         
         close = float(last['close'])
         upper = float(last['upper'])
@@ -231,7 +236,8 @@ class MeanReversionRSI:
         rsi = float(last['rsi'])
         atr = float(last['atr'])
         
-        if close <= 0: return []
+        if close <= 0:
+            return []
         
         items = []
         
@@ -296,7 +302,8 @@ class MeanReversionRSI:
         for i in range(50, len(df)):
             row = df.iloc[i]
             
-            if pd.isna(row['rsi']) or pd.isna(row['upper']): continue
+            if pd.isna(row['rsi']) or pd.isna(row['upper']):
+                continue
             
             close = float(row['close'])
             high = float(row['high'])

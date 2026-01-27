@@ -153,7 +153,6 @@ class MeanReversionBollinger:
             df["atr"] = self._compute_atr(df)
 
             last = df.iloc[-1]
-            prev = df.iloc[-2]
 
             if pd.isna(last["sma"]) or pd.isna(last["rsi"]):
                 continue
@@ -331,7 +330,8 @@ class MeanReversionBollinger:
         
         for i in range(50, len(df)):
             last = df.iloc[i]
-            if pd.isna(last["upper"]): continue
+            if pd.isna(last["upper"]):
+                continue
             
             close = float(last["close"])
             lower = float(last["lower"])
