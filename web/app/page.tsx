@@ -28,6 +28,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { StrategyShowcase } from '@/components/landing/strategy-showcase'
 
 // --- Visual Components ---
 
@@ -365,15 +366,15 @@ export default function HomePage() {
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 text-balance leading-[1.1]">
               Institutional Intelligence
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400 animate-gradient-x">
                 For Retail Traders
               </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              Stop guessing. Start executing.
+            <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+              Stop guessing. Start executing with <span className="text-white font-medium">proven edge</span>.
               <br className="hidden sm:block" />
-              TraderCopilot delivers high-probability swing setups directly to your dashboard.
+              Automated swing setups, 24/7 market scanning, and risk management built-in.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
@@ -395,8 +396,11 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Strategy Performance Showcase (The Engine) */}
+        <StrategyShowcase />
+
         {/* Feature Grid - "Bento" Style */}
-        <section id="features" className="py-24 px-4 bg-zinc-950/50">
+        <section id="features" className="py-24 px-4 bg-zinc-950/50 border-t border-white/5">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold text-white mb-4">Engineered for Precision</h2>
