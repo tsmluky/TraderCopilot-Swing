@@ -218,7 +218,10 @@ class BacktestValidator:
                 f.write("| Folder | Period | Token | TF | Issue |\n")
                 f.write("|--------|--------|-------|-------|-------|\n")
                 for detail in invalid_details:
-                    f.write(f"| {detail['folder']} | {detail['period']} | {detail['token']} | {detail['timeframe']} | {detail['message']} |\n")
+                f.write(
+                    f"| {detail['folder']} | {detail['period']} | {detail['token']} | "
+                    f"{detail['timeframe']} | {detail['message']} |\n"
+                )
             else:
                 f.write("No issues found! All files are valid.\n")
 
