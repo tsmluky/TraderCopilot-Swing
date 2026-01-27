@@ -109,11 +109,16 @@ def advisor_chat(
         token = req.context.token
         tf = req.context.timeframe or "1h"
 
-        # A. Fetch Market Data Snapshot
+        # A. Fetch Market Data Snapshot (Robust)
         try:
-            ohlcv = get_ohlcv_data(token, tf, limit=1)
-            price = ohlcv[0]["close"] if ohlcv else "Unknown"
-        except Exception:
+            ohlcv = get_ohlcv_data(token, tf, limit=5)
+            if ohlcv and len(ohlcv) > 0:
+                price = ohlcv[-1]["close"]
+                print(f"[ADVISOR] Context Price for {token}: {price}")
+            else:
+                 price = "Unavailable"
+        except Exception as e:
+            print(f"[ADVISOR] Price Fetch Error: {e}")
             price = "Unavailable"
 
         # B. Fetch RAG Context
@@ -144,6 +149,8 @@ def advisor_chat(
         "Soy **TraderCopilot Advisor**, tu copiloto automatizado de análisis táctico. "
         "No soy un asesor financiero humano.\n"
         "MI OBJETIVO: Procesar datos de mercado para ofrecer escenarios de riesgo claros y objetivos.\n\n"
+        f"FECHA ACTUAL: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}\n"
+        f"PRECIO ACTUAL DE {token}: {price}\n\n"
         "REGLAS DE IDENTIDAD:\n"
         "- Actúa como un Analista Cuantitativo Senior: objetivo, basado en datos, sin emociones.\n"
         "- Transparencia: Si no hay datos suficientes, dilo. No inventes.\n"
