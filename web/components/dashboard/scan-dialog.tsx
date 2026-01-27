@@ -126,9 +126,7 @@ export function ScanDialog({ onScanComplete }: ScanDialogProps) {
                         <div className="space-y-0.5">
                             <DialogTitle className="flex items-center gap-2 text-xl">
                                 Market Scanner
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-muted-foreground uppercase tracking-wider">
-                                    LITE
-                                </span>
+
                             </DialogTitle>
                             <DialogDescription className="text-xs">
                                 Real-time algorithmic analysis across <strong>{Object.keys(STRATEGY_DISPLAY).length}</strong> strategies.
@@ -272,38 +270,80 @@ export function ScanDialog({ onScanComplete }: ScanDialogProps) {
                                                             {item.reason}
                                                         </div>
 
-                                                        <Button
-                                                            variant="default"
-                                                            size="sm"
-                                                            className="w-full h-8 text-xs font-medium bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary border border-primary/10 shadow-none transition-all"
-                                                            onClick={async () => {
-                                                                try {
-                                                                    const tid = toast.loading("Configuring Watch...")
-                                                                    const { apiFetch } = await import('@/lib/api-client')
-                                                                    const res = await apiFetch<{ status: string; expires_at: string }>('/api/alerts/watch', {
-                                                                        method: 'POST',
-                                                                        body: JSON.stringify({
-                                                                            token: result.token,
-                                                                            timeframe: result.timeframe,
-                                                                            strategy_id: item.strategy_id,
-                                                                            side: item.side,
-                                                                            trigger_price: item.trigger_price,
-                                                                            distance_atr: item.distance_atr,
-                                                                            reason: item.reason
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="flex-1 h-8 text-xs font-medium border-primary/20 text-primary hover:bg-primary/5"
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        const tid = toast.loading("Configuring Watch...")
+                                                                        const { apiFetch } = await import('@/lib/api-client')
+                                                                        const res = await apiFetch<{ status: string; expires_at: string }>('/api/alerts/watch', {
+                                                                            method: 'POST',
+                                                                            body: JSON.stringify({
+                                                                                token: result.token,
+                                                                                timeframe: result.timeframe,
+                                                                                strategy_id: item.strategy_id,
+                                                                                side: item.side,
+                                                                                trigger_price: item.trigger_price,
+                                                                                distance_atr: item.distance_atr,
+                                                                                reason: item.reason
+                                                                            })
                                                                         })
-                                                                    })
-                                                                    toast.dismiss(tid)
-                                                                    toast.success("Added to Watchlist", {
-                                                                        description: `Alert active until ${new Date(res.expires_at).toLocaleTimeString()}`
-                                                                    })
-                                                                } catch (e) {
-                                                                    console.error(e)
-                                                                    toast.error("Failed to add watch")
-                                                                }
-                                                            }}
-                                                        >
-                                                            <ScanLine className="h-3 w-3 mr-1.5" /> Watch (Notify me on Telegram)
-                                                        </Button>
+                                                                        toast.dismiss(tid)
+                                                                        toast.success("Added to Watchlist", {
+                                                                            description: `Alert active until ${new Date(res.expires_at).toLocaleTimeString()}`
+                                                                        })
+                                                                    } catch (e) {
+                                                                        console.error(e)
+                                                                        toast.error("Failed to add watch")
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <ScanLine className="h-3 w-3 mr-1.5" /> Watch
+                                                            </Button>
+
+                                                            <Button
+                                                                variant="default"
+                                                                size="sm"
+                                                                className="flex-1 h-8 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        const tid = toast.loading("Accepting Signal...")
+                                                                        const { apiFetch } = await import('@/lib/api-client')
+                                                                        // Manual Create Signal
+                                                                        // Endpoint: POST /api/signals
+                                                                        await apiFetch('/api/signals', {
+                                                                            method: 'POST',
+                                                                            body: JSON.stringify({
+                                                                                token: result.token,
+                                                                                timeframe: result.timeframe,
+                                                                                strategy_id: item.strategy_id,
+                                                                                direction: item.side,
+                                                                                entry: result.entryPrice, // Use current price from result
+                                                                                confidence: 80.0, // Manual accept implies confidence
+                                                                                rationale: `Manual Accept: ${item.reason}`,
+                                                                                extra: { distance_atr: item.distance_atr }
+                                                                            })
+                                                                        })
+
+                                                                        toast.dismiss(tid)
+                                                                        toast.success("Signal Accepted", {
+                                                                            description: "Added to your active signals."
+                                                                        })
+                                                                        // Optional: Close modal or update UI
+                                                                        // setIsOpen(false) 
+                                                                    } catch (e) {
+                                                                        console.error(e)
+                                                                        toast.error("Failed to accept signal")
+                                                                        toast.dismiss()
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <CheckCircle2 className="h-3 w-3 mr-1.5" /> Accept Signal
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -355,7 +395,7 @@ export function ScanDialog({ onScanComplete }: ScanDialogProps) {
                                         <div>
                                             <h4 className="font-bold text-sm text-emerald-700 dark:text-emerald-400">Algorithmic Validation</h4>
                                             <p className="text-xs text-muted-foreground/80 mt-1 leading-relaxed">
-                                                Confirmed high-probability setup based on <strong>{getStrategyName(result.indicators?.strategy_id || 'Unknown')}</strong> logic.
+                                                {result.rationale}
                                             </p>
                                         </div>
                                     </div>
@@ -366,58 +406,7 @@ export function ScanDialog({ onScanComplete }: ScanDialogProps) {
                             </div>
                         )}
 
-                        {/* Diagnostics Toggle - Only show if we have diagnostics and it's not a generic 'No Setup' without hints */}
-                        {(result.indicators?.strategies || (result.type === 'NEUTRAL' && result.watchlist?.length === 0)) && (
-                            <div className="p-3 bg-secondary/5 border-t border-black/5 dark:border-white/5">
-                                <Accordion type="single" collapsible className="w-full">
-                                    <AccordionItem value="details" className="border-0">
-                                        <AccordionTrigger className="text-[10px] text-muted-foreground py-1 justify-center hover:no-underline hover:text-foreground group min-h-0 h-6">
-                                            <div className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                                                <Info className="h-3 w-3" />
-                                                View Strategy Diagnostics
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent>
-                                            <div className="space-y-2 mt-3 mb-1">
-                                                {result.indicators?.strategies?.map((strat: any, i: number) => (
-                                                    <div key={i} className="flex flex-col gap-2 p-3 bg-white dark:bg-card rounded-lg border border-black/5 dark:border-white/5 shadow-sm">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="font-bold text-xs text-foreground/80">
-                                                                {getStrategyName(strat.strategy_id)}
-                                                            </span>
-                                                            {strat.has_setup ? (
-                                                                <span className="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold flex items-center gap-1">
-                                                                    <CheckCircle2 className="h-3 w-3" /> MATCH
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-muted-foreground text-[10px] font-bold flex items-center gap-1 opacity-70">
-                                                                    <XCircle className="h-3 w-3" /> NO MATCH
-                                                                </span>
-                                                            )}
-                                                        </div>
 
-                                                        {strat.state && !strat.state.status && (
-                                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] font-mono text-muted-foreground/70 border-t border-dashed border-border/50 pt-2 mt-1">
-                                                                {/* Example logic for displaying internal indicators */}
-                                                                {strat.strategy_id.includes('trend') && strat.state.indicators && (
-                                                                    <>
-                                                                        <span>EMA(20): <span className="text-foreground">{strat.state.indicators.ema_fast?.toFixed(2)}</span></span>
-                                                                        <span>EMA(50): <span className="text-foreground">{strat.state.indicators.ema_slow?.toFixed(2)}</span></span>
-                                                                        <span className="col-span-2 mt-0.5">
-                                                                            Trend: <span className={strat.state.state?.trend === 'Bullish' ? 'text-emerald-500' : 'text-red-500'}>{strat.state.state?.trend}</span>
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
-                            </div>
-                        )}
                     </div>
                 )}
             </DialogContent>

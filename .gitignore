@@ -73,3 +73,11 @@ openapi.runtime.json
 backend/openapi.runtime.json
 dev_local.db*
 
+# --- Temporary files / Debug artifacts ---
+startup_err*.txt
+startup_out*.txt
+test_telegram_send.py
+benchmark*.txt
+legacy_benchmark*.txt
+premium_benchmark*.txt
+git_status_full.txt

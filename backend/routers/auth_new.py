@@ -125,6 +125,8 @@ async def login_for_access_token(
             "plan_status": ("expired" if tier == "TRIAL_EXPIRED" else "active"),
             "allowed_tokens": allowed_tokens,
             "allowed_timeframes": allowed_timeframes,
+            "telegram_chat_id": getattr(user, "telegram_chat_id", None),
+            "telegram_username": getattr(user, "telegram_username", None),
             "created_at": getattr(user, "created_at", None),
         },
     }
@@ -230,6 +232,7 @@ async def register_user(request: Request, db: Session = fastapi.Depends(get_db))
             "allowed_tokens": entitlements["tokens"],
             "allowed_timeframes": entitlements["timeframes"],
             "telegram_chat_id": getattr(new_user, "telegram_chat_id", None),
+            "telegram_username": getattr(new_user, "telegram_username", None),
             "timezone": getattr(new_user, "timezone", None),
             "created_at": getattr(new_user, "created_at", None),
         }
@@ -306,6 +309,7 @@ async def read_users_me(current_user: User = fastapi.Depends(get_current_user)):
         "allowed_tokens": entitlements["tokens"],
         "allowed_timeframes": entitlements["timeframes"],
         "telegram_chat_id": getattr(current_user, "telegram_chat_id", None),
+        "telegram_username": getattr(current_user, "telegram_username", None),
         "timezone": getattr(current_user, "timezone", None),
         "created_at": getattr(current_user, "created_at", None) or datetime.utcnow(),
     }

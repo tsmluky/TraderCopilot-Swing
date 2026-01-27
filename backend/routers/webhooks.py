@@ -98,7 +98,7 @@ async def stripe_webhook(
 
     db = SessionLocal()
     try:
-        # 1) Checkout completed: best moment to link user_id <-> customer/subscription
+        # 1) Checkout completed: Link user <-> customer
         if ev_type == "checkout.session.completed":
             user_id = None
             meta = obj.get("metadata") or {}
@@ -149,58 +149,39 @@ async def stripe_webhook(
             db.commit()
             return {"received": True}
 
-        # 2) Subscription lifecycle updates
-        if ev_type in (
-            "customer.subscription.created",
-            "customer.subscription.updated",
-            "customer.subscription.deleted"
-        ):
-            sub = obj
-            cust_id = sub.get("customer")
-            sub_id = sub.get("id")
-            status = str(sub.get("status") or "")
-            current_period_end = sub.get("current_period_end")
-
-            price_id = None
-            items = (sub.get("items") or {}).get("data") or []
-            if items:
-                price_id = (items[0].get("price") or {}).get("id")
-
-            user = None
-            if cust_id:
-                user = db.query(User).filter(User.stripe_customer_id == cust_id).first()
-
-            if not user:
-                LOG.warning("Subscription event but no user for customer=%s", cust_id)
+        # 2) Subscription Updates (Renewals, Cancellations, Downgrades)
+        elif ev_type in ["customer.subscription.updated", "customer.subscription.deleted"]:
+            cust_id = obj.get("customer")
+            if not cust_id:
                 return {"received": True}
-
+            
+            # Find user by Stripe Customer ID
+            user = db.query(User).filter(User.stripe_customer_id == cust_id).first()
+            if not user:
+                LOG.warning(f"Webhook {ev_type}: No user found for customer {cust_id}")
+                return {"received": True}
+            
+            # Extract status directly from event object (it IS the subscription)
+            status = obj.get("status")
+            current_period_end = obj.get("current_period_end")
+            items = (obj.get("items") or {}).get("data") or []
+            price_id = (items[0].get("price") or {}).get("id") if items else None
+            
             _apply_subscription_state(
                 user,
                 subscription_status=status,
                 price_id=price_id,
                 current_period_end=current_period_end,
-                subscription_id=sub_id,
-                customer_id=cust_id,
+                subscription_id=obj.get("id"),
+                customer_id=cust_id
             )
             db.commit()
+            LOG.info(f"Updated subscription for user {user.id} to status: {status}")
             return {"received": True}
 
-        # 3) Payment failure (lock access)
-        if ev_type in ("invoice.payment_failed", "invoice.payment_action_required"):
-            cust_id = obj.get("customer")
-            if not cust_id:
-                return {"received": True}
-
-            user = db.query(User).filter(User.stripe_customer_id == cust_id).first()
-            if not user:
-                return {"received": True}
-
-            user.plan = "FREE"
-            user.plan_status = "inactive"
-            user.plan_expires_at = datetime.utcnow()
-            db.commit()
-            return {"received": True}
-
+        return {"received": True}
+    except Exception as e:
+        LOG.error(f"Webhook Handler Failed: {e}")
         return {"received": True}
     finally:
         db.close()

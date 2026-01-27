@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session # For quota
 
 # Enums / Types
 PlanType = Literal["TRIAL", "TRADER", "PRO"]
-StrategyCode = Literal["TITAN_BREAKOUT", "FLOW_MASTER"]
+StrategyCode = Literal["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"]
 TimeframeCode = Literal["1H", "4H", "1D"]
 TokenCode = Literal["BTC", "ETH", "SOL", "BNB", "XRP"]
 
@@ -32,24 +32,25 @@ class PlanEntitlements(TypedDict):
 PLANS: Dict[PlanType, PlanEntitlements] = {
     "TRIAL": {
         "tokens": ["BTC", "ETH", "SOL"],
-        "timeframes": ["4H", "1D"],
-        "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER"],
+        "timeframes": ["4H"],
+        "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"],
     },
     "TRADER": {
         "tokens": ["BTC", "ETH", "SOL"],
-        "timeframes": ["4H", "1D"],
-        "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER"],
+        "timeframes": ["4H"],
+        "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"],
     },
     "PRO": {
         "tokens": ["BTC", "ETH", "SOL", "BNB", "XRP"],
-        "timeframes": ["1H", "4H", "1D"],
-        "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER"],
+        "timeframes": ["1H", "4H"],
+        "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"],
     }
 }
 
 STRATEGY_NAMES = {
     "TITAN_BREAKOUT": "Titan Breakout",
-    "FLOW_MASTER": "Flow Master"
+    "FLOW_MASTER": "Flow Master",
+    "MEAN_REVERSION": "Mean Reversion"
 }
 
 # --- Core Logic ---
@@ -94,7 +95,7 @@ def get_user_entitlements(user: Optional[User]) -> Dict[str, List[StrategyOfferi
     pro_entitlements = get_plan_entitlements("PRO")
     
     # 4. Build Offerings
-    all_strategies = ["TITAN_BREAKOUT", "FLOW_MASTER"]
+    all_strategies = ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"]
     canonical_timeframes = ["1H", "4H", "1D"]
 
     for strat_code in all_strategies:

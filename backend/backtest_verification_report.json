@@ -1,0 +1,83 @@
+{
+  "total": 3,
+  "verified": 0,
+  "mismatches": 3,
+  "errors": 0,
+  "details": [
+    {
+      "config": "MeanReversion/5Y/BNB1H",
+      "match": false,
+      "expected": {
+        "total_trades": 1732,
+        "win_rate": 41.0,
+        "net_profit": 540.0,
+        "wins": 710,
+        "losses": 1022
+      },
+      "actual": {
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "net_profit": 0.0,
+        "wins": 0,
+        "losses": 0
+      },
+      "differences": [
+        "Total Trades: 0 vs 1732",
+        "Win Rate: 0.0% vs 41.0%",
+        "Net Profit: 0.0R vs 540.0R",
+        "Wins: 0 vs 710",
+        "Losses: 0 vs 1022"
+      ]
+    },
+    {
+      "config": "FlowMaster/6M/BNB1H",
+      "match": false,
+      "expected": {
+        "total_trades": 34,
+        "win_rate": 38.2,
+        "net_profit": 7.6,
+        "wins": 13,
+        "losses": 21
+      },
+      "actual": {
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "net_profit": 0.0,
+        "wins": 0,
+        "losses": 0
+      },
+      "differences": [
+        "Total Trades: 0 vs 34",
+        "Win Rate: 0.0% vs 38.2%",
+        "Net Profit: 0.0R vs 7.6R",
+        "Wins: 0 vs 13",
+        "Losses: 0 vs 21"
+      ]
+    },
+    {
+      "config": "MeanReversion/2Y/BNB1H",
+      "match": false,
+      "expected": {
+        "total_trades": 698,
+        "win_rate": 41.8,
+        "net_profit": 236.4,
+        "wins": 292,
+        "losses": 406
+      },
+      "actual": {
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "net_profit": 0.0,
+        "wins": 0,
+        "losses": 0
+      },
+      "differences": [
+        "Total Trades: 0 vs 698",
+        "Win Rate: 0.0% vs 41.8%",
+        "Net Profit: 0.0R vs 236.4R",
+        "Wins: 0 vs 292",
+        "Losses: 0 vs 406"
+      ]
+    }
+  ]
+}

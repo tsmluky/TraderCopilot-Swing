@@ -9,6 +9,7 @@ export type BackendUser = {
   plan: string; // FREE | TRADER | PRO (or others)
   allowed_tokens?: string[] | null;
   telegram_chat_id?: string | null;
+  telegram_username?: string | null;
   timezone?: string | null;
   plan_expires_at?: string | null;
   created_at: string;

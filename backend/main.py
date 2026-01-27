@@ -3,18 +3,23 @@ import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from dotenv import load_dotenv
+
+# Load env vars immediately to ensure imports (like telegram_listener) see them
+load_dotenv()
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
+import asyncio
 import threading
 from alembic import command
 from alembic.config import Config
 
 from database import SessionLocal, engine, Base, get_db
 from models_db import User, Signal, SignalEvaluation
+from telegram_listener import start_telegram_polling
 
 from routers.auth_new import router as auth_router
 from routers.analysis import router as analysis_router
@@ -35,7 +40,7 @@ from core.entitlements import get_user_entitlements
 from core.trial_policy import get_access_tier
 from strategies.registry import load_default_strategies
 
-load_dotenv()
+
 
 
 def setup_logging() -> logging.Logger:
@@ -99,6 +104,9 @@ app.add_middleware(
 )
 
 
+
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     # Log full stack to backend/logs/error.log
@@ -124,8 +132,45 @@ app.include_router(logs_router, prefix="/logs", tags=["Logs"])
 app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"])
 app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
 
+from fastapi.responses import FileResponse
 
-# ====== Database init ======
+@app.get("/api/strategies/download_ledger")
+def download_ledger(strategy_name: str, period: str, token: str, timeframe: str):
+    """
+    Serves the pre-computed TXT ledger for a given strategy, period, token, and timeframe.
+    Path: backend/data/strategies/{Strategy}/{Period}/{Token}{Timeframe}.txt
+    """
+    # Sanitize inputs (basic)
+    clean_strategy = strategy_name.replace(" ", "") # Titan Breakout -> TitanBreakout ? No, user directories have specific names.
+    # Map UI names to Directory names if needed, but ideally they match.
+    # Strategy Map:
+    # "Flow Master" -> "FlowMaster"
+    # "Titan Breakout" -> "TitanBreakout" 
+    # "Mean Reversion" -> "MeanReversion"
+    
+    dir_name = clean_strategy.replace(" ", "")
+    
+    # Period: 6m -> 6M, 2y -> 2Y
+    clean_period = period.upper()
+    
+    # File: ETH4H.txt
+    filename = f"{token.upper()}{timeframe.upper()}.txt"
+    
+    base_dir = Path(__file__).resolve().parent / "data" / "strategies"
+    file_path = base_dir / dir_name / clean_period / filename
+    
+    if not file_path.exists():
+        LOG.warning(f"Ledger not found: {file_path}")
+        raise HTTPException(status_code=404, detail="Ledger file not found")
+        
+    return FileResponse(
+        path=file_path, 
+        filename=f"Ledger_{dir_name}_{token}_{clean_period}.txt",
+        media_type='text/plain'
+    )
+
+
+# ====== Database init & Startup ======
 @app.on_event("startup")
 async def on_startup():
     LOG.info("API startup: init DB + seed strategies")
@@ -161,50 +206,55 @@ async def on_startup():
             
         # FIX: Force explicit path to the latest migration instead of generic 'head'
         # This forces Alembic to calculate the path or die trying.
-        LOG.info("Forcing upgrade to '999999999999'...")
-        command.upgrade(alembic_cfg, "999999999999")
+        LOG.info("Forcing upgrade to 'aaaaaaaaaaaa'...")
+        command.upgrade(alembic_cfg, "aaaaaaaaaaaa")
         LOG.info("Alembic Migrations completed successfully.")
     except Exception:
         LOG.exception("Alembic Migrations failed!")
 
     # 2) EMERGENCY PATCH: Raw SQL Fallback (Self-Healing)
-    # If Alembic failed or didn't run, we MUST ensure columns exist to prevent 500s.
     try:
         LOG.info("Running Emergency Schema Patch (Raw SQL)...")
         with engine.connect() as conn:
-            # Check if columns exist
-            # Note: Postgres specific information_schema check, or just try/except allow failure?
-            # Safer to just look at error logs? No, better to check.
-            # Simple approach: Try selecting the column, if error, add it.
-            # OR better: separate `ALTER TABLE users ADD COLUMN IF NOT EXISTS`
-            
-            # Postgres supports IF NOT EXISTS for columns in newer versions, 
-            # but to be safe for all versions, we trap errors or do nothing.
-            
             sql_check = text(
                 "SELECT column_name FROM information_schema.columns "
                 "WHERE table_name='users' AND column_name='billing_provider'"
             )
-            res = conn.execute(sql_check).scalar()
-            
+            # Safe execution for SQLite/Postgres
+            try:
+                res = conn.execute(sql_check).scalar()
+            except Exception:
+                res = None
+
             if not res:
                 LOG.warning("Column 'billing_provider' MISSING. Applying Raw SQL Patch...")
-                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_provider VARCHAR"))
-                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR"))
-                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR"))
-                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_price_id VARCHAR"))
+                # SQLite doesn't support IF NOT EXISTS in ADD COLUMN well in old versions, but try/catch block handles it
+                for col_def in [
+                    "billing_provider VARCHAR",
+                    "stripe_customer_id VARCHAR", 
+                    "stripe_subscription_id VARCHAR",
+                    "stripe_price_id VARCHAR",
+                    "plan_status VARCHAR",
+                    "telegram_chat_id VARCHAR",
+                    "telegram_username VARCHAR"
+                ]:
+                     try:
+                         col_name = col_def.split()[0]
+                         conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_def}"))
+                     except Exception as e:
+                         pass # Silent fail for duplicates
+                         # LOG.warning(f"Patch column {col_name} skipped: {e}")
                 
-                conn.execute(text(
-                    "CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id ON users (stripe_customer_id)"
-                ))
-                conn.execute(text(
-                    "CREATE INDEX IF NOT EXISTS ix_users_stripe_subscription_id ON users (stripe_subscription_id)"
-                ))
+                try:
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id ON users (stripe_customer_id)"))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_stripe_subscription_id ON users (stripe_subscription_id)"))
+                except Exception:
+                    pass
                 
                 conn.commit()
                 LOG.info("Emergency Schema Patch APPLIED.")
             else:
-                LOG.info("Schema integrity check passed (Stripe columns exist).")
+                LOG.info("Schema integrity check passed.")
                 
     except Exception:
         LOG.exception("Emergency Schema Patch failed")
@@ -217,17 +267,24 @@ async def on_startup():
     except Exception:
         LOG.exception("Failed loading default strategies")
 
-    # Telegram listener (dev/prod opt-in)
-    tg_enabled = os.getenv("TELEGRAM_LISTENER_ENABLED", "false")
-    LOG.info(f"Checking Telegram Listener flag: {tg_enabled}")
-    
-    if tg_enabled.lower() in ("1", "true", "yes"):
+    # 3) Telegram Bot Startup (Consolidated)
+    run_bot = os.getenv("RUN_TELEGRAM_BOT", "false").lower()
+    LOG.info(f"Checking Telegram Bot Flag (RUN_TELEGRAM_BOT): {run_bot}")
+
+    if run_bot == "true":
         try:
+            LOG.info("🚀 Starting Telegram Bot (Polling Mode)...")
+            # We use the async version directly if possible, or the helper
             from telegram_listener import start_telegram_bot_async
-            await start_telegram_bot_async()
-            LOG.info("Telegram listener started")
+            # Since we are inside an async startup event, we can AWAIT it!
+            # The previous 'start_telegram_polling' was a hack for sync contexts.
+            # Using create_task to run it in background so it doesn't block startup
+            asyncio.create_task(start_telegram_bot_async())
+            LOG.info("Telegram Bot Task scheduled.")
         except Exception:
-            LOG.exception("Telegram listener failed to start")
+            LOG.exception("Telegram Bot failed to launch")
+    else:
+        LOG.info("Telegram Bot is disabled.")
 
     # Scheduler thread: strictly opt-in (dev-only)
     if os.getenv("RUN_SCHEDULER", "false").lower() in ("1", "true", "yes"):
@@ -349,6 +406,24 @@ def stats_summary(user_id: int, db: Session = Depends(get_db)):
         }
 
 
+
+# Include all routers
+app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+app.include_router(analysis_router, prefix="/analysis", tags=["Analysis"])
+app.include_router(signals_router, prefix="/signals", tags=["Signals"])
+app.include_router(settings_router, prefix="/settings", tags=["Settings"])
+app.include_router(webhooks_router, prefix="/webhooks", tags=["Webhooks"])
+app.include_router(billing_router, prefix="/billing", tags=["Billing"])
+app.include_router(users_router, prefix="/users", tags=["Users"])
+app.include_router(stats_router, prefix="/stats", tags=["Stats"])
+app.include_router(logs_router, prefix="/logs", tags=["Logs"])
+app.include_router(strategies_router, prefix="/strategies", tags=["Strategies"])
+app.include_router(system_router, prefix="/system", tags=["System"])
+app.include_router(admin_router, prefix="/admin", tags=["Admin"])
+app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"])
+app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
+
+
 if __name__ == "__main__":
     import uvicorn
 
@@ -360,7 +435,4 @@ if __name__ == "__main__":
         port=int(os.getenv("PORT", "8000")),
         reload=reload_flag,
     )
-
-
-app.include_router(billing_router, prefix="/billing", tags=["Billing"])
 

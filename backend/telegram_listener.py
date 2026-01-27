@@ -63,8 +63,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if success:
             await update.message.reply_text(
                 f"✅ **Account Linked Successfully!**\n\n"
-                f"You will now receive alerts for User ID: `{user_id}`\n"
-                f"Chat ID: `{chat_id}`",
+                f"You will now receive alerts for **{username or 'your account'}**.\n"
+                f"Welcome directly to your signals feed! 🚀",
                 parse_mode="Markdown"
             )
         else:
@@ -80,33 +80,50 @@ async def start_telegram_bot_async():
     """Async entry point for main.py integration"""
     global telegram_app
 
-    if not BOT_TOKEN:
-        LOG.warning("[TELEGRAM] No Token found (TELEGRAM_BOT_TOKEN). Bot disabled.")
-        return
-
-    LOG.info("[TELEGRAM] Initializing Bot...")
-
-    # Build Application
-    telegram_app = Application.builder().token(BOT_TOKEN).build()
-
-    # Register Handlers
-    telegram_app.add_handler(CommandHandler("start", start_command))
-
-    # Initialize
-    await telegram_app.initialize()
-    
-    # CRITICAL: Delete any existing webhook to allow polling to work
+    print("DEBUG: [TELEGRAM] start_telegram_bot_async called")
     try:
-        LOG.info("[TELEGRAM] Clearing existing webhooks...")
-        await telegram_app.bot.delete_webhook(drop_pending_updates=True)
-    except Exception as e:
-        LOG.warning(f"[TELEGRAM] Failed to clear webhook (might be fine): {e}")
+        if not BOT_TOKEN:
+            LOG.warning("[TELEGRAM] No Token found (TELEGRAM_BOT_TOKEN). Bot disabled.")
+            print("[TELEGRAM] No Token found.")
+            return
 
-    await telegram_app.start()
-    
-    # Start Polling (Non-blocking)
-    await telegram_app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
-    LOG.info(f"[TELEGRAM] Bot verified and listening (@{telegram_app.bot.username})")
+        LOG.info("[TELEGRAM] Initializing Bot...")
+        print(f"[TELEGRAM] Token found (len={len(BOT_TOKEN)}). Building app...")
+
+        # Build Application
+        telegram_app = Application.builder().token(BOT_TOKEN).build()
+
+        # Register Handlers
+        telegram_app.add_handler(CommandHandler("start", start_command))
+
+        # Initialize
+        print("[TELEGRAM] Calling app.initialize()...")
+        await telegram_app.initialize()
+        
+        # CRITICAL: Delete any existing webhook to allow polling to work
+        try:
+            LOG.info("[TELEGRAM] Clearing existing webhooks...")
+            print("[TELEGRAM] Clearing webhooks...")
+            await telegram_app.bot.delete_webhook(drop_pending_updates=True)
+        except Exception as e:
+            LOG.warning(f"[TELEGRAM] Failed to clear webhook (might be fine): {e}")
+            print(f"[TELEGRAM] Webhook clear error: {e}")
+
+        print("[TELEGRAM] Calling app.start()...")
+        await telegram_app.start()
+        
+        # Start Polling (Non-blocking)
+        print("[TELEGRAM] Starting polling...")
+        await telegram_app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+        
+        LOG.info(f"[TELEGRAM] Bot verified and listening (@{telegram_app.bot.username})")
+        print(f"[TELEGRAM] Bot verified and listening (@{telegram_app.bot.username})")
+        
+    except Exception as e:
+        LOG.exception("CRITICAL: Telegram Bot Async Startup Failed!")
+        print(f"CRITICAL: Telegram Bot Async Startup Failed! {e}")
+        import traceback
+        traceback.print_exc()
 
 def start_telegram_polling():
     """

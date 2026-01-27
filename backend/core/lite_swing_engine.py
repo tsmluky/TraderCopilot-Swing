@@ -35,6 +35,7 @@ ALLOWED_STRATEGY_IDS = {
     # canonical
     "donchian_v2",
     "trend_following_native_v1",
+    "mean_reversion_rsi_v1",
     # backwards-compat alias
     "donchian",
 }
@@ -156,7 +157,7 @@ def build_lite_swing_signal(
     if "donchian_v2" in scoped_map and "donchian" in scoped_map:
         del scoped_map["donchian"]
 
-    preferred = ["donchian_v2", "trend_following_native_v1", "donchian"]
+    preferred = ["donchian_v2", "trend_following_native_v1", "mean_reversion_rsi_v1", "donchian"]
     ordered = []
     for sid in preferred:
         if sid in scoped_map:
@@ -290,21 +291,14 @@ def build_lite_swing_signal(
     watchlist_data: Optional[List[Dict[str, Any]]] = None
 
     if not setups:
-        indicators["decision"] = "neutral_no_setup"
-        indicators["strategy_id"] = "lite_swing_neutral"
+        indicators["decision"] = "neutral_check_watchlist"
+        indicators["strategy_id"] = "lite_swing_watchlist"
 
-        # --- WATCHLIST GENERATION (MVP) ---
-        # If no confirmed setup, check for near-setups
-        # If no confirmed setup, check for near-setups
+        # --- WATCHLIST GENERATION (On-Demand Fallback) ---
         try:
             # 1. Reuse fetched data
-            # raw_candles already fetched above
             if raw_candles:
-                df_watch = pd.DataFrame(raw_candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
-                if "timestamp" in df_watch.columns:
-                     df_watch["timestamp"] = pd.to_datetime(df_watch["timestamp"], unit="ms")
-                     df_watch.set_index("timestamp", inplace=True)
-                
+                # Ensure context is robust
                 all_watch_items = []
                 for cfg in scoped:
                     sid = (cfg.strategy_id or "").strip()
@@ -313,20 +307,64 @@ def build_lite_swing_signal(
                     
                     if strat and hasattr(strat, "analyze_watchlist"):
                         try:
-                            w_items = strat.analyze_watchlist(token_u, timeframe, context=context)
+                            # Looser params for On-Demand "Weak Signal" checking
+                            # We want to show SOMETHING if the user asks.
+                            w_items = strat.analyze_watchlist(
+                                token_u, timeframe, context=context, 
+                                near_atr=1.5,  # Relaxed from 1.2
+                                near_cross=0.03 # Relaxed from 0.02
+                            )
                             if w_items:
                                 all_watch_items.extend(w_items)
                         except Exception as ex:
                             print(f"Error generating watchlist for {sid}: {ex}")
                 
-                # Sort by distance (ascending) and take top 5
-                # Sorting key: distance_atr
+                # Sort by distance (ascending)
                 all_watch_items.sort(key=lambda x: float(x.get("distance_atr", 999.0)))
                 watchlist_data = all_watch_items[:5]
 
         except Exception as e:
             print(f"Error generating watchlist global: {e}")
+            watchlist_data = []
 
+        # --- LOGIC UPGRADE: Promote Watchlist to Weak Signal ---
+        if watchlist_data:
+            best_watch = watchlist_data[0]
+            # Convert "Near Setup" to "Weak Signal"
+            # Confidence: 30-50%
+            base_conf = 0.32  # > 30% as requested
+            
+            # Simple TP/SL estimation for manual entry
+            # SL = 1.5 ATR from price (rough heuristic if not provided)
+            # TP = 2.0 ATR
+            # We assume current price is entry
+            import math
+            
+            direction = best_watch.get("side", "long")
+            # Try to get ATR from context if strategies computed it? Hard to reach back.
+            # We'll assume % based fallback if no ATR
+            est_atr_pct = 0.02 # 2% default volatility assumption
+            
+            est_tp = price * (1 + (2 * est_atr_pct)) if direction == "long" else price * (1 - (2 * est_atr_pct))
+            est_sl = price * (1 - (1.5 * est_atr_pct)) if direction == "long" else price * (1 + (1.5 * est_atr_pct))
+
+            lite = LiteSignal(
+                timestamp=now,
+                token=token_u,
+                timeframe=timeframe,
+                direction=direction,
+                entry=price,
+                tp=round(est_tp, 4),
+                sl=round(est_sl, 4),
+                confidence=base_conf,
+                rationale=f"[SCANNER] Near Setup detected. {best_watch.get('reason', '')}",
+                source=f"lite:watchlist:{best_watch.get('strategy_id', 'unknown')}",
+                indicators=indicators,
+                watchlist=watchlist_data
+            )
+            return lite, indicators
+
+        # If truly nothing found even with relaxed search:
         lite = LiteSignal(
             timestamp=now,
             token=token_u,
@@ -336,7 +374,7 @@ def build_lite_swing_signal(
             tp=0.0,
             sl=0.0,
             confidence=0.0,
-            rationale="No hay setup válido ahora (LITE-Swing).",
+            rationale="Market is flat or choppy. No clear setup or near-setup detected.",
             source="lite-swing@v1",
             indicators=indicators,
             watchlist=watchlist_data

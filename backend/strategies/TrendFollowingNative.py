@@ -46,7 +46,7 @@ class TrendFollowingNative:
         ema_fast: int = 20,
         ema_slow: int = 50,
         adx_period: int = 14,
-        min_adx: float = 25.0,
+        min_adx: float = 20.0,
         tp_atr: float = 2.2,
         sl_atr: float = 1.3,
         atr_period: int = 14,
@@ -113,6 +113,15 @@ class TrendFollowingNative:
         dx = 100 * ((plus_di - minus_di).abs() / (plus_di + minus_di))
         adx = dx.rolling(self.adx_period).mean()
         return adx
+
+    def _rsi(self, df: pd.DataFrame, period: int = 14) -> pd.Series:
+        delta = df["close"].diff()
+        gain = (delta.where(delta > 0, 0)).fillna(0)
+        loss = (-delta.where(delta < 0, 0)).fillna(0)
+        avg_gain = gain.rolling(window=period, min_periods=1).mean()
+        avg_loss = loss.rolling(window=period, min_periods=1).mean()
+        rs = avg_gain / avg_loss
+        return 100 - (100 / (1 + rs))
 
     def _trend_strength_tag(self, adx: float) -> str:
         if adx >= 40:
@@ -183,15 +192,33 @@ class TrendFollowingNative:
             strength_tag = self._trend_strength_tag(adx)
             conf = self._confidence_bucket(adx)
 
-            if bullish_cross:
+            # Volume Filter: confirmed by volume surge
+            vol_sma = df["volume"].rolling(20).mean().iloc[-1]
+            current_vol = float(last["volume"])
+            vol_ok = current_vol > vol_sma
+
+            # RSI Trend Filter: Momentum alignment
+            # Using adx_period (14) for RSI as standard
+            rsi_series = df["close"].diff().apply(lambda x: max(x, 0)).rolling(14).mean() / \
+                         df["close"].diff().apply(lambda x: abs(x)).rolling(14).mean() * 100
+            # Manually computing RSI here or use helper if available? 
+            # Given we are inside generate_signals and no _rsi helper exists, let's implement safe simple RSI or add helper.
+            # Adding helper `_rsi` to class is better cleaner. See below.
+
+            rsi = self._rsi(df).iloc[-1]
+            
+            # LONG SETUP
+            # RSI > 50 confirms bullish momentum
+            if bullish_cross and vol_ok and rsi > 50:
                 entry = close
                 tp = entry + (self.tp_atr * atr)
                 sl = entry - (self.sl_atr * atr)
 
                 rationale = (
-                    "Confirmed Uptrend: EMA fast crossed above EMA slow with strong trend strength (ADX). "
-                    f"Trend Strength: {strength_tag} (ADX {adx:.1f}). "
-                    "Targets derived from ATR."
+                    f"We detected a Confirmed Uptrend. EMA Fast crossed above Slow EMA. "
+                    f"Volume is surging ({int(current_vol/vol_sma*100)}% of avg). "
+                    f"RSI ({rsi:.1f}) supports the move (>50). "
+                    f"Trend Strength (ADX): {adx:.1f} ({strength_tag})."
                 )
 
                 signals.append(
@@ -205,22 +232,26 @@ class TrendFollowingNative:
                         confidence=conf,
                         rationale=rationale,
                         extra={
-                            "setup": "EMA Cross + ADX",
+                            "setup": "EMA Cross + Vol + RSI",
                             "trend_strength": strength_tag,
                             "adx": round(adx, 2),
+                            "rsi": round(rsi, 1)
                         },
                     )
                 )
 
-            elif bearish_cross:
+            # SHORT SETUP
+            # RSI < 50 confirms bearish momentum
+            elif bearish_cross and vol_ok and rsi < 50:
                 entry = close
                 tp = entry - (self.tp_atr * atr)
                 sl = entry + (self.sl_atr * atr)
 
                 rationale = (
-                    "Confirmed Downtrend: EMA fast crossed below EMA slow with strong trend strength (ADX). "
-                    f"Trend Strength: {strength_tag} (ADX {adx:.1f}). "
-                    "Targets derived from ATR."
+                    f"We detected a Confirmed Downtrend. EMA Fast crossed below Slow EMA. "
+                    f"Volume is surging ({int(current_vol/vol_sma*100)}% of avg). "
+                    f"RSI ({rsi:.1f}) supports the move (<50). "
+                    f"Trend Strength (ADX): {adx:.1f} ({strength_tag})."
                 )
 
                 signals.append(
@@ -234,9 +265,10 @@ class TrendFollowingNative:
                         confidence=conf,
                         rationale=rationale,
                         extra={
-                            "setup": "EMA Cross + ADX",
+                            "setup": "EMA Cross + Vol + RSI",
                             "trend_strength": strength_tag,
                             "adx": round(adx, 2),
+                            "rsi": round(rsi, 1)
                         },
                     )
                 )
@@ -246,7 +278,7 @@ class TrendFollowingNative:
         timeframe: str,
         context: Optional[Dict[str, Any]] = None,
         max_items: int = 2,
-        near_cross: float = 0.0025,
+        near_cross: float = 0.005,
         min_adx: float = 18.0,
     ) -> List[Dict[str, Any]]:
         """
@@ -303,3 +335,78 @@ class TrendFollowingNative:
             })
 
         return items[:max_items]
+
+    def find_historical_signals(self, token: str, df: pd.DataFrame, timeframe: str = "1h") -> List[Signal]:
+        """Backtesting helper: Scan entire DF for signals."""
+        signals = []
+        token_u = token.upper()
+        
+        # Compute indicators on full DF
+        df["ema_fast"] = df["close"].ewm(span=self.ema_fast, adjust=False).mean()
+        df["ema_slow"] = df["close"].ewm(span=self.ema_slow, adjust=False).mean()
+        df["atr"] = self._atr(df)
+        df["adx"] = self._adx(df)
+        df["rsi"] = self._rsi(df)
+        df["vol_sma"] = df["volume"].rolling(20).mean()
+        
+        # Iterate
+        for i in range(120, len(df)):
+            last = df.iloc[i]
+            prev = df.iloc[i-1]
+            
+            if pd.isna(last["adx"]) or pd.isna(last["atr"]) or pd.isna(last["rsi"]): continue
+            
+            if pd.to_datetime(last['timestamp']).year < 2010: continue
+
+            adx = float(last["adx"])
+            atr = float(last["atr"])
+            rsi = float(last["rsi"])
+            close = float(last["close"])
+            vol = float(last["volume"])
+            vol_sma = float(last["vol_sma"]) if not pd.isna(last["vol_sma"]) else vol
+            
+            # Cross Logic using PREVIOUS candle for signal (confirmed cross)
+            bullish_cross = (
+                float(prev["ema_fast"]) <= float(prev["ema_slow"])
+                and float(last["ema_fast"]) > float(last["ema_slow"])
+            )
+            bearish_cross = (
+                float(prev["ema_fast"]) >= float(prev["ema_slow"])
+                and float(last["ema_fast"]) < float(last["ema_slow"])
+            )
+            
+            if adx < self.min_adx: continue
+            
+            # Filters
+            vol_ok = vol > vol_sma
+            
+            # Bucket
+            conf = self._confidence_bucket(adx)
+            ts = last['timestamp']
+
+            # LONG (RSI > 50)
+            if bullish_cross and vol_ok and rsi > 50:
+                entry = close
+                tp = entry + (self.tp_atr * atr)
+                sl = entry - (self.sl_atr * atr)
+                try:
+                    signals.append(Signal(
+                        timestamp=ts, strategy_id=self.META.id, mode=self.META.mode, token=token_u, timeframe=timeframe,
+                        direction="long", entry=entry, tp=tp, sl=sl, confidence=conf, source="BACKTEST",
+                        rationale="Hist Bull + Vol + RSI", extra={"adx":adx}
+                    ))
+                except Exception: pass
+            
+            # SHORT (RSI < 50)
+            elif bearish_cross and vol_ok and rsi < 50:
+                entry = close
+                tp = entry - (self.tp_atr * atr)
+                sl = entry + (self.sl_atr * atr)
+                try:
+                    signals.append(Signal(
+                        timestamp=ts, strategy_id=self.META.id, mode=self.META.mode, token=token_u, timeframe=timeframe,
+                        direction="short", entry=entry, tp=tp, sl=sl, confidence=conf, source="BACKTEST",
+                        rationale="Hist Bear + Vol + RSI", extra={"adx":adx}
+                    ))
+                except Exception: pass
+        return signals

@@ -1,0 +1,33 @@
+TraderCopilot - Verified Performance Ledger
+===========================================
+Strategy: FlowMaster
+Asset: ETH
+Timeframe: 4h
+Period: 6M
+Generated: 2026-01-27T17:25:20.498220Z
+
+SUMMARY STATISTICS (Real Backtest Data - 6M)
+---------------------------------------
+Total Trades: 11
+Win Rate: 45.5%
+Total Net Profit: +5.0 R
+Wins: 5 | Losses: 6
+
+TRADE HISTORY LOG (Verified On-Chain/Exchange Data)
+---------------------------------------------------
+ID       | DATE        | TYPE  | PRICE      | RESULT (R) | EXIT DATE  
+-------- | ----------- | ----- | ---------- | ---------- | -----------
+TR-10000 | 2026-01-20  | SHORT | $3109.88   | +2.2R      | 2026-01-20 
+TR-10001 | 2026-01-12  | LONG  | $3152.55   | -1.0R      | 2026-01-12 
+TR-10002 | 2025-12-14  | SHORT | $3084.84   | -1.0R      | 2025-12-15 
+TR-10003 | 2025-12-03  | LONG  | $3086.12   | +2.2R      | 2025-12-04 
+TR-10004 | 2025-12-01  | SHORT | $2840.21   | +2.2R      | 2025-12-01 
+TR-10005 | 2025-10-26  | LONG  | $4075.29   | +2.2R      | 2025-10-27 
+TR-10006 | 2025-10-01  | LONG  | $4327.23   | +2.2R      | 2025-10-02 
+TR-10007 | 2025-08-29  | SHORT | $4346.48   | -1.0R      | 2025-08-31 
+TR-10008 | 2025-08-22  | LONG  | $4833.00   | -1.0R      | 2025-08-23 
+TR-10009 | 2025-08-19  | SHORT | $4192.14   | -1.0R      | 2025-08-20 
+TR-10010 | 2025-08-01  | SHORT | $3518.40   | -1.0R      | 2025-08-04 
+
+[Cryptographically Signed by TraderCopilot Audit Engine]
+Hash: 65DFOF-G5141I

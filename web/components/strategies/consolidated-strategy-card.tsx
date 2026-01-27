@@ -34,12 +34,15 @@ interface ConsolidatedStrategyCardProps {
 }
 
 export function ConsolidatedStrategyCard({ strategyName, strategyCode, description, variants }: ConsolidatedStrategyCardProps) {
-    // Sort variants by timeframe logic (1H -> 4H -> 1D)
+    // Sort variants by timeframe logic (1H -> 4H) and exclude 1D
     const sortedVariants = useMemo(() => {
         const order = ["1H", "4H", "1D", "1W"]
-        return [...variants].sort((a, b) => {
-            return order.indexOf(a.timeframe) - order.indexOf(b.timeframe)
-        })
+        // Filter out 1D as per user request (not enough signals)
+        return [...variants]
+            .filter(v => v.timeframe !== '1D')
+            .sort((a, b) => {
+                return order.indexOf(a.timeframe) - order.indexOf(b.timeframe)
+            })
     }, [variants])
 
     // Default to the first available (unlocked) variant, or just the first one
@@ -84,6 +87,8 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
         }
     }
 
+    if (!selectedVariant) return null
+
     const isLocked = selectedVariant.locked
 
     return (
@@ -96,7 +101,7 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                 )} />
 
                 <Card className={cn(
-                    "relative h-full bg-white dark:bg-card/40 backdrop-blur-xl border-black/5 dark:border-white/5 overflow-hidden transition-all duration-300 flex flex-col shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-none",
+                    "relative h-full min-h-[340px] bg-white dark:bg-card/40 backdrop-blur-xl border-black/5 dark:border-white/5 overflow-hidden transition-all duration-300 flex flex-col shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-none",
                     theme.borderHover
                 )}>
                     {/* Interior Background Decoration */}
@@ -104,38 +109,38 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                     <div className="absolute inset-0 bg-grid-black/5 dark:bg-grid-white/5 mask-image-linear-gradient-to-b opacity-50 dark:opacity-30" />
 
                     {/* Header */}
-                    <CardHeader className="relative pb-4 z-10">
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                            <div className="flex gap-4">
-                                <div className={cn("h-12 w-12 rounded-xl bg-white dark:bg-background/50 border border-black/5 dark:border-white/10 flex items-center justify-center shadow-md dark:shadow-inner mt-1")}>
+                    <CardHeader className="relative pb-2 pt-5 px-5 z-10">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                            <div className="flex gap-3">
+                                <div className={cn("h-10 w-10 rounded-xl bg-white dark:bg-background/50 border border-black/5 dark:border-white/10 flex items-center justify-center shadow-md dark:shadow-inner mt-0.5 shrink-0")}>
                                     {theme.icon}
                                 </div>
-                                <div className="space-y-1">
-                                    <CardTitle className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                                <div className="space-y-0.5">
+                                    <CardTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                                         {strategyName}
                                     </CardTitle>
-                                    <CardDescription className="text-sm font-medium text-muted-foreground/80 max-w-sm leading-relaxed">
+                                    <CardDescription className="text-xs font-medium text-muted-foreground/80 leading-snug">
                                         {description}
                                     </CardDescription>
                                 </div>
                             </div>
 
                             {/* Timeframe Selector Pills */}
-                            <div className="flex bg-black/5 dark:bg-black/20 p-1 rounded-xl border border-black/5 dark:border-white/5 backdrop-blur-md self-start">
+                            <div className="flex bg-black/5 dark:bg-black/20 p-0.5 rounded-lg border border-black/5 dark:border-white/5 backdrop-blur-md self-start shrink-0">
                                 {sortedVariants.map((variant) => (
                                     <button
                                         key={variant.id}
                                         onClick={() => setSelectedVariant(variant)}
                                         className={cn(
-                                            "relative px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center gap-1.5",
+                                            "relative px-2.5 py-1 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1",
                                             selectedVariant.id === variant.id
-                                                ? cn("text-white shadow-lg", theme.buttonActive)
+                                                ? cn("text-white shadow-sm", theme.buttonActive)
                                                 : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5",
                                             variant.locked && selectedVariant.id !== variant.id && "opacity-60"
                                         )}
                                     >
                                         {variant.locked && (
-                                            <Lock className="w-2.5 h-2.5 opacity-70" />
+                                            <Lock className="w-2 h-2 opacity-70" />
                                         )}
                                         {variant.timeframe}
                                     </button>
@@ -145,55 +150,55 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                     </CardHeader>
 
                     {/* Content */}
-                    <CardContent className="relative flex-1 z-10 pt-2 flex flex-col justify-between gap-6">
+                    <CardContent className="relative flex-1 z-10 pt-2 px-5 pb-5 flex flex-col justify-between gap-4">
 
-                        {/* Metrics Grid with "Sparkline" feel */}
-                        <div className="grid grid-cols-3 gap-3">
+                        {/* Metrics Grid */}
+                        <div className="grid grid-cols-3 gap-2">
                             {/* Win Rate */}
-                            <div className="space-y-1 p-3 rounded-2xl bg-black/5 dark:bg-black/20 border border-black/5 dark:border-white/5 relative overflow-hidden group/metric">
+                            <div className="space-y-0.5 p-2.5 rounded-xl bg-black/5 dark:bg-black/20 border border-black/5 dark:border-white/5 relative overflow-hidden group/metric">
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/40 dark:from-white/5 to-transparent opacity-0 group-hover/metric:opacity-100 transition-opacity" />
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10 relative">
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider z-10 relative">
                                     <TrendingUp className="w-3 h-3" /> Win Rate
                                 </div>
-                                <div className={cn("text-2xl font-black tabular-nums mt-1 z-10 relative", isLocked ? "text-muted-foreground blur-[3px]" : "text-foreground")}>
+                                <div className={cn("text-lg font-black tabular-nums mt-0.5 z-10 relative", isLocked ? "text-muted-foreground blur-[3px]" : "text-foreground")}>
                                     {selectedVariant.win_rate || "N/A"}
                                 </div>
                                 {/* Visual decor line */}
-                                <div className={cn("absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r opacity-50", theme.bgGradient)} />
+                                <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r opacity-50", theme.bgGradient)} />
                             </div>
 
                             {/* Signals */}
-                            <div className="space-y-1 p-3 rounded-2xl bg-black/5 dark:bg-black/20 border border-black/5 dark:border-white/5 relative overflow-hidden group/metric">
+                            <div className="space-y-0.5 p-2.5 rounded-xl bg-black/5 dark:bg-black/20 border border-black/5 dark:border-white/5 relative overflow-hidden group/metric">
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/40 dark:from-white/5 to-transparent opacity-0 group-hover/metric:opacity-100 transition-opacity" />
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10 relative">
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider z-10 relative">
                                     <Activity className="w-3 h-3" /> Signals
                                 </div>
-                                <div className={cn("text-2xl font-black tabular-nums mt-1 z-10 relative", isLocked ? "text-muted-foreground blur-[3px]" : "text-foreground")}>
+                                <div className={cn("text-lg font-black tabular-nums mt-0.5 z-10 relative", isLocked ? "text-muted-foreground blur-[3px]" : "text-foreground")}>
                                     {selectedVariant.total_signals || 0}
                                 </div>
                             </div>
 
                             {/* Frequency */}
-                            <div className="space-y-1 p-3 rounded-2xl bg-black/5 dark:bg-black/20 border border-black/5 dark:border-white/5 relative overflow-hidden group/metric">
+                            <div className="space-y-0.5 p-2.5 rounded-xl bg-black/5 dark:bg-black/20 border border-black/5 dark:border-white/5 relative overflow-hidden group/metric">
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/40 dark:from-white/5 to-transparent opacity-0 group-hover/metric:opacity-100 transition-opacity" />
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10 relative">
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider z-10 relative">
                                     <Clock className="w-3 h-3" /> Pace
                                 </div>
-                                <div className="text-xl font-bold text-foreground mt-2 z-10 relative">
+                                <div className="text-base font-bold text-foreground mt-1 z-10 relative truncate">
                                     {selectedVariant.timeframe === '1H' ? 'Intraday' : selectedVariant.timeframe === '4H' ? 'Swing' : 'Long Term'}
                                 </div>
                             </div>
                         </div>
 
                         {/* Tokens & CTA */}
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <div className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest pl-1">
+                                <div className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest pl-1">
                                     Active Markets
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1.5 min-h-[28px]">
                                 {/* If locked, show only locked tokens view or blurred view */}
                                 {selectedVariant.all_tokens?.map((token) => {
                                     const isIncluded = selectedVariant.tokens.includes(token)
@@ -203,13 +208,13 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                                         <div
                                             key={token}
                                             className={cn(
-                                                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all shadow-sm dark:shadow-none",
+                                                "flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-bold transition-all shadow-sm dark:shadow-none",
                                                 !tokenLocked
                                                     ? getTokenColor(token)
                                                     : "bg-black/5 dark:bg-black/20 border-black/5 dark:border-white/5 text-muted-foreground/50"
                                             )}
                                         >
-                                            {tokenLocked && <Lock className="w-2.5 h-2.5 opacity-50" />}
+                                            {tokenLocked && <Lock className="w-2 h-2 opacity-50" />}
                                             {token}
                                         </div>
                                     )
@@ -217,30 +222,30 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                             </div>
 
                             {/* Action Footer */}
-                            <div className="pt-4 mt-2 border-t border-black/5 dark:border-white/5">
+                            <div className="pt-3 mt-1 border-t border-black/5 dark:border-white/5">
                                 {isLocked ? (
-                                    <Button className="w-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground border border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 shadow-none h-12 flex justify-between group/btn">
-                                        <span className="flex items-center gap-2">
-                                            <Lock className="w-4 h-4" />
+                                    <Button className="w-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground border border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 shadow-none h-10 flex justify-between group/btn">
+                                        <span className="flex items-center gap-2 text-xs">
+                                            <Lock className="w-3.5 h-3.5" />
                                             <span className="bg-gradient-to-r from-neutral-500 to-neutral-700 dark:from-neutral-200 dark:to-neutral-400 bg-clip-text text-transparent font-bold">
                                                 Locked Feature
                                             </span>
                                         </span>
-                                        <Link href="/pricing" className={cn("text-xs font-bold px-3 py-1.5 rounded bg-gradient-to-r text-white shadow-lg", theme.bgGradient)}>
-                                            UPGRADE TO UNLOCK
+                                        <Link href="/pricing" className={cn("text-[10px] font-bold px-2 py-1 rounded bg-gradient-to-r text-white shadow-md", theme.bgGradient)}>
+                                            UPGRADE
                                         </Link>
                                     </Button>
                                 ) : (
                                     <Button
                                         variant="ghost"
-                                        className="w-full h-12 flex justify-between items-center group/btn hover:bg-black/5 dark:hover:bg-white/5"
+                                        className="w-full h-10 flex justify-between items-center group/btn hover:bg-black/5 dark:hover:bg-white/5 px-2"
                                         onClick={() => setShowDetails(true)}
                                     >
-                                        <span className="text-sm font-medium text-muted-foreground group-hover/btn:text-foreground transition-colors">
+                                        <span className="text-xs font-medium text-muted-foreground group-hover/btn:text-foreground transition-colors">
                                             View Performance Details
                                         </span>
-                                        <span className={cn("p-2 rounded-full bg-black/5 dark:bg-black/20 transition-all group-hover/btn:scale-110", theme.accent)}>
-                                            <ArrowUpRight className="w-4 h-4" />
+                                        <span className={cn("p-1.5 rounded-full bg-black/5 dark:bg-black/20 transition-all group-hover/btn:scale-110", theme.accent)}>
+                                            <ArrowUpRight className="w-3.5 h-3.5" />
                                         </span>
                                     </Button>
                                 )}
@@ -253,6 +258,7 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
 
             <StrategyDetailsModal
                 offering={selectedVariant}
+                variants={sortedVariants}
                 open={showDetails}
                 onOpenChange={setShowDetails}
             />

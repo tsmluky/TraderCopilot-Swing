@@ -103,11 +103,12 @@ def load_default_strategies():
     Carga EXCLUSIVAMENTE las estrategias Swing-PvP certificadas.
     Cualquier otra estrategia es rechazada.
     """
-    print("📦 [REGISTRY] Loading Certified Swing Strategies...")
+    print("[REGISTRY] Loading Certified Swing Strategies...")
     
     # 1. Official Strategy Whitelist
     from .DonchianBreakoutV2 import DonchianBreakoutV2
     from .TrendFollowingNative import TrendFollowingNative
+    from .MeanReversionBollinger import MeanReversionBollinger
 
     r = get_registry()
     
@@ -116,13 +117,14 @@ def load_default_strategies():
     
     r.register(DonchianBreakoutV2)
     r.register(TrendFollowingNative)
+    r.register(MeanReversionBollinger)
     
     # 3. Canonical Aliases (For DB backward compatibility only)
     if "donchian" not in r._strategies:
          r._strategies["donchian"] = DonchianBreakoutV2
          
     # Validate Whitelist
-    allowed_ids = {"trend_following_native_v1", "donchian_v2", "donchian"}
+    allowed_ids = {"trend_following_native_v1", "donchian_v2", "donchian", "mean_reversion_v1"}
     current_ids = set(r._strategies.keys())
     
     diff = current_ids - allowed_ids
@@ -132,7 +134,7 @@ def load_default_strategies():
         for illegal in diff:
             del r._strategies[illegal]
             
-    print(f"✅ [REGISTRY] Sealed with {len(r._strategies)} strategies.")
+    print(f"[REGISTRY] Sealed with {len(r._strategies)} strategies.")
     
     # Error handling removed as it was wrapping the old block.
     # New block handles its own logic.

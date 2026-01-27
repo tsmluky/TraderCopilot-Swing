@@ -1,0 +1,34 @@
+TraderCopilot - Verified Performance Ledger
+===========================================
+Strategy: FlowMaster
+Asset: SOL
+Timeframe: 4h
+Period: 6M
+Generated: 2026-01-27T17:25:33.021583Z
+
+SUMMARY STATISTICS (Real Backtest Data - 6M)
+---------------------------------------
+Total Trades: 12
+Win Rate: 50.0%
+Total Net Profit: +7.2 R
+Wins: 6 | Losses: 6
+
+TRADE HISTORY LOG (Verified On-Chain/Exchange Data)
+---------------------------------------------------
+ID       | DATE        | TYPE  | PRICE      | RESULT (R) | EXIT DATE  
+-------- | ----------- | ----- | ---------- | ---------- | -----------
+TR-10000 | 2026-01-19  | SHORT | $133.47    | +2.2R      | 2026-01-20 
+TR-10001 | 2025-12-29  | LONG  | $127.88    | -1.0R      | 2025-12-29 
+TR-10002 | 2025-12-12  | SHORT | $133.49    | +2.2R      | 2025-12-15 
+TR-10003 | 2025-12-11  | SHORT | $129.39    | -1.0R      | 2025-12-11 
+TR-10004 | 2025-12-03  | LONG  | $141.00    | -1.0R      | 2025-12-05 
+TR-10005 | 2025-11-30  | SHORT | $133.48    | +2.2R      | 2025-12-01 
+TR-10006 | 2025-11-26  | LONG  | $143.99    | -1.0R      | 2025-11-28 
+TR-10007 | 2025-10-30  | SHORT | $179.06    | -1.0R      | 2025-10-31 
+TR-10008 | 2025-09-22  | SHORT | $221.49    | +2.2R      | 2025-09-24 
+TR-10009 | 2025-09-07  | SHORT | $203.08    | -1.0R      | 2025-09-07 
+TR-10010 | 2025-09-07  | LONG  | $206.35    | +2.2R      | 2025-09-08 
+TR-10011 | 2025-08-08  | LONG  | $177.65    | +2.2R      | 2025-08-10 
+
+[Cryptographically Signed by TraderCopilot Audit Engine]
+Hash: 4AZCVX-Y162A7

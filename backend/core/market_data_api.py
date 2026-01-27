@@ -13,11 +13,13 @@ from core.cache import cache  # Importar Cache
 print("[DEBUG] LOADING MARKET_DATA_API (Scale-Ready Fix)")
 
 
+import concurrent.futures
+
 def get_ohlcv_data(
     symbol: str, timeframe: str = "30m", limit: int = 100, return_source: bool = False
 ) -> Union[List[Dict[str, Any]], Tuple[List[Dict[str, Any]], str]]:
     """
-    Obtiene datos OHLCV con Caching + Fallback.
+    Obtiene datos OHLCV con Caching + Parallel Race.
     TTL: 60s para reducir latencia.
     """
     timeframe = timeframe.lower() # CCXT expects lowercase
@@ -36,101 +38,87 @@ def get_ohlcv_data(
     ccxt_symbol = f"{base_symbol}/USDT"
 
     # [HARDENING] Symbol Migration Handling (e.g., MATIC -> POL)
-    # If the exchange rejects "MATIC", we might need "POL".
-    # We will try the primary symbol first, and if it fails with specific errors, try aliases.
     aliases = {
         "MATIC": "POL",
-        # Add others if needed
+        "RUNE": "RUNE", # Sometimes exchanges differ
     }
-
-    # 1. Fallback Order
+    
+    # Priority Exchanges (Concurrent Race)
     exchanges_config = [
-        {"id": "binance", "class": ccxt.binance, "timeout": 5000},  # 5s timeout
-        {"id": "kraken", "class": ccxt.kraken, "timeout": 5000},    # Strong Regulatory Compliance (No 451/403 usually)
-        {"id": "kucoin", "class": ccxt.kucoin, "timeout": 5000},    # 5s timeout
-        {"id": "gateio", "class": ccxt.gateio, "timeout": 5000},    # Good Altcoin coverage
-        {"id": "bybit", "class": ccxt.bybit, "timeout": 5000},      # Strict Geo-Blocking (Last resort)
+        {"id": "binance", "class": ccxt.binance, "timeout": 8000},
+        {"id": "kraken", "class": ccxt.kraken, "timeout": 8000},
+        {"id": "kucoin", "class": ccxt.kucoin, "timeout": 8000},
+        {"id": "bybit", "class": ccxt.bybit, "timeout": 8000},
     ]
 
-    for cfg in exchanges_config:
+    def _fetch_worker(cfg):
         ex_id = cfg["id"]
         try:
-            print(f"[MARKET DATA] Attempting fetch {ccxt_symbol} from {ex_id}...")
-            exchange = cfg["class"](
-                {"enableRateLimit": True, "timeout": cfg["timeout"]}
-            )
+            exchange = cfg["class"]({"enableRateLimit": True, "timeout": cfg["timeout"]})
+            # Try Primary
+            try:
+                data = exchange.fetch_ohlcv(ccxt_symbol, timeframe, limit=limit)
+                return data, ex_id
+            except Exception as e:
+                # Try Alias
+                alias = aliases.get(base_symbol)
+                if alias:
+                    alias_sym = f"{alias}/USDT"
+                    # print(f"[{ex_id}] Trying alias {alias_sym}...")
+                    data = exchange.fetch_ohlcv(alias_sym, timeframe, limit=limit)
+                    return data, ex_id
+                raise e
+        except Exception as e:
+            # print(f"[{ex_id}] Failed: {e}")
+            raise e
+        finally:
+             if 'exchange' in locals():
+                 exchange.close()
 
-            # [HARDENING] Retry with Exponential Backoff
-            # Handles 429 Rate Limits gracefully prevents stampedes.
-            max_retries = 3
-            backoff = 1  # Start 1s
-            
-            for attempt in range(max_retries):
+    # 2. Parallel Race
+    str_start = time.time()
+    results = []
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        future_map = {executor.submit(_fetch_worker, cfg): cfg["id"] for cfg in exchanges_config}
+        
+        try:
+            for future in concurrent.futures.as_completed(future_map, timeout=12): # Max global wait
+                ex_id = future_map[future]
                 try:
-                    # Try Primary Symbol
-                    data = exchange.fetch_ohlcv(ccxt_symbol, timeframe, limit=limit)
-                    break # Success
-                except Exception as e:
-                    # Check for Alias (Migration fallback)
-                    alias = aliases.get(base_symbol)
-                    if alias:
-                        try:
-                            alias_symbol = f"{alias}/USDT"
-                            # print(f"[MARKET] ⚠️ Primary {ccxt_symbol} failed. Trying {alias_symbol}...")
-                            data = exchange.fetch_ohlcv(alias_symbol, timeframe, limit=limit)
-                            # If successful, print and break
-                            print(f"[MARKET] ✅ Recovered using alias {alias_symbol} on {ex_id}")
-                            break
-                        except Exception:
-                            pass # Alias failed too, proceed to standard retry logic
+                    data, source_id = future.result()
+                    if data and len(data) > 0:
+                        print(f"[MARKET DATA] 🚀 Race Won by {source_id} in {time.time()-str_start:.2f}s")
+                        
+                        # Format
+                        ohlcv = []
+                        for candle in data:
+                            ts = candle[0]
+                            dt = datetime.fromtimestamp(ts / 1000)
+                            ohlcv.append({
+                                "timestamp": ts,
+                                "time": dt.strftime("%Y-%m-%d %H:%M"),
+                                "open": float(candle[1]),
+                                "high": float(candle[2]),
+                                "low": float(candle[3]),
+                                "close": float(candle[4]),
+                                "volume": float(candle[5]),
+                            })
+                        
+                        # Cache Success
+                        cache.set(cache_key, ohlcv, ttl=60) # Increased TTL 60s
+                        
+                        if return_source:
+                            return ohlcv, source_id
+                        return ohlcv
+                        
+                except Exception:
+                    continue # Try next finished future
+        except Exception as e:
+            print(f"[MARKET DATA] Race Error: {e}")
 
-                    # Standard Retry Logic
-                    is_network_error = isinstance(e, (ccxt.NetworkError, ccxt.RateLimitExceeded))
-                    if attempt == max_retries - 1:
-                         # Last attempt failed, raise to skip to next exchange
-                         # print(f"[MARKET] Drop {ex_id}: {e}")
-                         raise e 
-                     
-                    if is_network_error:
-                        sleep_time = backoff * (2 ** attempt)
-                        print(f"[MARKET] ⚠️ {ex_id} Network/Rate Error. Retrying in {sleep_time}s...")
-                        time.sleep(sleep_time)
-                    else:
-                        # If it's a Logic Error (Bad Symbol) and alias failed, strictly break to next exchange
-                        # Don't retry BadSymbol 3 times
-                        raise e
-
-            if data and len(data) > 0:
-                print(f"[MARKET DATA] Success: {len(data)} candles from {ex_id}.")
-
-                # Format
-                ohlcv = []
-                for candle in data:
-                    ts = candle[0]
-                    dt = datetime.fromtimestamp(ts / 1000)
-                    ohlcv.append(
-                        {
-                            "timestamp": ts,
-                            "time": dt.strftime("%Y-%m-%d %H:%M"),
-                            "open": float(candle[1]),
-                            "high": float(candle[2]),
-                            "low": float(candle[3]),
-                            "close": float(candle[4]),
-                            "volume": float(candle[5]),
-                        }
-                    )
-
-                # Cache Valid Data: 20s TTL (Balance between load and freshness)
-                cache.set(cache_key, ohlcv, ttl=20)
-                if return_source:
-                    return ohlcv, ex_id
-                return ohlcv
-        except BaseException as e:
-            print(f"[MARKET DATA] ⚠️ Failed fetch from {ex_id}: {e}")
-            continue  # Try next exchange
-
-    # 2. Last Resort: Fail gracefully (No Mocks allowed per User Request)
-    print("[MARKET DATA] 🚨 All exchanges failed. Returning EMPTY to avoid fake data.")
+    # 3. Last Resort
+    print("[MARKET DATA] 🚨 All exchanges failed. Returning EMPTY.")
     if return_source:
         return [], "none"
     return []

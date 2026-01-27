@@ -97,6 +97,7 @@ class User(Base):
     plan_status = Column(String, nullable=True)               # active/inactive/canceled, etc.
     # Optional owner checks / integrations
     telegram_chat_id = Column(String, nullable=True)
+    telegram_username = Column(String, nullable=True)
 
     # Relationship to signals
     signals = relationship(lambda: Signal, backref="user")

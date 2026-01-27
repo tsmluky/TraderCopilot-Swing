@@ -51,8 +51,17 @@ export default function StrategiesPage() {
 
   const getStrategyDescription = (code: string) => {
     switch (code) {
-      case 'TITAN_BREAKOUT': return "Advanced volatility breakout system capitalizing on explosive market moves."
-      case 'FLOW_MASTER': return "Momentum-based trend following engine designed for sustained directional moves."
+      case 'TITAN_BREAKOUT':
+      case 'donchian_v2':
+      case 'DONCHIAN_BREAKOUT': return "Advanced volatility breakout system capitalizing on explosive market moves."
+
+      case 'FLOW_MASTER':
+      case 'trend_following_native_v1':
+      case 'TREND_FOLLOWING': return "Momentum-based trend following engine designed for sustained directional moves."
+
+      case 'MEAN_REVERSION':
+      case 'mean_reversion_v1': return "Mean reversion scalp system for ranging markets."
+
       default: return "Automated trading system."
     }
   }
@@ -71,13 +80,13 @@ export default function StrategiesPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-8 lg:grid-cols-2 animate-pulse">
-          {[1, 2].map((i) => (
+        <div className="grid gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 animate-pulse">
+          {[1, 2, 3].map((i) => (
             <div key={i} className="h-[400px] rounded-3xl bg-card/50 border border-border/50"></div>
           ))}
         </div>
       ) : (
-        <div className="grid gap-8 lg:grid-cols-2">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {Object.entries(strategyGroups).map(([code, variants]) => {
             const first = variants[0]
             return (

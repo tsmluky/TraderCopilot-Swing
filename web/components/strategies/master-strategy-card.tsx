@@ -76,19 +76,15 @@ export function MasterStrategyCard({ offering }: MasterStrategyCardProps) {
                             <div className="flex items-center gap-2">
                                 <CardTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                                     {offering.strategy_name}
-                                    <span className={cn(
-                                        "text-xs px-2 py-0.5 rounded-md font-bold border",
-                                        isLocked
-                                            ? "bg-muted text-muted-foreground border-border"
-                                            : "bg-primary/5 text-primary border-primary/10 dark:bg-primary/10 dark:border-primary/20"
-                                    )}>
-                                        {offering.timeframe}
-                                    </span>
+
                                 </CardTitle>
                             </div>
                             <CardDescription className="line-clamp-2 text-xs font-medium text-muted-foreground/80">
                                 {/* Description implied? Or we can map codes to descriptions here if API doesn't send it */}
-                                {offering.strategy_code === 'TITAN_BREAKOUT' ? "Breakout volatility system." : "Trend following momentum system."}
+                                {offering.strategy_code === 'TITAN_BREAKOUT' ? "Breakout volatility system." :
+                                    offering.strategy_code === 'MEAN_REVERSION' ? "Mean reversion scalp system." :
+                                        offering.strategy_code === 'mean_reversion_v1' ? "Mean reversion scalp system." :
+                                            "Trend following momentum system."}
                             </CardDescription>
                         </div>
 

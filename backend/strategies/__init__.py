@@ -8,6 +8,7 @@ from .base import Strategy, StrategyMetadata
 # Import Strategy Implementations
 from .DonchianBreakoutV2 import DonchianBreakoutV2
 from .TrendFollowingNative import TrendFollowingNative
+from .MeanReversionBollinger import MeanReversionBollinger
 
 
 __all__ = [
@@ -15,4 +16,5 @@ __all__ = [
     "StrategyMetadata",
     "DonchianBreakoutV2",
     "TrendFollowingNative",
+    "MeanReversionBollinger",
 ]

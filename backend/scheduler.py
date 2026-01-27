@@ -166,7 +166,8 @@ class StrategyScheduler:
         # MAPPING (Hardcoded for MVP or import from entitlements if we add it there)
         impl_map = {
             "TITAN_BREAKOUT": "donchian_v2",
-            "FLOW_MASTER": "trend_following_native_v1"
+            "FLOW_MASTER": "trend_following_native_v1",
+            "MEAN_REVERSION": "mean_reversion_rsi_v1"
         }
         impl_id = impl_map.get(task["strategy_code"], "").lower()
         
@@ -186,6 +187,47 @@ class StrategyScheduler:
                  tokens=task["tokens"],
                  timeframe=task["timeframe"]
              )
+             
+             # MARKETING/ACTIVITY BOOST:
+             # If no confirmed trades, check for "Watchlist" items (Near-Misses)
+             # and convert them to 'WATCH' type signals to show activity.
+             # Only do this for 'PRO' plan to add value? No, do it for all to show system matches.
+             
+             if not signals:
+                 # Check watchlist for each token?
+                 # Strategy analyze_watchlist takes 1 token at a time usually
+                 watchlist_signals = []
+                 from core.schemas import Signal # Ensure imported
+                 from datetime import datetime
+                 
+                 for t in task["tokens"]:
+                     items = strategy_impl.analyze_watchlist(t, task["timeframe"])
+                     for item in items:
+                         # Convert dict to Signal (Activity Mode)
+                         # direction = item['side']
+                         # confidence = 0 (Neutral / Watch)
+                         
+                         w_sig = Signal(
+                             timestamp=datetime.utcnow(),
+                             token=item["token"],
+                             direction=item["side"], # 'long' or 'short' bias
+                             entry=item["trigger_price"], # Pivot price
+                             tp=0.0,
+                             sl=0.0,
+                             confidence=0.0, # 0.0 explicitly marks it as WATCH/NEUTRAL
+                             rationale=f"[WATCHLIST] {item['reason']}",
+                             extra={
+                                 "setup": "Watchlist Monitor",
+                                 "distance_atr": item.get("distance_atr"),
+                                 "is_watchlist": True
+                             }
+                         )
+                         watchlist_signals.append(w_sig)
+                 
+                 # Limit watchlist noise? Maybe just top 1 per task?
+                 if watchlist_signals:
+                     signals.extend(watchlist_signals[:2]) 
+
              return signals or []
         except Exception as e:
             LOG.error("Task failed %s: %s", task["key"], e)
