@@ -111,7 +111,10 @@ class BacktestValidator:
             return False, f"Invalid win_rate: {existing['win_rate']}"
         
         if existing['wins'] + existing['losses'] != existing['total_trades']:
-            return False, f"Wins ({existing['wins']}) + Losses ({existing['losses']}) != Total ({existing['total_trades']})"
+            return False, (
+                f"Wins ({existing['wins']}) + Losses ({existing['losses']}) "
+                f"!= Total ({existing['total_trades']})"
+            )
         
         return True, "OK"
     

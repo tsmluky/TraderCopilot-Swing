@@ -381,7 +381,10 @@ def main():
             
             print(f"    Similarity: {score}%")
             print(f"    Actual:   {actual['total_trades']} trades, {actual['win_rate']}% WR, {actual['net_profit']}R")
-            print(f"    Expected: {expected['total_trades']} trades, {expected['win_rate']}% WR, {expected['net_profit']}R")
+            print(
+                f"    Expected: {expected['total_trades']} trades, "
+                f"{expected['win_rate']}% WR, {expected['net_profit']}R"
+            )
             
             if is_match:
                 print("    ✅ CLOSE MATCH")

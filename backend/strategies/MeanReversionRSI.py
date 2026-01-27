@@ -73,7 +73,8 @@ class MeanReversionRSI:
                 if col not in df.columns:
                     return None
             df = df.copy().reset_index(drop=True)
-            df[["open", "high", "low", "close", "volume"]] = df[["open", "high", "low", "close", "volume"]].astype(float)
+            cols = ["open", "high", "low", "close", "volume"]
+            df[cols] = df[cols].astype(float)
             return df
         except Exception:
             return None
@@ -95,7 +96,12 @@ class MeanReversionRSI:
         rs = avg_gain / avg_loss
         return 100 - (100 / (1 + rs))
 
-    def generate_signals(self, tokens: List[str], timeframe: str, context: Optional[Dict[str, Any]] = None) -> List[Signal]:
+    def generate_signals(
+        self, 
+        tokens: List[str], 
+        timeframe: str, 
+        context: Optional[Dict[str, Any]] = None
+    ) -> List[Signal]:
         signals: List[Signal] = []
         tf = str(timeframe).lower().strip()
 
@@ -234,7 +240,7 @@ class MeanReversionRSI:
         upper = float(last['upper'])
         lower = float(last['lower'])
         rsi = float(last['rsi'])
-        atr = float(last['atr'])
+        # atr = float(last['atr']) # Unused
         
         if close <= 0:
             return []
