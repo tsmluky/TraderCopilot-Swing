@@ -457,7 +457,7 @@ export default function SignalsPage() {
                 <p className="text-sm text-muted-foreground">No active signals</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {activeSignals.map((signal) => (
                   <div key={signal.id} className="relative"> {/* Wrapper for potential tap targets */}
                     <SignalCard signal={signal} compact={true} />
@@ -469,7 +469,7 @@ export default function SignalsPage() {
           </TabsContent>
 
           <TabsContent value="closed" className="m-0 mt-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
               {closedSignals.map((signal) => (
                 <SignalCard key={signal.id} signal={signal} compact={true} />
               ))}
