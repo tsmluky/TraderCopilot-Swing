@@ -500,10 +500,10 @@ export function StrategyDetailsModal({ offering, variants, open, onOpenChange }:
 import realLedger from '@/data/real_ledger.json'
 
 // --- DOWNLOAD HELPER ---
+import { BASE_URL } from '@/lib/api-client'
+
 function handleDownloadLedger(row: PerformanceMetric, strategyName: string, period: string) {
     // Construct the backend URL
-    // e.g. http://localhost:8000/api/strategies/download_ledger?strategy_name=FlowMaster&period=2Y&token=ETH&timeframe=4H
-
     const params = new URLSearchParams({
         strategy_name: strategyName,
         period: period,
@@ -511,9 +511,8 @@ function handleDownloadLedger(row: PerformanceMetric, strategyName: string, peri
         timeframe: row.timeframe
     })
 
-    // In production this should use an environment variable for API_BASE_URL
-    const baseUrl = "http://localhost:8000"
-    const downloadUrl = `${baseUrl}/api/strategies/download_ledger?${params.toString()}`
+    // Use the same BASE_URL as the rest of the app
+    const downloadUrl = `${BASE_URL}/api/strategies/download_ledger?${params.toString()}`
 
     // Trigger download
     const a = document.createElement('a')

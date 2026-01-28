@@ -28,7 +28,7 @@ function normalizeBaseUrl(raw: string | undefined | null): string {
     return `https://${v}`.replace(/\/+$/, "");
 }
 
-const BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
+export const BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
 
 export class AuthError extends Error {
     constructor(message = "Unauthorized") {
