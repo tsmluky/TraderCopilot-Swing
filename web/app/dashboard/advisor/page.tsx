@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, Suspense } from 'react'
+import { useState, useRef, useEffect, Suspense, useCallback } from 'react'
 import { Send, Sparkles, Bot, User, Terminal, X } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -70,8 +70,13 @@ function AdvisorContent() {
 
   const [activeSignal, setActiveSignal] = useState<any>(null)
 
-  const handleSignalDetected = (sig: any) => {
-    setActiveSignal(sig)
+  const handleSignalDetected = useCallback((sig: any) => {
+    setActiveSignal((prev: any) => {
+      // Prevent re-setting if same signal to avoid unnecessary updates
+      if (prev?.id === sig.id) return prev
+      return sig
+    })
+
     setMessages(prev => {
       const hasContextGreeting = prev.some(m => m.id === 'context-greeting')
       if (hasContextGreeting) return prev
@@ -86,7 +91,7 @@ function AdvisorContent() {
         }
       ]
     })
-  }
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
