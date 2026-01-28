@@ -41,6 +41,42 @@ class ChatRequest(BaseModel):
     messages: List[ChatMessage]
     context: Optional[ChatContext] = None
 
+# --- Smart Context Logic ---
+TOKEN_ALIAS_MAP = {
+    "BTC": "BTC", "BITCOIN": "BTC", "BITCOIN": "BTC", "BITCOIN": "BTC", # Common
+    "ETH": "ETH", "ETHER": "ETH", "ETHEREUM": "ETH", "ETHERIUM": "ETH",
+    "SOL": "SOL", "SOLANA": "SOL",
+    "BNB": "BNB", "BINANCE": "BNB", "BSC": "BNB",
+    "XRP": "XRP", "RIPPLE": "XRP",
+    # Add more as needed
+}
+
+import re
+def detect_tokens_in_history(messages: List[ChatMessage], lookback: int = 3) -> List[str]:
+    """
+    Scans the last 'lookback' user messages for token references.
+    Returns unique list of normalized token symbols (e.g., ['BTC', 'ETH']).
+    """
+    found_tokens = set()
+    
+    # Filter only user messages, take last N
+    user_msgs = [m.content for m in messages if m.role == 'user'][-lookback:]
+    
+    for msg in user_msgs:
+        msg_upper = msg.upper()
+        # 1. Direct symbol check
+        words = set(re.findall(r'\b[A-Z0-9]+\b', msg_upper))
+        for alias, symbol in TOKEN_ALIAS_MAP.items():
+            if alias in words:
+                found_tokens.add(symbol)
+        
+        # 2. Typos / Substring check
+        for alias, symbol in TOKEN_ALIAS_MAP.items():
+             if len(alias) > 3 and alias in msg_upper:
+                 found_tokens.add(symbol)
+                 
+    return list(found_tokens)
+
 
 @router.post("/chat")
 @limiter.limit("5/minute")
@@ -103,37 +139,68 @@ def advisor_chat(
         print(f"[ADVISOR] Warning: Could not fetch profile (DB Error?): {e}")
         # non-critical, continue
 
-    # 4. Build Dynamic System Context if Token is present
+    # 4. Build Dynamic System Context
     system_context_block = ""
+    # Default visualizers for "Global" mode
+    token = "MERCADO GLOBAL" 
+    price = "N/A"
+    
+    detected_tokens = []
+    
+    # A. Check if User provided explicit context (Button click)
     if req.context and req.context.token:
-        token = req.context.token
-        tf = req.context.timeframe or "1h"
-
-        # A. Fetch Market Data Snapshot (Robust)
+        detected_tokens = [req.context.token]
+        token = req.context.token # Main focus
+    else:
+        # B. Try to detect from history (Smart Context - Multi-turn)
         try:
-            ohlcv = get_ohlcv_data(token, tf, limit=5)
-            if ohlcv and len(ohlcv) > 0:
-                price = ohlcv[-1]["close"]
-                print(f"[ADVISOR] Context Price for {token}: {price}")
-            else:
-                 price = "Unavailable"
-        except Exception as e:
-            print(f"[ADVISOR] Price Fetch Error: {e}")
-            price = "Unavailable"
+            detected_tokens = detect_tokens_in_history(req.messages)
+            if detected_tokens:
+                print(f"[ADVISOR] Smart Context Detected: {detected_tokens}")
+                # Set primary token to the most recently detected/mentioned for "persona" consistency
+                token = detected_tokens[-1] 
+        except Exception:
+            pass
 
-        # B. Fetch RAG Context
-        rag = build_token_context(token)
+    # Fetch Data for ALL interesting tokens found
+    if detected_tokens:
+        tf = (req.context.timeframe if req.context else "1h") or "1h"
+        
+        market_data_lines = []
+        
+        for t_sym in detected_tokens:
+            try:
+                # Fetch only 1 candle for price to be fast
+                ohlcv = get_ohlcv_data(t_sym, tf, limit=1)
+                curr_price = ohlcv[-1]["close"] if ohlcv else "Unavailable"
+                
+                market_data_lines.append(f"- {t_sym}: ${curr_price}")
+                
+                # If this is the 'primary' token, update the main variable
+                if t_sym == token:
+                    price = curr_price
+                    
+            except Exception as e:
+                print(f"[ADVISOR] Price Error {t_sym}: {e}")
+                market_data_lines.append(f"- {t_sym}: Price Error")
 
         # C. Build Context Block
+        token_context = build_token_context(token) # RAG for primary only to save Tokens
+        
         system_context_block = f"""
-[CURRENT MARKET CONTEXT for {token.upper()}]
-- Price: {price}
+[REAL-TIME MARKET DATA]
+Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+Prices (Source: Live Exchange):
+{chr(10).join(market_data_lines)}
+
+[PRIMARY FOCUS: {token}]
 - Timeframe: {tf}
-- Sentiment: {rag.get("sentiment", "Neutral")}
-- News/Narrative: {rag.get("news", "No major news")}
+- Sentiment: {token_context.get("sentiment", "Neutral")}
+- News: {token_context.get("news", "No major news")}
 """
+        
         # D. Add Signal Context if coming from a specific signal
-        if req.context.signal_data:
+        if req.context and req.context.signal_data:
             sig = req.context.signal_data
             system_context_block += f"""
 [ACTIVE SIGNAL CONTEXT]

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { TrendingUp, Lock, ArrowUpRight, Clock, Zap, Activity, Waves } from "lucide-react"
+import { TrendingUp, Lock, ArrowUpRight, Clock, Zap, Activity, Waves, RotateCcw } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -61,6 +61,16 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                 borderHover: "group-hover:border-orange-500/30",
                 glow: "from-orange-500/20 to-purple-600/20",
                 chartColor: "#f97316" // orange-500
+            }
+        } else if (strategyCode === 'MEAN_REVERSION' || strategyCode === 'mean_reversion_v1') {
+            return {
+                accent: "text-fuchsia-500",
+                bgGradient: "from-fuchsia-500/10 to-pink-500/5",
+                buttonActive: "bg-fuchsia-500 hover:bg-fuchsia-600",
+                icon: <RotateCcw className="w-5 h-5 text-fuchsia-500" />,
+                borderHover: "group-hover:border-fuchsia-500/30",
+                glow: "from-fuchsia-500/20 to-pink-600/20",
+                chartColor: "#d946ef" // fuchsia-500
             }
         } else {
             return {
@@ -123,28 +133,6 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                                         {description}
                                     </CardDescription>
                                 </div>
-                            </div>
-
-                            {/* Timeframe Selector Pills */}
-                            <div className="flex bg-black/5 dark:bg-black/20 p-0.5 rounded-lg border border-black/5 dark:border-white/5 backdrop-blur-md self-start shrink-0">
-                                {sortedVariants.map((variant) => (
-                                    <button
-                                        key={variant.id}
-                                        onClick={() => setSelectedVariant(variant)}
-                                        className={cn(
-                                            "relative px-2.5 py-1 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1",
-                                            selectedVariant.id === variant.id
-                                                ? cn("text-white shadow-sm", theme.buttonActive)
-                                                : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5",
-                                            variant.locked && selectedVariant.id !== variant.id && "opacity-60"
-                                        )}
-                                    >
-                                        {variant.locked && (
-                                            <Lock className="w-2 h-2 opacity-70" />
-                                        )}
-                                        {variant.timeframe}
-                                    </button>
-                                ))}
                             </div>
                         </div>
                     </CardHeader>

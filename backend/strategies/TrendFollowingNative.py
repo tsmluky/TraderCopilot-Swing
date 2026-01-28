@@ -276,6 +276,7 @@ class TrendFollowingNative:
         max_items: int = 2,
         near_cross: float = 0.005,
         min_adx: float = 18.0,
+        **kwargs: Any,
     ) -> List[Dict[str, Any]]:
         """
         Near-setups: proximidad de EMAs + ADX mÃ­nimo para sugerir "posible cross".

@@ -4,12 +4,39 @@ import { TrendingUp, TrendingDown, Lock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/lib/user-context'
-import { tokenPrices, formatPrice, formatPercent, TOKEN_INFO } from '@/lib/mock-data'
+import { TOKEN_INFO } from '@/lib/types'
+import { formatPrice, formatPercent } from '@/lib/formatters'
 import type { Token } from '@/lib/types'
+import { marketService } from '@/services/market'
+import { useEffect, useState } from 'react'
 
 export function TokenPrices() {
   const { canAccessToken } = useUser()
-  const tokens = Object.keys(tokenPrices) as Token[]
+  const [prices, setPrices] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const syms = Object.keys(TOKEN_INFO)
+        const data = await marketService.getMarketSummary(syms)
+        if (data && Array.isArray(data)) {
+          setPrices(data)
+        }
+      } catch (e) {
+        console.error("Failed to load market summary", e)
+      }
+    }
+    fetchPrices()
+    const interval = setInterval(fetchPrices, 30000) // Refresh every 30s
+    return () => clearInterval(interval)
+  }, [])
+
+  // If loading empty, maybe show skeleton? or just blank.
+  const displayList = prices.length > 0 ? prices : Object.keys(TOKEN_INFO).map(t => ({
+    symbol: t,
+    price: 0,
+    change_24h: 0
+  }))
 
   return (
     <Card className="bg-card border-border">
@@ -17,11 +44,11 @@ export function TokenPrices() {
         <CardTitle className="text-base font-medium">Market Overview</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {tokens.map((token) => {
-          const price = tokenPrices[token]
-          const info = TOKEN_INFO[token]
+        {displayList.map((item) => {
+          const token = item.symbol as Token
+          const info = TOKEN_INFO[token] || { name: token, color: '#888' }
           const isLocked = !canAccessToken(token)
-          const isPositive = price.change24h >= 0
+          const isPositive = (item.change_24h || 0) >= 0
 
           return (
             <div
@@ -43,7 +70,7 @@ export function TokenPrices() {
                   <p className="text-xs text-muted-foreground">{info.name}</p>
                 </div>
               </div>
-              
+
               {isLocked ? (
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Lock className="h-3.5 w-3.5" />
@@ -52,7 +79,7 @@ export function TokenPrices() {
               ) : (
                 <div className="text-right">
                   <p className="font-mono text-sm font-medium text-foreground">
-                    ${formatPrice(price.price)}
+                    ${formatPrice(item.price || 0)}
                   </p>
                   <div
                     className={cn(
@@ -65,7 +92,7 @@ export function TokenPrices() {
                     ) : (
                       <TrendingDown className="h-3 w-3" />
                     )}
-                    {formatPercent(price.change24h)}
+                    {formatPercent(item.change_24h || 0)}
                   </div>
                 </div>
               )}

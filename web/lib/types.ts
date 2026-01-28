@@ -21,7 +21,7 @@ export interface Signal {
   invalidation?: number
   confidence: number
   timestamp: Date
-  status: 'ACTIVE' | 'CLOSED' | 'CANCELLED'
+  status: 'ACTIVE' | 'CLOSED' | 'CANCELLED' | 'WATCH' | 'CREATED' | 'ARCHIVED'
   evaluation: EvaluationStatus
   pnl?: number
   rationale?: string

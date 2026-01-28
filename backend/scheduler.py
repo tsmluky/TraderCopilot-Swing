@@ -345,6 +345,17 @@ class StrategyScheduler:
                 # Persist
                 self.process_and_persist_signals(signals, task)
 
+            # === VALIDATION STEP ===
+            try:
+                db_val = SessionLocal()
+                from core.signal_evaluator import evaluate_pending_signals
+                validated_count = evaluate_pending_signals(db_val)
+                if validated_count > 0:
+                    LOG.info(f"Validator: Updated {validated_count} signals (TP/SL/Timeout)")
+                db_val.close()
+            except Exception as e:
+                LOG.error(f"Validator failed: {e}")
+
             time.sleep(self.loop_interval)
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowUpRight, ArrowDownRight, CheckCircle, XCircle, Clock, Filter, Lock, Activity, Zap, TrendingUp, TrendingDown } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, CheckCircle, XCircle, Clock, Filter, Lock, Activity, Zap, TrendingUp, TrendingDown, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/lib/user-context'
 import { logsService } from '@/services/logs'
+import { signalsService } from '@/services/signals'
 import type { Signal, Token, Timeframe } from '@/lib/types'
 import { toast } from 'sonner'
 import { TOKEN_INFO } from '@/lib/types'
@@ -28,8 +29,14 @@ import { ScanProDialog } from '@/components/dashboard/scan-pro-dialog'
 import { AuthError } from '@/lib/api-client'
 
 // Helpers
-const formatPrice = (p: number) => p.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-const formatPercent = (p: number) => `${p > 0 ? '+' : ''}${p.toFixed(2)}%`
+const formatPrice = (p: number | undefined | null) => {
+  if (p === undefined || p === null) return '$0.00'
+  return p.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+}
+const formatPercent = (p: number | undefined | null) => {
+  if (p === undefined || p === null) return '0.00%'
+  return `${p > 0 ? '+' : ''}${p.toFixed(2)}%`
+}
 const timeAgo = (date: Date | string) => {
   const d = new Date(date)
   const now = new Date()
@@ -40,7 +47,7 @@ const timeAgo = (date: Date | string) => {
   return d.toLocaleDateString()
 }
 
-function SignalRow({ signal, isLocked }: { signal: Signal; isLocked: boolean }) {
+function SignalRow({ signal, isLocked, onDelete }: { signal: Signal; isLocked: boolean; onDelete: (id: string) => void }) {
   const tokenKey = signal.token as keyof typeof TOKEN_INFO
   const tokenInfo = TOKEN_INFO[tokenKey] || { name: signal.token, color: '#888' }
   const isLong = signal.type === 'LONG'
@@ -60,7 +67,7 @@ function SignalRow({ signal, isLocked }: { signal: Signal; isLocked: boolean }) 
             </div>
           </div>
         </TableCell>
-        <TableCell colSpan={6} className="text-center">
+        <TableCell colSpan={7} className="text-center">
           <div className="absolute inset-0 flex items-center justify-center">
             <Badge variant="outline" className="gap-2 bg-white/80 dark:bg-black/50 backdrop-blur-md border-black/5 dark:border-white/10 text-muted-foreground group-hover/locked:bg-primary/5 group-hover/locked:dark:bg-primary/20 group-hover/locked:text-primary group-hover/locked:border-primary/20 transition-all cursor-not-allowed">
               <Lock className="w-3 h-3" /> Upgrade to View
@@ -129,6 +136,17 @@ function SignalRow({ signal, isLocked }: { signal: Signal; isLocked: boolean }) 
         )}
       </TableCell>
       <TableCell className="text-muted-foreground text-xs font-medium">{timeAgo(signal.timestamp)}</TableCell>
+      <TableCell className="text-right pr-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100"
+          onClick={() => onDelete(signal.id)}
+          title="Delete Signal"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </TableCell>
     </TableRow>
   )
 }
@@ -172,31 +190,28 @@ export default function SignalsPage() {
   const fetchSignals = async () => {
     try {
       setIsLoading(true)
-      const data = await logsService.getRecentLogs({ include_system: false, limit: 100 })
-      const list = Array.isArray(data) ? data : (data.logs || [])
+      const data = await signalsService.getRecent(100)
+      const list = Array.isArray(data) ? data : []
 
-      // TEST SIGNAL INJECTION
-      const testSignal: any = {
-        id: 'test-1',
-        token: 'BTC',
-        type: 'LONG',
-        timeframe: '4H',
-        entryPrice: 96500,
-        targetPrice: 102000,
-        stopLoss: 94000,
-        status: 'ACTIVE',
-        timestamp: new Date().toISOString(),
-        confidence: 85,
-        rationale: "Strong breakout above resistance with high volume."
-      }
-
-      // If list is empty or just to show it, we append it
-      setSignals([testSignal, ...list])
+      setSignals(list)
     } catch (e) {
       console.error(e)
       toast.error("Failed to load signals")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this signal? This action cannot be undone.")) return;
+
+    try {
+      await signalsService.deleteSignal(id);
+      await fetchSignals(); // Refresh list
+      toast.success("Signal deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete signal:", error);
+      toast.error("Failed to delete signal");
     }
   }
 
@@ -210,8 +225,10 @@ export default function SignalsPage() {
     return true
   })
 
-  const activeSignals = filteredSignals.filter((s) => s.status === 'ACTIVE' && s.type !== 'NEUTRAL')
-  const closedSignals = filteredSignals.filter((s) => s.status === 'CLOSED' || s.type === 'NEUTRAL')
+  const activeSignals = filteredSignals.filter((s) =>
+    (s.status === 'ACTIVE' || s.status === 'CREATED' || s.status === 'WATCH')
+  )
+  const closedSignals = filteredSignals.filter((s) => s.status === 'CLOSED' || s.status === 'ARCHIVED')
 
   // Stats
   const totalClosed = closedSignals.length
@@ -238,7 +255,7 @@ export default function SignalsPage() {
         <div className="flex items-center gap-3">
           <div className="flex gap-2">
             <ScanDialog onScanComplete={fetchSignals} />
-            <ScanProDialog onScanComplete={() => { }} />
+            <ScanProDialog onScanComplete={fetchSignals} />
           </div>
 
           <Popover>
@@ -355,20 +372,33 @@ export default function SignalsPage() {
                     <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Stop</TableHead>
                     <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Status</TableHead>
                     <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Time</TableHead>
+                    <TableHead className="h-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {activeSignals.length === 0 ? (
-                    <TableRow className="hover:bg-transparent">
-                      <TableCell colSpan={7} className="text-center py-20">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="p-4 rounded-full bg-black/5 dark:bg-white/5 text-muted-foreground">
-                            <Activity className="w-8 h-8 opacity-50" />
+                    <TableRow className="hover:bg-transparent border-0">
+                      <TableCell colSpan={7} className="h-64 text-center">
+                        <div className="flex flex-col items-center justify-center space-y-4">
+                          <div className="h-16 w-16 rounded-full bg-muted/30 flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10">
+                            <Activity className="h-8 w-8 text-muted-foreground/40" />
                           </div>
-                          <p className="text-lg font-medium text-foreground">No active signals</p>
-                          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                            The AI hasn't detected any high-probability setups at the moment. Try running a manual scan.
-                          </p>
+                          <div className="space-y-1">
+                            <h3 className="text-lg font-bold text-foreground">No active signals found</h3>
+                            <p className="text-sm text-muted-foreground/80 max-w-sm mx-auto leading-relaxed">
+                              Waiting for high-confidence setups to align.
+                            </p>
+                          </div>
+                          <div className="pt-2">
+                            <Button
+                              variant="outline"
+                              className="gap-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all font-medium"
+                              onClick={() => (window as any).document.getElementById('scan-trigger')?.click()}
+                            >
+                              <Zap className="h-4 w-4 text-primary" />
+                              Scan Market
+                            </Button>
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -378,6 +408,7 @@ export default function SignalsPage() {
                         key={signal.id}
                         signal={signal}
                         isLocked={!checkSignalAccess(signal)}
+                        onDelete={handleDelete}
                       />
                     ))
                   )}
@@ -395,6 +426,7 @@ export default function SignalsPage() {
                     <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Stop</TableHead>
                     <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Result</TableHead>
                     <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Closed</TableHead>
+                    <TableHead className="h-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -403,6 +435,7 @@ export default function SignalsPage() {
                       key={signal.id}
                       signal={signal}
                       isLocked={!checkSignalAccess(signal)}
+                      onDelete={handleDelete}
                     />
                   ))}
                 </TableBody>

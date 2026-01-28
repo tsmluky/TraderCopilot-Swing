@@ -144,6 +144,11 @@ def get_ai_service() -> AIProvider:
     Retorna el proveedor configurado.
     Default: Gemini (Primary).
     """
-    # Force Gemini as per migration request
+    provider = os.getenv("AI_PROVIDER", "gemini").lower()
+    
+    if provider == "deepseek":
+        return DeepSeekProvider()
+    
+    # Default to Gemini
     return GeminiProvider()
 

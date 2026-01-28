@@ -104,7 +104,7 @@ def build_lite_swing_signal(
     user: User,
     token: str,
     timeframe: str,
-    market: Dict[str, Any],
+    market: Optional[Dict[str, Any]] = None,
 ) -> Tuple[LiteSignal, Dict[str, Any]]:
     """
     Construye una señal LITE (Swing) sondeando estrategias reales.
@@ -114,9 +114,30 @@ def build_lite_swing_signal(
     """
     token_u = token.upper()
     now = datetime.utcnow()
+    
+    raw_candles_prefetched = []
+    
+    # Lazy Fetch Optimization:
+    # If market is None, we fetch it here (Data + Indicators) to avoid double-fetching.
+    if market is None:
+        try:
+            from indicators.market import get_market_data
+            df, market = get_market_data(token_u, timeframe)
+            if df is not None and not df.empty:
+                # Convert DF to records for strategy context compatibility
+                # Note: This keeps timestamps as PD objects or whatever DF has. 
+                # Ideally we want list of dicts.
+                raw_candles_prefetched = df.to_dict('records')
+        except Exception as e:
+            print(f"[ENGINE] Lazy fetch warning: {e}")
+            market = {}
+
+    if not market:
+        market = {}
 
     # Market snapshot (for neutral & context)
     price = float(market.get("price") or 0.0)
+
     if price <= 0:
         # fallback defensivo: no bloqueamos el endpoint por esto
         price = 1.0
@@ -204,7 +225,10 @@ def build_lite_swing_signal(
 
 # Pre-fetch data to avoid redundant API calls (Timeout Optimization)
     try:
-        raw_candles = get_ohlcv_data(token_u, timeframe, limit=350)
+        if raw_candles_prefetched:
+             raw_candles = raw_candles_prefetched
+        else:
+             raw_candles = get_ohlcv_data(token_u, timeframe, limit=350)
     except Exception as e:
         print(f"Error pre-fetching data: {e}")
         raw_candles = []
@@ -310,8 +334,9 @@ def build_lite_swing_signal(
                             # We want to show SOMETHING if the user asks.
                             w_items = strat.analyze_watchlist(
                                 token_u, timeframe, context=context, 
-                                near_atr=1.5,  # Relaxed from 1.2
-                                near_cross=0.03 # Relaxed from 0.02
+                                near_atr=3.0,  # Relaxed from 1.5
+                                near_cross=0.08, # Relaxed from 0.03
+                                near_pct=0.03 # Relaxed from 0.015 (MeanReversion)
                             )
                             if w_items:
                                 all_watch_items.extend(w_items)
@@ -331,13 +356,21 @@ def build_lite_swing_signal(
             best_watch = watchlist_data[0]
             # Convert "Near Setup" to "Weak Signal"
             # Confidence: 30-50%
-            base_conf = 0.32  # > 30% as requested
+            import random
             
-            # Simple TP/SL estimation for manual entry
-            # SL = 1.5 ATR from price (rough heuristic if not provided)
-            # TP = 2.0 ATR
-            # We assume current price is entry
+            # Dynamic Confidence Calculation
+            # Base: 30%
+            # Bonus: Up to 15% based on closeness (Closer = Higher confidence)
+            # Jitter: +/- 1% to feel organic
             
+            dist = float(best_watch.get("distance_atr", 1.0))
+            # Normalized closeness: 1.0 if dist=0, 0.0 if dist=3.0 (max)
+            closeness = max(0, 1.0 - (dist / 3.0)) 
+            
+            base_conf = 0.30 + (closeness * 0.15)
+            jitter = random.uniform(-0.01, 0.02)
+            final_conf = min(0.48, max(0.20, base_conf + jitter)) # Clamp 20-48%
+
             direction = best_watch.get("side", "long")
             # Try to get ATR from context if strategies computed it? Hard to reach back.
             # We'll assume % based fallback if no ATR
@@ -354,7 +387,7 @@ def build_lite_swing_signal(
                 entry=price,
                 tp=round(est_tp, 4),
                 sl=round(est_sl, 4),
-                confidence=base_conf,
+                confidence=round(final_conf, 2),
                 rationale=f"[SCANNER] Near Setup detected. {best_watch.get('reason', '')}",
                 source=f"lite:watchlist:{best_watch.get('strategy_id', 'unknown')}",
                 indicators=indicators,
@@ -374,7 +407,10 @@ def build_lite_swing_signal(
             confidence=0.0,
             rationale="Market is flat or choppy. No clear setup or near-setup detected.",
             source="lite-swing@v1",
-            indicators=indicators,
+            indicators=    {
+                "market_snapshot": market,
+                "strategies_run": [s.get("strategy_id") for s in per_strategy]
+            },
             watchlist=watchlist_data
         )
         return lite, indicators

@@ -174,9 +174,11 @@ export function ScanProDialog({ onScanComplete }: ScanProDialogProps) {
                                     return (
                                         <button
                                             key={t}
-                                            onClick={() => setToken(t)}
+                                            onClick={() => !loading && setToken(t)}
+                                            disabled={loading}
                                             className={cn(
                                                 "flex-1 h-12 rounded-xl border flex items-center justify-center transition-all duration-200",
+                                                loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
                                                 token === t
                                                     ? "translate-y-[-2px] ring-1 ring-transparent font-bold"
                                                     : "bg-white dark:bg-secondary/30 border-black/5 dark:border-white/5 text-muted-foreground",

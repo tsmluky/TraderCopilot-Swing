@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Sparkles, Bot, User, Terminal } from 'lucide-react'
+import { Send, Sparkles, Bot, User, Terminal, X } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,9 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
 import { AdvisorLocked } from '@/components/advisor-locked'
 import { advisorService } from '@/services/advisor'
+import { signalsService } from '@/services/signals'
 import { toast } from 'sonner'
+import { useSearchParams } from 'next/navigation'
 
 interface Message {
   id: string
@@ -40,6 +42,43 @@ export default function AdvisorPage() {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Context Logic
+  const searchParams = useSearchParams()
+  const signalId = searchParams.get('signalId')
+  const [activeSignal, setActiveSignal] = useState<any>(null)
+
+  useEffect(() => {
+    if (signalId) {
+      const fetchContext = async () => {
+        try {
+          const sig = await signalsService.getById(signalId)
+          if (sig) {
+            setActiveSignal(sig)
+            // Proactive greeting upgrade
+            setMessages(prev => {
+              const hasContextGreeting = prev.some(m => m.id === 'context-greeting')
+              if (hasContextGreeting) return prev
+
+              return [
+                ...prev,
+                {
+                  id: 'context-greeting',
+                  role: 'assistant',
+                  content: `I see you want to discuss the **${sig.token} ${sig.type}** signal.\n\nEntry: $${sig.entryPrice} | Target: $${sig.targetPrice}\n\nHow can I assist you with this setup?`, // Explicit context acknowledgement
+                  timestamp: new Date()
+                }
+              ]
+            })
+          }
+        } catch (e) {
+          console.error("Failed to fetch context signal", e)
+          toast.error("Could not load signal context")
+        }
+      }
+      fetchContext()
+    }
+  }, [signalId])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -70,7 +109,14 @@ export default function AdvisorPage() {
         content: m.content,
       }))
 
-      const response: any = await advisorService.chat(history)
+      // Inject Context if active
+      const contextPayload = activeSignal ? {
+        token: activeSignal.token,
+        timeframe: activeSignal.timeframe,
+        signal_data: activeSignal
+      } : undefined
+
+      const response: any = await advisorService.chat(history, contextPayload)
 
       const assistantContent =
         typeof response === 'string'
@@ -120,6 +166,15 @@ export default function AdvisorPage() {
           <p className="text-muted-foreground/80 mt-1 font-light">
             Your personal institutional-grade trading analyst.
           </p>
+          {activeSignal && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-500 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+              Analyzing Signal: {activeSignal.token} {activeSignal.type} (${activeSignal.entryPrice})
+              <button onClick={() => setActiveSignal(null)} className="ml-2 hover:text-foreground">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

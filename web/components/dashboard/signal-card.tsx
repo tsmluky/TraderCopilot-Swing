@@ -1,11 +1,14 @@
 'use client'
 
-import { ArrowUpRight, ArrowDownRight, Lock, Clock, Check, Loader2, X, AlertTriangle, TrendingUp } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, Lock, Clock, Check, Loader2, X, AlertTriangle, TrendingUp, MessageSquare } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/lib/user-context'
 import type { Signal, EvaluationStatus } from '@/lib/types'
-import { formatPrice, timeAgo, TOKEN_INFO } from '@/lib/mock-data'
+import { TOKEN_INFO } from '@/lib/types'
+import { formatPrice, timeAgo } from '@/lib/formatters'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 
 interface SignalCardProps {
   signal: Signal
@@ -32,9 +35,17 @@ function EvaluationBadge({ status }: { status: EvaluationStatus }) {
     },
   }
 
-  const { label, icon: Icon, className, animate } = config[status] as {
+
+
+  const badgeConfig = config[status as keyof typeof config]
+
+  if (!badgeConfig) {
+    return null
+  }
+
+  const { label, icon: Icon, className, animate } = badgeConfig as {
     label: string
-    icon: typeof Check
+    icon: any
     className: string
     animate?: boolean
   }
@@ -52,6 +63,7 @@ function EvaluationBadge({ status }: { status: EvaluationStatus }) {
 
 export function SignalCard({ signal, compact = false }: SignalCardProps) {
   const { canAccessToken, canAccessTimeframe } = useUser()
+  const router = useRouter()
 
   const isTokenLocked = !canAccessToken(signal.token)
   const isTimeframeLocked = !canAccessTimeframe(signal.timeframe)
@@ -250,15 +262,28 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
           <Clock className="h-3 w-3" />
           <span>{timeAgo(signal.timestamp)}</span>
         </div>
-        {signal.status === 'ACTIVE' && (
-          <span className="flex items-center gap-1 text-[10px] font-bold text-success uppercase tracking-wider">
-            <span className="relative flex h-1.5 w-1.5 ">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 rounded-full hover:bg-indigo-500/10 hover:text-indigo-500 text-muted-foreground transition-colors"
+            onClick={() => router.push(`/dashboard/advisor?signalId=${signal.id}`)}
+            title="Discuss with Advisor"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+          </Button>
+
+          {signal.status === 'ACTIVE' && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-success uppercase tracking-wider">
+              <span className="relative flex h-1.5 w-1.5 ">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
+              </span>
+              Active
             </span>
-            Active
-          </span>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )

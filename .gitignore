@@ -81,3 +81,15 @@ benchmark*.txt
 legacy_benchmark*.txt
 premium_benchmark*.txt
 git_status_full.txt
+backend_debug_log_2.txt
+backend_debug_log.txt
+debug_advisor_internal.py
+debug_advisor_router.py
+debug_db.py
+debug_gemini.py
+debug_output.txt
+fix_db_profiles.py
+read_logs.py
+web/app/icon.png
+web/app/icon.png
+web/app/icon.png

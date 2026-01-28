@@ -39,7 +39,7 @@ CSV_HEADERS = [
 ]
 
 
-def log_signal(signal: Signal) -> bool:
+def log_signal(signal: Signal) -> Optional[int]:
     """
     Guarda una señal en DB (Canonical) y si tiene éxito, en CSV.
 
@@ -70,7 +70,10 @@ def log_signal(signal: Signal) -> bool:
     # === 3. Push Notification (Mobile) ===
     _send_push_notification(signal)
     
-    return True
+    # === 3. Push Notification (Mobile) ===
+    _send_push_notification(signal)
+    
+    return saved_id
 
 
 

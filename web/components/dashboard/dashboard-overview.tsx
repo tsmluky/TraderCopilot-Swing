@@ -11,7 +11,7 @@ import type { Token, Timeframe, Signal } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { statsService } from '@/services/stats'
-import { logsService } from '@/services/logs'
+import { signalsService } from '@/services/signals'
 
 export function DashboardOverview() {
   const { canAccessTelegram, user } = useUser()
@@ -30,9 +30,9 @@ export function DashboardOverview() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const [statsData, logsData] = await Promise.all([
+      const [statsData, signalsData] = await Promise.all([
         statsService.getDashboardStats(),
-        logsService.getRecentLogs({ limit: 50, include_system: true })
+        signalsService.getRecent(50)
       ])
 
       // Map Stats: Adapting backend summary to UI expectations
@@ -46,44 +46,9 @@ export function DashboardOverview() {
       })
 
       // Map Signals
-      // logsData is List<LogEntry>
-      const rawLogs = Array.isArray(logsData) ? logsData : (logsData.results || [])
-      const mappedSignals: Signal[] = rawLogs
-        .map((log: any) => ({
-          id: (log.id || Math.random()).toString(),
-          token: (log.token || 'BTC').toUpperCase(),
-          timeframe: (log.timeframe || '4h').toUpperCase(),
-          type: (log.direction || 'NEUTRAL').toUpperCase(),
-          entryPrice: log.entry || 0,
-          targetPrice: log.tp || 0,
-          stopLoss: log.sl || 0,
-          confidence: log.confidence || 0,
-          timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
-          status: log.status === 'OPEN' ? 'ACTIVE' : 'CLOSED',
-          evaluation: log.status !== 'OPEN' ? 'evaluated' : 'pending',
-          pnl: log.pnl,
-          rationale: log.rationale
-        }))
-        .filter((s: Signal) => s.type !== 'NEUTRAL')
-
-      // Test Signal Injection
-      mappedSignals.unshift({
-        id: 'test-sig-1',
-        token: 'BTC',
-        timeframe: '4H',
-        type: 'LONG',
-        entryPrice: 64200,
-        targetPrice: 68500,
-        stopLoss: 62500,
-        confidence: 0.85,
-        timestamp: new Date(),
-        status: 'ACTIVE',
-        evaluation: 'pending',
-        pnl: undefined,
-        rationale: "Bullish divergence on RSI + Support retest. Institutional flow detected."
-      })
-
-      setSignals(mappedSignals)
+      // signalsData is already mapped by backend (EntryPrice, TargetPrice, Status, etc.)
+      const list = Array.isArray(signalsData) ? signalsData : []
+      setSignals(list)
 
     } catch (e) {
       console.error("Dashboard fetch error", e)

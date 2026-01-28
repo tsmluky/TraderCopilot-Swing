@@ -2,6 +2,8 @@
 import logging
 import asyncio
 import threading
+import asyncio
+import threading
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -230,9 +232,8 @@ async def on_startup():
                 res = None
 
             if not res:
-                LOG.warning("'billing_provider' MISSING. Applying Raw SQL Patch...")
-                # SQLite doesn't support IF NOT EXISTS in ADD COLUMN well in old versions,
-                # but try/catch block handles it
+                LOG.warning("'billing_provider' MISSING. Applying User Schema Patch...")
+                # ... (User patching code, keeping existing logic concise or matching original if possible)
                 for col_def in [
                     "billing_provider VARCHAR",
                     "stripe_customer_id VARCHAR", 
@@ -246,9 +247,8 @@ async def on_startup():
                          col_def.split()[0]
                          conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_def}"))
                      except Exception:
-                         pass # Silent fail for duplicates
-                         # LOG.warning(f"Patch column {col_name} skipped: {e}")
-                
+                         pass 
+
                 try:
                     conn.execute(text(
                         "CREATE INDEX IF NOT EXISTS ix_users_stripe_customer_id ON users (stripe_customer_id)"
@@ -260,9 +260,36 @@ async def on_startup():
                     pass
                 
                 conn.commit()
-                LOG.info("Emergency Schema Patch APPLIED.")
+                LOG.info("User Schema Patch APPLIED.")
             else:
-                LOG.info("Schema integrity check passed.")
+                LOG.info("User Schema integrity check passed.")
+
+            # === PATCH: Signals Table (Independent Check) ===
+            try:
+                # Check if is_saved exists
+                sql_check_sig = text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name='signals' AND column_name='is_saved'"
+                )
+                # SQLite fallback: PRAGMA table_info(signals)
+                # But generic approach: Try selecting it.
+                # Simplest for SQLite: Just try ADD COLUMN, catch 'duplicate column' error.
+                # BUT we need to commit it.
+                
+                # Let's just try running the ALTER. 
+                # SQLite allows ADD COLUMN even if it exists? No, it throws.
+                # But Postgres/others throw.
+                # We can't rely on information_schema for sqlite easily via SQLA text without exact dialect.
+                
+                # Just FORCE check via try/except on ADD
+                conn.execute(text("ALTER TABLE signals ADD COLUMN is_saved INTEGER DEFAULT 0"))
+                conn.commit()
+                LOG.info("Signals Schema Patch APPLIED (is_saved added).")
+            except Exception as e:
+                # Likely "duplicate column name" -> It exists.
+                conn.rollback()
+                # LOG.info(f"Signals Schema Patch skipped (likely exists): {e}")
+                pass
                 
     except Exception:
         LOG.exception("Emergency Schema Patch failed")
@@ -284,18 +311,18 @@ async def on_startup():
         LOG.exception("Failed loading default strategies")
 
     # 3) Telegram Bot Startup (Consolidated)
-    run_bot = os.getenv("RUN_TELEGRAM_BOT", "false").lower()
-    LOG.info(f"Checking Telegram Bot Flag (RUN_TELEGRAM_BOT): {run_bot}")
+    args_run_bot = os.getenv("RUN_TELEGRAM_BOT", "false").lower()
+    LOG.info(f"Checking Telegram Bot Flag (RUN_TELEGRAM_BOT): {args_run_bot}")
 
-    if run_bot == "true":
+    if args_run_bot == "true":
         try:
             LOG.info("🚀 Starting Telegram Bot (Polling Mode)...")
-            # We use the async version directly if possible, or the helper
+            import asyncio
             from telegram_listener import start_telegram_bot_async
-            # Since we are inside an async startup event, we can AWAIT it!
-            # The previous 'start_telegram_polling' was a hack for sync contexts.
-            # Using create_task to run it in background so it doesn't block startup
-            asyncio.create_task(start_telegram_bot_async())
+            
+            # Use the running loop to schedule the task
+            loop = asyncio.get_event_loop()
+            loop.create_task(start_telegram_bot_async())
             LOG.info("Telegram Bot Task scheduled.")
         except Exception:
             LOG.exception("Telegram Bot failed to launch")

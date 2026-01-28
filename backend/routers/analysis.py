@@ -35,23 +35,9 @@ def _analyze_lite_unsafe(req: LiteReq, current_user: User, db: Session, tf_norm:
     """
     print(f"[ANALYSIS] STARTING LITE SCAN: {req.token} {tf_norm}")
     
-    # 1. Fetch Market Data
-    try:
-        # returns (DataFrame, Dict)
-        print("[ANALYSIS] Fetching market data...")
-        df, market_dict = get_market_data(req.token, tf_norm)
-        
-        if df is None or market_dict is None:
-            print("[ANALYSIS] Market data None")
-            raise ValueError(f"Failed to fetch market data for {req.token}")
-            
-        print(f"[ANALYSIS] Market data fetched. Price: {market_dict.get('price')}")
-        
-    except Exception as e:
-        print(f"[ANALYSIS] Market Data Error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Market Data Error: {str(e)}")
-
+    # 1. Lazy Fetch (Delegated to Engine)
+    # Optimized: We pass market=None so the engine fetches once.
+    
     # 2. Run LITE-Swing Engine (Unified Logic)
     try:
         print("[ANALYSIS] Building Lite Swing Signal...")
@@ -61,8 +47,14 @@ def _analyze_lite_unsafe(req: LiteReq, current_user: User, db: Session, tf_norm:
             user=current_user,
             token=req.token,
             timeframe=tf_norm,
-            market=market_dict
+            market=None
         )
+        print(f"[ANALYSIS] Signal generated: {lite_signal.direction} {lite_signal.confidence}")
+        
+        # Log price from the engine's result
+        price = indicators.get("market_snapshot", {}).get("price", "N/A")
+        print(f"[ANALYSIS] Market data checked via Engine. Price: {price}")
+
         print(f"[ANALYSIS] Signal generated: {lite_signal.direction} {lite_signal.confidence}")
         
     except Exception as e:
@@ -98,7 +90,8 @@ def _analyze_lite_unsafe(req: LiteReq, current_user: User, db: Session, tf_norm:
             rationale=lite_signal.rationale,
             source=lite_signal.source,
             extra=indicators, # Map indicators -> extra
-            user_id=current_user.id
+            user_id=current_user.id,
+            is_saved=0 # Transient! Must be accepted by user to become visible (1)
         )
         
         print("[ANALYSIS] Logging signal...")

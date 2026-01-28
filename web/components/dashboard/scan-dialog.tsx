@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Loader2, ScanLine, AlertTriangle, CheckCircle2, XCircle, Info, Lock } from 'lucide-react'
-import { analysisService } from '@/services/analysis'
+import { Loader2, ScanLine, Lock, CheckCircle2, AlertTriangle, XCircle, Trash2 } from "lucide-react";
+import { analysisService } from "@/services/analysis";
+import { signalsService } from "@/services/signals";
 import { SignalCard } from '@/components/dashboard/signal-card'
 import type { Signal } from '@/lib/types'
 import { TOKEN_INFO } from '@/lib/types'
@@ -162,13 +163,18 @@ export function ScanDialog({ onScanComplete }: ScanDialogProps) {
                                     return (
                                         <button
                                             key={t}
-                                            disabled={!isAllowed}
-                                            onClick={() => setToken(t)}
+                                            disabled={!isAllowed || loading}
+                                            onClick={() => !loading && setToken(t)}
                                             className={cn(
                                                 "flex-1 h-10 min-w-[3rem] text-sm rounded-lg border transition-all duration-200 flex items-center justify-center relative",
-                                                !isAllowed ? "opacity-50 cursor-not-allowed bg-secondary/50 border-transparent" : "bg-white dark:bg-secondary/30 border-black/5 dark:border-white/5",
-                                                getColor(t, isActive),
-                                                isActive && "translate-y-[-1px]"
+                                                // Disabled/Lock logic
+                                                (!isAllowed) && "opacity-50 cursor-not-allowed bg-secondary/50 border-transparent",
+                                                // Loading cursor
+                                                loading && "cursor-not-allowed",
+                                                // Color logic + Loading Fade
+                                                isActive
+                                                    ? cn(getColor(t, true), "scale-[1.02]", loading ? "opacity-75" : "opacity-100")
+                                                    : (loading ? "opacity-30" : cn("bg-white dark:bg-secondary/30 border-black/5 dark:border-white/5", getColor(t, false)))
                                             )}
                                         >
                                             {t}
@@ -189,14 +195,18 @@ export function ScanDialog({ onScanComplete }: ScanDialogProps) {
                                     return (
                                         <button
                                             key={tf}
-                                            disabled={!isAllowed}
-                                            onClick={() => setTimeframe(tf)}
+                                            disabled={!isAllowed || loading}
+                                            onClick={() => !loading && setTimeframe(tf)}
                                             className={cn(
                                                 "flex-1 h-10 rounded-lg border text-sm font-medium transition-all duration-200 flex items-center justify-center relative",
-                                                !isAllowed ? "opacity-50 cursor-not-allowed bg-secondary/50 border-transparent text-muted-foreground" :
-                                                    isActive
-                                                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 border-primary"
-                                                        : "bg-white dark:bg-secondary/30 border-black/5 dark:border-white/5 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                                                // Base disabled state
+                                                (!isAllowed) && "opacity-50 cursor-not-allowed bg-secondary/50 border-transparent text-muted-foreground",
+                                                // Loading state: If loading, disable cursor but keep visibility if active
+                                                loading && "cursor-not-allowed",
+                                                // Active vs Inactive
+                                                isActive
+                                                    ? cn("bg-primary text-primary-foreground shadow-md shadow-primary/20 border-primary", loading ? "opacity-75 bg-primary/80" : "opacity-100")
+                                                    : (loading && !isActive) ? "opacity-30" : "bg-white dark:bg-secondary/30 border-black/5 dark:border-white/5 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
                                             )}
                                         >
                                             {tf}
@@ -400,9 +410,49 @@ export function ScanDialog({ onScanComplete }: ScanDialogProps) {
                                         </div>
                                     </div>
                                 </div>
-                                <Button className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20" onClick={() => setIsOpen(false)}>
-                                    View Full Signal Analysis
-                                </Button>
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <Button
+                                        variant="outline"
+                                        className="h-12 border-red-500/20 text-red-500 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                        onClick={async () => {
+                                            if (result?.id) {
+                                                try {
+                                                    await signalsService.deleteSignal(result.id);
+                                                    toast.success("Signal discarded");
+                                                } catch (e) {
+                                                    toast.error("Failed to delete signal");
+                                                }
+                                            }
+                                            reset();
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Decline
+                                    </Button>
+
+                                    <Button
+                                        className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20"
+                                        onClick={async () => {
+                                            if (result?.id) {
+                                                try {
+                                                    await signalsService.acceptSignal(result.id);
+                                                    toast.success("Signal accepted & added to dashboard");
+                                                    setIsOpen(false);
+                                                    setTimeout(() => {
+                                                        // Refresh signals page
+                                                        window.location.reload();
+                                                    }, 500);
+                                                } catch (e) {
+                                                    console.error(e);
+                                                    toast.error("Failed to accept signal");
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                                        Accept Signal
+                                    </Button>
+                                </div>
                             </div>
                         )}
 

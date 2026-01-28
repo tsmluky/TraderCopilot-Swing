@@ -251,6 +251,7 @@ class DonchianBreakoutV2:
         context: Optional[Dict[str, Any]] = None,
         max_items: int = 2,
         near_atr: float = 0.5,
+        **kwargs: Any,
     ) -> List[Dict[str, Any]]:
         """
         Near-setups para UX: si no hay breakout, reportamos distancia al canal.

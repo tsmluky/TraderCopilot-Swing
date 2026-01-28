@@ -209,6 +209,7 @@ class MeanReversionRSI:
         timeframe: str,
         context: Optional[Dict[str, Any]] = None,
         near_pct: float = 0.015, # 1.5% distance from band
+        **kwargs: Any,
     ) -> List[Dict[str, Any]]:
         """
         Near-setups: Price approaching BB or RSI entering zone.

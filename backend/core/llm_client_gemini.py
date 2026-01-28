@@ -21,15 +21,15 @@ MODELS = {
 # I will use exact strings.
 
 MODELS_MAP = {
-    "advisor": "gemini-2.0-flash-lite-preview-02-05", # Mapping to real known models for stability if 2.5 is typo
-    "pro": "gemini-2.0-flash-exp"
+    "advisor": "gemini-1.5-flash", # Stable fallback
+    "pro": "gemini-1.5-pro"      # Stable fallback
 }
 
 # Override with user requested exact names if I must, but usually better to use real ones.
 # The user prompt: "Advisor => gemini-2.5-flash-lite / PRO => gemini-2.5-flash".
 # I will put these in constants but make them overridable via env just in case.
-DEFAULT_MODEL_ADVISOR = os.getenv("GEMINI_MODEL_ADVISOR", "gemini-2.5-flash-lite") 
-DEFAULT_MODEL_PRO = os.getenv("GEMINI_MODEL_PRO", "gemini-2.5-flash")
+DEFAULT_MODEL_ADVISOR = os.getenv("GEMINI_MODEL_ADVISOR", "gemini-1.5-flash") 
+DEFAULT_MODEL_PRO = os.getenv("GEMINI_MODEL_PRO", "gemini-1.5-pro")
 
 # Correction: user provided real names might be typos. I'll stick to env vars with defaults to the LATEST known flash.
 # Let's use the user's specific names as the default strings if they are confident.
@@ -59,11 +59,11 @@ def call_llm(
     # 1. Select Model
     mode = mode.lower()
     if mode == "pro":
-        model_name = os.getenv("GEMINI_MODEL_PRO", "gemini-2.0-flash")
+        model_name = os.getenv("GEMINI_MODEL_PRO", "gemini-1.5-pro")
         default_max_tokens = int(os.getenv("GEMINI_MAX_OUTPUT_PRO", "8000"))
     else:
         # Advisor / default
-        model_name = os.getenv("GEMINI_MODEL_ADVISOR", "gemini-2.0-flash-lite-preview-02-05")
+        model_name = os.getenv("GEMINI_MODEL_ADVISOR", "gemini-1.5-flash")
         default_max_tokens = int(os.getenv("GEMINI_MAX_OUTPUT_ADVISOR", "1000"))
 
     # 2. Build URL
@@ -114,43 +114,43 @@ def call_llm(
     backoff = 1
 
     last_error = None
+    
+    # Clean key
+    api_key = api_key.strip()
+    
+    # URL Construction (Exact match to debug_gemini.py)
+    # Note: We use v1beta as confirmed working
+    base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+    final_url = f"{base_url}?key={api_key}"
 
     for i in range(retries):
         try:
             resp = requests.post(
-                url,
-                headers={
-                    "Content-Type": "application/json"
-                },
-                params={"key": api_key}, # API KEY goes in query param for Google AI Studio
+                final_url,
+                headers={"Content-Type": "application/json"},
                 json=payload,
                 timeout=timeout
             )
             
             if resp.status_code == 200:
                 data = resp.json()
-                # Parse response
-                # Response format: { candidates: [ { content: { parts: [ { text: "..." } ] } } ] }
                 try:
                     text = data["candidates"][0]["content"]["parts"][0]["text"]
                     return text
                 except (KeyError, IndexError) as parse_err:
-                    # Check for safety blocks or other non-200-like bodies
-                    if "promptFeedback" in data:
-                        # Safety block?
+                     if "promptFeedback" in data:
                         return f"[BLOCKED] Safety: {data.get('promptFeedback')}"
-                    raise ValueError(f"Unexpected response format: {str(parse_err)} | Data: {str(data)[:200]}")
+                     raise ValueError(f"Unexpected response format: {str(parse_err)}")
 
             # Handle Errors
             error_msg = resp.text
             if resp.status_code in [429, 500, 502, 503, 504]:
-                # Retryable
                 print(f"[GEMINI] Retryable Error {resp.status_code}: {error_msg[:100]}")
                 time.sleep(backoff * (2 ** i))
                 last_error = f"{resp.status_code} - {error_msg}"
                 continue
             else:
-                # Client Error (400, 401, 403, 404) -> Fatal
+                # Fatal
                 raise ValueError(f"Gemini API Error {resp.status_code}: {error_msg}")
 
         except requests.exceptions.RequestException as re:
