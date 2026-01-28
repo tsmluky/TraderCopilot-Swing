@@ -31,18 +31,18 @@ class PlanEntitlements(TypedDict):
 
 PLANS: Dict[PlanType, PlanEntitlements] = {
     "TRIAL": {
-        "tokens": ["BTC", "ETH", "SOL"],
-        "timeframes": ["4H"],
+        "tokens": ["BTC", "ETH"],
+        "timeframes": ["4H", "1D"],
         "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"],
     },
     "TRADER": {
         "tokens": ["BTC", "ETH", "SOL"],
-        "timeframes": ["4H"],
+        "timeframes": ["4H", "1D"],
         "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"],
     },
     "PRO": {
         "tokens": ["BTC", "ETH", "SOL", "BNB", "XRP"],
-        "timeframes": ["1H", "4H"],
+        "timeframes": ["1H", "4H", "1D"],
         "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"],
     }
 }

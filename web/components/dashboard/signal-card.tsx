@@ -141,7 +141,8 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
   return (
     <div className={cn(
       'group relative overflow-hidden rounded-xl border border-black/5 dark:border-border/50 bg-white dark:bg-card transition-all duration-300',
-      'hover:border-black/10 dark:hover:border-border hover:shadow-md dark:hover:shadow-soft-md shadow-sm dark:shadow-none'
+      'hover:border-black/10 dark:hover:border-border hover:shadow-md dark:hover:shadow-soft-md shadow-soft-sm dark:shadow-none',
+      compact ? 'shadow-none border-transparent bg-transparent' : ''
     )}>
       {/* Top accent line based on signal type */}
       <div className={cn(

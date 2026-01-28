@@ -58,7 +58,7 @@ export function AppHeader() {
       <div className="flex h-14 items-center justify-between border-b border-border/50 bg-background/80 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         {/* Left side */}
         <div className="flex items-center gap-3">
-          <SidebarTrigger className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors md:hidden" />
+          <SidebarTrigger className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors hidden" />
 
           {/* Breadcrumb */}
           <nav className="hidden md:flex items-center gap-1.5 text-sm">

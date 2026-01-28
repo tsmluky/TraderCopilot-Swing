@@ -226,7 +226,7 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                                 ) : (
                                     <Button
                                         variant="ghost"
-                                        className="w-full h-10 flex justify-between items-center group/btn hover:bg-black/5 dark:hover:bg-white/5 px-2"
+                                        className="w-full h-12 flex justify-between items-center group/btn hover:bg-black/5 dark:hover:bg-white/5 px-3" // Increased height to h-12
                                         onClick={() => setShowDetails(true)}
                                     >
                                         <span className="text-xs font-medium text-muted-foreground group-hover/btn:text-foreground transition-colors">

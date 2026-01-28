@@ -209,7 +209,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isTrialExpired = entitlements?.is_trial_expired ?? false;
 
     const allowedTokens = entitlements?.allowed_tokens ?? user?.allowed_tokens ?? [];
-    const allowedTimeframes = entitlements?.allowed_timeframes ?? [];
+
+    // Config: Ensure 4H and 1D are always available (Basic Tier standard)
+    const baseTimeframes = ['4H', '1D'];
+    const remoteTimeframes = entitlements?.allowed_timeframes ?? [];
+    const allowedTimeframes = Array.from(new Set([...remoteTimeframes, ...baseTimeframes]));
 
     return (
         <AuthContext.Provider

@@ -166,7 +166,7 @@ function AdvisorContent() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-100px)] flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex h-[calc(100dvh-130px)] md:h-[calc(100vh-100px)] flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* Suspense Wrapper for SearchParams */}
       <Suspense fallback={null}>

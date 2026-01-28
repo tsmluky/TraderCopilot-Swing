@@ -20,7 +20,7 @@ interface KPICardsProps {
 export function KPICards({ data, isLoading }: KPICardsProps) {
   if (isLoading) {
     return (
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map(i => (
           <div key={i} className="h-40 rounded-3xl border border-border/40 bg-card/20 animate-pulse" />
         ))}
@@ -97,7 +97,7 @@ export function KPICards({ data, isLoading }: KPICardsProps) {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {kpis.map((kpi, index) => {
         const theme = themes[kpi.theme as keyof typeof themes] || themes.blue
         return (
