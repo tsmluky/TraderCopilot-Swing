@@ -387,7 +387,7 @@ export function StrategyDetailsModal({ offering, variants, open, onOpenChange }:
                                         <div className="relative z-10">
                                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Real Win Rate</p>
                                             <div className="flex items-baseline gap-2">
-                                                <h3 className="text-3xl font-bold text-white tabular-nums tracking-tight">{avgWinRate}%</h3>
+                                                <h3 className="text-3xl font-bold text-foreground tabular-nums tracking-tight">{avgWinRate}%</h3>
                                             </div>
                                             <div className="flex items-center gap-1.5 mt-2">
                                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -420,7 +420,7 @@ export function StrategyDetailsModal({ offering, variants, open, onOpenChange }:
                                         </div>
                                         <div className="relative z-10">
                                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Total Trades</p>
-                                            <h3 className="text-3xl font-bold text-white tabular-nums tracking-tight">{totalTrades}</h3>
+                                            <h3 className="text-3xl font-bold text-foreground tabular-nums tracking-tight">{totalTrades}</h3>
                                             <div className="inline-flex items-center mt-2 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                                                 VERIFIED {perfPeriod === '5y' ? '5Y' : perfPeriod.toUpperCase()}
                                             </div>

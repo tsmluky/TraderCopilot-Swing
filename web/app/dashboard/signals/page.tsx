@@ -26,6 +26,7 @@ import { toast } from 'sonner'
 import { TOKEN_INFO } from '@/lib/types'
 import { ScanDialog } from '@/components/dashboard/scan-dialog'
 import { ScanProDialog } from '@/components/dashboard/scan-pro-dialog'
+import { SignalCard } from '@/components/dashboard/signal-card'
 import { AuthError } from '@/lib/api-client'
 
 // Helpers
@@ -359,90 +360,123 @@ export default function SignalsPage() {
           </TabsList>
         </div>
 
-        <Card className="bg-white dark:bg-card/40 backdrop-blur-xl border-black/5 dark:border-white/5 overflow-hidden rounded-3xl shadow-sm dark:shadow-none">
-          <CardContent className="p-0">
-            <TabsContent value="active" className="m-0">
-              <Table>
-                <TableHeader className="bg-black/5 dark:bg-black/20 border-b border-black/5 dark:border-white/5">
-                  <TableRow className="hover:bg-transparent border-0">
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-6 h-12">Asset</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Direction</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Entry</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Target</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Stop</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Status</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Time</TableHead>
-                    <TableHead className="h-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activeSignals.length === 0 ? (
+        {/* Desktop Table View */}
+        <div className="hidden md:block">
+          <Card className="bg-white dark:bg-card/40 backdrop-blur-xl border-black/5 dark:border-white/5 overflow-hidden rounded-3xl shadow-sm dark:shadow-none">
+            <CardContent className="p-0">
+              <TabsContent value="active" className="m-0">
+                <Table>
+                  <TableHeader className="bg-black/5 dark:bg-black/20 border-b border-black/5 dark:border-white/5">
                     <TableRow className="hover:bg-transparent border-0">
-                      <TableCell colSpan={7} className="h-64 text-center">
-                        <div className="flex flex-col items-center justify-center space-y-4">
-                          <div className="h-16 w-16 rounded-full bg-muted/30 flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10">
-                            <Activity className="h-8 w-8 text-muted-foreground/40" />
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="text-lg font-bold text-foreground">No active signals found</h3>
-                            <p className="text-sm text-muted-foreground/80 max-w-sm mx-auto leading-relaxed">
-                              Waiting for high-confidence setups to align.
-                            </p>
-                          </div>
-                          <div className="pt-2">
-                            <Button
-                              variant="outline"
-                              className="gap-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all font-medium"
-                              onClick={() => (window as any).document.getElementById('scan-trigger')?.click()}
-                            >
-                              <Zap className="h-4 w-4 text-primary" />
-                              Scan Market
-                            </Button>
-                          </div>
-                        </div>
-                      </TableCell>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-6 h-12">Asset</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Direction</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Entry</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Target</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Stop</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Status</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Time</TableHead>
+                      <TableHead className="h-12"></TableHead>
                     </TableRow>
-                  ) : (
-                    activeSignals.map((signal) => (
+                  </TableHeader>
+                  <TableBody>
+                    {activeSignals.length === 0 ? (
+                      <TableRow className="hover:bg-transparent border-0">
+                        <TableCell colSpan={7} className="h-64 text-center">
+                          <div className="flex flex-col items-center justify-center space-y-4">
+                            <div className="h-16 w-16 rounded-full bg-muted/30 flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10">
+                              <Activity className="h-8 w-8 text-muted-foreground/40" />
+                            </div>
+                            <div className="space-y-1">
+                              <h3 className="text-lg font-bold text-foreground">No active signals found</h3>
+                              <p className="text-sm text-muted-foreground/80 max-w-sm mx-auto leading-relaxed">
+                                Waiting for high-confidence setups to align.
+                              </p>
+                            </div>
+                            <div className="pt-2">
+                              {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+                              <button
+                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2 font-medium"
+                                onClick={() => (window as any).document.getElementById('scan-trigger')?.click()}
+                              >
+                                <Zap className="h-4 w-4 text-primary" />
+                                Scan Market
+                              </button>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      activeSignals.map((signal) => (
+                        <SignalRow
+                          key={signal.id}
+                          signal={signal}
+                          isLocked={!checkSignalAccess(signal)}
+                          onDelete={handleDelete}
+                        />
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+              <TabsContent value="closed" className="m-0">
+                <Table>
+                  <TableHeader className="bg-black/5 dark:bg-black/20 border-b border-black/5 dark:border-white/5">
+                    <TableRow className="hover:bg-transparent border-0">
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-6 h-12">Asset</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Direction</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Entry</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Target</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Stop</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Result</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Closed</TableHead>
+                      <TableHead className="h-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {closedSignals.map((signal) => (
                       <SignalRow
                         key={signal.id}
                         signal={signal}
                         isLocked={!checkSignalAccess(signal)}
                         onDelete={handleDelete}
                       />
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TabsContent>
-            <TabsContent value="closed" className="m-0">
-              <Table>
-                <TableHeader className="bg-black/5 dark:bg-black/20 border-b border-black/5 dark:border-white/5">
-                  <TableRow className="hover:bg-transparent border-0">
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-6 h-12">Asset</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Direction</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Entry</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Target</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Stop</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Result</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Closed</TableHead>
-                    <TableHead className="h-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {closedSignals.map((signal) => (
-                    <SignalRow
-                      key={signal.id}
-                      signal={signal}
-                      isLocked={!checkSignalAccess(signal)}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </TabsContent>
-          </CardContent>
-        </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Mobile Grid View */}
+        <div className="md:hidden">
+          <TabsContent value="active" className="m-0 mt-4">
+            {activeSignals.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center bg-card/50 rounded-xl border border-dashed border-border">
+                <Activity className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground">No active signals</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {activeSignals.map((signal) => (
+                  <div key={signal.id} className="relative"> {/* Wrapper for potential tap targets */}
+                    <SignalCard signal={signal} compact={true} />
+                    {/* Delete button overlay for mobile admin/management if needed, or rely on card details */}
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="closed" className="m-0 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {closedSignals.map((signal) => (
+                <SignalCard key={signal.id} signal={signal} compact={true} />
+              ))}
+            </div>
+          </TabsContent>
+        </div>
+
       </Tabs>
     </div>
   )
