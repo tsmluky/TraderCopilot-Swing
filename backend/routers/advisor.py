@@ -43,7 +43,7 @@ class ChatRequest(BaseModel):
 
 # --- Smart Context Logic ---
 TOKEN_ALIAS_MAP = {
-    "BTC": "BTC", "BITCOIN": "BTC", "BITCOIN": "BTC", "BITCOIN": "BTC", # Common
+    "BTC": "BTC", "BITCOIN": "BTC", # Common
     "ETH": "ETH", "ETHER": "ETH", "ETHEREUM": "ETH", "ETHERIUM": "ETH",
     "SOL": "SOL", "SOLANA": "SOL",
     "BNB": "BNB", "BINANCE": "BNB", "BSC": "BNB",

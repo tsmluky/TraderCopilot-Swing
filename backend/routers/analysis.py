@@ -16,7 +16,7 @@ from core.trial_policy import assert_trial_active
 from core.timeframe_policy import assert_timeframe_allowed, normalize_timeframe
 from core.token_policy import assert_token_allowed, normalize_token
 
-from indicators.market import get_market_data
+
 
 # Legacy LITE heuristics (kept for PRO context & backward compatibility)
 

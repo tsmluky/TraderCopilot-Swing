@@ -2,8 +2,6 @@
 import logging
 import asyncio
 import threading
-import asyncio
-import threading
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -267,10 +265,6 @@ async def on_startup():
             # === PATCH: Signals Table (Independent Check) ===
             try:
                 # Check if is_saved exists
-                sql_check_sig = text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_name='signals' AND column_name='is_saved'"
-                )
                 # SQLite fallback: PRAGMA table_info(signals)
                 # But generic approach: Try selecting it.
                 # Simplest for SQLite: Just try ADD COLUMN, catch 'duplicate column' error.
@@ -285,7 +279,7 @@ async def on_startup():
                 conn.execute(text("ALTER TABLE signals ADD COLUMN is_saved INTEGER DEFAULT 0"))
                 conn.commit()
                 LOG.info("Signals Schema Patch APPLIED (is_saved added).")
-            except Exception as e:
+            except Exception:
                 # Likely "duplicate column name" -> It exists.
                 conn.rollback()
                 # LOG.info(f"Signals Schema Patch skipped (likely exists): {e}")

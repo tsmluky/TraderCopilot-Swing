@@ -111,7 +111,7 @@ def get_ohlcv_data(
                             return ohlcv, source_id
                         return ohlcv
                         
-                except Exception as e:
+                except Exception:
                     # captured by _fetch_worker print
                     continue 
         except Exception as e:

@@ -67,7 +67,9 @@ def call_llm(
         default_max_tokens = int(os.getenv("GEMINI_MAX_OUTPUT_ADVISOR", "1000"))
 
     # 2. Build URL
-    url = GEMINI_API_URL_TEMPLATE.format(model=model_name)
+    # url = GEMINI_API_URL_TEMPLATE.format(model=model_name)
+    # Note: url was unused here as we reconstruct it in the retry loop below.
+    # Leaving logic structure but removing assignment.
     
     # 3. Format Parameters
     generation_config = {

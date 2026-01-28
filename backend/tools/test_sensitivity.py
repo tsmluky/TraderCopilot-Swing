@@ -28,7 +28,7 @@ def test_sensitivity():
     }
 
     print(f"\n{'='*60}")
-    print(f"RUNNING SCANNER SENSITIVITY TEST (Thresholds Relaxed)")
+    print("RUNNING SCANNER SENSITIVITY TEST (Thresholds Relaxed)")
     print(f"{'='*60}\n")
     print(f"{'TOKEN':<8} {'TF':<5} {'TYPE':<10} {'CONFidence':<10} {'ITEMS':<5} {'RATIONALE'}")
     print("-" * 100)
@@ -58,7 +58,8 @@ def test_sensitivity():
                 results["total"] += 1
                 
                 wl_count = len(signal.watchlist) if signal.watchlist else 0
-                print(f"{t:<8} {tf:<5} {res_type:<10} {signal.confidence*100:>5.1f}%     {wl_count:<5} {signal.rationale[:50]}...")
+                print(f"{t:<8} {tf:<5} {res_type:<10} {signal.confidence*100:>5.1f}%     "
+                      f"{wl_count:<5} {signal.rationale[:50]}...")
 
             except Exception as e:
                 print(f"Error testing {t} {tf}: {e}")

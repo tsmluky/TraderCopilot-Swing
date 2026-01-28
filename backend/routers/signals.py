@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from database import get_db
 # from models_db import Signal as SignalDB, User
-from models_db import Signal, User, Signal as SignalDB
+from models_db import Signal, User
 from routers.auth_new import get_current_user
 from core.signal_logger import log_signal
 from core.schemas import Signal as SignalSchema

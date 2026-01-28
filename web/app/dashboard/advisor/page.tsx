@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { Send, Sparkles, Bot, User, Terminal, X } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,7 +29,32 @@ const suggestedQuestions = [
   'What are the key support levels for BNB?',
 ]
 
-export default function AdvisorPage() {
+// Componente hijo para manejar params con Suspense
+function AdvisorContextManager({ onSignalDetected }: { onSignalDetected: (sig: any) => void }) {
+  const searchParams = useSearchParams()
+  const signalId = searchParams.get('signalId')
+
+  useEffect(() => {
+    if (signalId) {
+      const fetchContext = async () => {
+        try {
+          const sig = await signalsService.getById(signalId)
+          if (sig) {
+            onSignalDetected(sig)
+          }
+        } catch (e) {
+          console.error("Failed to fetch context signal", e)
+          toast.error("Could not load signal context")
+        }
+      }
+      fetchContext()
+    }
+  }, [signalId, onSignalDetected])
+
+  return null
+}
+
+function AdvisorContent() {
   const { canAccessAdvisor, user } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -43,42 +68,25 @@ export default function AdvisorPage() {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Context Logic
-  const searchParams = useSearchParams()
-  const signalId = searchParams.get('signalId')
   const [activeSignal, setActiveSignal] = useState<any>(null)
 
-  useEffect(() => {
-    if (signalId) {
-      const fetchContext = async () => {
-        try {
-          const sig = await signalsService.getById(signalId)
-          if (sig) {
-            setActiveSignal(sig)
-            // Proactive greeting upgrade
-            setMessages(prev => {
-              const hasContextGreeting = prev.some(m => m.id === 'context-greeting')
-              if (hasContextGreeting) return prev
+  const handleSignalDetected = (sig: any) => {
+    setActiveSignal(sig)
+    setMessages(prev => {
+      const hasContextGreeting = prev.some(m => m.id === 'context-greeting')
+      if (hasContextGreeting) return prev
 
-              return [
-                ...prev,
-                {
-                  id: 'context-greeting',
-                  role: 'assistant',
-                  content: `I see you want to discuss the **${sig.token} ${sig.type}** signal.\n\nEntry: $${sig.entryPrice} | Target: $${sig.targetPrice}\n\nHow can I assist you with this setup?`, // Explicit context acknowledgement
-                  timestamp: new Date()
-                }
-              ]
-            })
-          }
-        } catch (e) {
-          console.error("Failed to fetch context signal", e)
-          toast.error("Could not load signal context")
+      return [
+        ...prev,
+        {
+          id: 'context-greeting',
+          role: 'assistant',
+          content: `I see you want to discuss the **${sig.token} ${sig.type}** signal.\n\nEntry: $${sig.entryPrice} | Target: $${sig.targetPrice}\n\nHow can I assist you with this setup?`,
+          timestamp: new Date()
         }
-      }
-      fetchContext()
-    }
-  }, [signalId])
+      ]
+    })
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -154,6 +162,12 @@ export default function AdvisorPage() {
 
   return (
     <div className="flex h-[calc(100vh-100px)] flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+      {/* Suspense Wrapper for SearchParams */}
+      <Suspense fallback={null}>
+        <AdvisorContextManager onSignalDetected={handleSignalDetected} />
+      </Suspense>
+
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
@@ -295,5 +309,13 @@ export default function AdvisorPage() {
         </div>
       </Card>
     </div>
+  )
+}
+
+export default function AdvisorPage() {
+  return (
+    <Suspense fallback={<div>Loading Advisor...</div>}>
+      <AdvisorContent />
+    </Suspense>
   )
 }
