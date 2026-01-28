@@ -35,9 +35,9 @@ export function CopilotFeatures() {
 
                     {/* FEATURE 1: Instant Telegram Alerts (The "Action" side) */}
                     <SpotlightCard className="bg-zinc-900/50 border-white/10 overflow-hidden group" spotlightColor="rgba(168, 85, 247, 0.15)">
-                        <div className="p-8 md:p-12 relative min-h-[500px] flex flex-col">
+                        <div className="p-6 md:p-12 relative min-h-[500px] flex flex-col">
                             {/* Decorative Mobile Frame mock */}
-                            <div className="absolute top-12 right-12 w-64 md:w-72 bg-black/90 border border-zinc-800 rounded-3xl shadow-2xl rotate-[-5deg] group-hover:rotate-0 transition-transform duration-700 ease-out z-10 p-4">
+                            <div className="relative md:absolute md:top-12 md:right-12 mx-auto mb-8 md:mb-0 w-64 md:w-72 bg-black/90 border border-zinc-800 rounded-3xl shadow-2xl rotate-[-5deg] group-hover:rotate-0 transition-transform duration-700 ease-out z-10 p-4">
                                 {/* Notch */}
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 h-6 w-24 bg-black rounded-b-xl z-20" />
 
@@ -94,10 +94,10 @@ export function CopilotFeatures() {
 
                     {/* FEATURE 2: AI Advisor Chat (The "Intelligence" side) */}
                     <SpotlightCard className="bg-zinc-900/50 border-white/10 overflow-hidden group" spotlightColor="rgba(99, 102, 241, 0.15)">
-                        <div className="p-8 md:p-12 relative min-h-[500px] flex flex-col">
+                        <div className="p-6 md:p-12 relative min-h-[500px] flex flex-col">
 
                             {/* Chat UI Mock */}
-                            <div className="absolute top-12 left-12 w-full max-w-md bg-[#09090b] border border-zinc-800 rounded-tl-3xl rounded-bl-3xl shadow-2xl z-10 p-6 opacity-90 group-hover:translate-x-2 transition-transform duration-700">
+                            <div className="relative md:absolute md:top-12 md:left-12 mx-auto mb-8 md:mb-0 w-full max-w-md bg-[#09090b] border border-zinc-800 rounded-tl-3xl rounded-bl-3xl shadow-2xl z-10 p-6 opacity-90 group-hover:translate-x-2 transition-transform duration-700">
                                 {/* AI Message */}
                                 <div className="flex gap-4 mb-6">
                                     <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(99,102,241,0.5)]">
