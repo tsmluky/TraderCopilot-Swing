@@ -24,6 +24,11 @@ def send_recovery_email(to_email: str, reset_token: str):
     
     # Construct Link
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    print(f"[EMAIL DEBUG] resolving FRONTEND_URL: {frontend_url}")
+    
+    if "localhost" in frontend_url and os.getenv("RAILWAY_ENVIRONMENT"):
+         print("⚠️ WARNING: FRONTEND_URL is localhost in a Railway Environment! Password links will be broken.")
+
     reset_link = f"{frontend_url}/reset-password?token={reset_token}"
     
     subject = "TraderCopilot - Reset Your Password"

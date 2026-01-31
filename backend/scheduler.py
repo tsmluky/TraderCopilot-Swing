@@ -55,6 +55,15 @@ def setup_worker_logging() -> logging.Logger:
 
 LOG = setup_worker_logging()
 
+# Global Instance (for import by main.py if needed)
+try:
+    scheduler_instance = StrategyScheduler()
+except Exception as e:
+    LOG.error(f"Failed to instantiate global StrategyScheduler: {e}")
+    scheduler_instance = None
+
+
+
 # -------------------------------------------------------------------------
 # Utils
 # -------------------------------------------------------------------------
@@ -329,32 +338,45 @@ class StrategyScheduler:
                 continue
 
             # Core Loop
-            now = datetime.utcnow()
-            tasks = self.get_execution_tasks(now)
-            
-            if tasks:
-                LOG.info("Executing %d eligible tasks...", len(tasks))
-                
-            for task in tasks:
-                # Mark run time
-                self.last_run[task["key"]] = now
-                
-                # Execute
-                signals = self.execute_task(task)
-                
-                # Persist
-                self.process_and_persist_signals(signals, task)
-
-            # === VALIDATION STEP ===
             try:
+                now = datetime.utcnow()
+                tasks = self.get_execution_tasks(now)
+                
+                if tasks:
+                    LOG.info("Executing %d eligible tasks...", len(tasks))
+                    
+                for task in tasks:
+                    # Mark run time
+                    self.last_run[task["key"]] = now
+                    
+                    # Execute
+                    signals = self.execute_task(task)
+                    
+                    # Persist
+                    self.process_and_persist_signals(signals, task)
+
+                # === VALIDATION STEP ===
+                
                 db_val = SessionLocal()
-                from core.signal_evaluator import evaluate_pending_signals
-                validated_count = evaluate_pending_signals(db_val)
-                if validated_count > 0:
-                    LOG.info(f"Validator: Updated {validated_count} signals (TP/SL/Timeout)")
-                db_val.close()
-            except Exception as e:
-                LOG.error(f"Validator failed: {e}")
+                try:
+                    from core.signal_evaluator import evaluate_pending_signals
+                    validated_count = evaluate_pending_signals(db_val)
+                    if validated_count > 0:
+                        LOG.info(f"Validator: Updated {validated_count} signals (TP/SL/Timeout)")
+                except Exception as e:
+                    LOG.error(f"Validator failed: {e}")
+                finally:
+                    db_val.close()
+
+                # Heartbeat (approx every 10 mins if loop is 60s)
+                # Just log "Alive" occasionally to prove we aren't stuck
+                if int(time.time()) % 600 < self.loop_interval + 5:
+                     LOG.info(f"❤️ Scheduler Heartbeat - Active | Last Check: {now.isoformat()}")
+
+            except Exception as main_e:
+                LOG.exception(f"CRITICAL: Scheduler Main Loop Crash prevented: {main_e}")
+                # Sleep a bit longer to let system recover (e.g. DB connectivity)
+                time.sleep(10)
 
             time.sleep(self.loop_interval)
 

@@ -47,7 +47,10 @@ def evaluate_pending_signals(db: Session) -> int:
     # 3. Evaluate by Token
     for token, signals in signals_by_token.items():
         current_price = get_current_price(token)
+        print(f"[VALIDATOR] Checking {token}: Price={current_price}, Pending Signals={len(signals)}")
+        
         if not current_price or current_price <= 0:
+            print(f"[VALIDATOR] ⚠️ Skipped {token} (No Price Data)")
             continue
 
         for sig in signals:
@@ -121,16 +124,24 @@ def evaluate_pending_signals(db: Session) -> int:
                 new_evaluations_count += 1
 
                 # Update Strategy Stats
-                # TODO: Re-enable when _update_strategy_stats is implemented
-                # if sig.strategy_id:
-                #     _update_strategy_stats(db, sig.strategy_id)
+                if sig.strategy_id:
+                     _update_strategy_stats(db, sig.strategy_id)
 
     db.commit()
     return new_evaluations_count
+
+
+def _update_strategy_stats(db: Session, strategy_id: str):
     """
     Recalculates Win Rate for the Persona (StrategyConfig).
     """
     try:
+        # Count total signals for this logic
+        # We assume strategy_id in signal matches the logic ID or we aggregate globally for MVP
+        
+        # For now, let's update the Global Strategy Config (single persona) 
+        # based on ALL signals to populate the dashboard "Win Rate" card.
+        
         total = (
             db.query(Signal)
             .join(SignalEvaluation)
@@ -139,36 +150,19 @@ def evaluate_pending_signals(db: Session) -> int:
         wins = (
             db.query(Signal)
             .join(SignalEvaluation)
+            .filter(SignalEvaluation.result == "WIN")
             .count()
         )
 
-        # Calculate Total PnL (Sum of R-Multiples)
-        pnl_r_sum = 0.0
-        evals = (
-            db.query(SignalEvaluation)
-            .join(Signal)
-            .all()
-        )
-        for e in evals:
-            if e.pnl_r:
-                pnl_r_sum += e.pnl_r
-
+        win_rate = 0.0
         if total > 0:
             win_rate = (wins / total) * 100  # Store as 0-100
 
-            # Upsert config
-            config = (
-                db.query(StrategyConfig)
-                .first()
-            )
-            if config:
-                config.win_rate = win_rate
-                config.total_signals = total
-                # Do NOT overwrite expected_roi with realized PnL.
-                # Expected ROI is a static backtest metric.
-                # Realized PnL should be calculated on the fly or stored in a new column.
-
+        # Upsert config
+        config = db.query(StrategyConfig).first()
+        if config:
+            config.win_rate = win_rate
+            config.total_signals = total
+            
     except Exception as e:
-        pass
-
-
+        print(f"Stats update failed: {e}")

@@ -233,11 +233,23 @@ def get_market_summary(symbols: List[str]) -> List[Dict[str, Any]]:
 def get_current_price(symbol: str) -> Optional[float]:
     """
     Obtiene el precio actual de un símbolo.
+    Fallback to Ticker/Summary if OHLCV fails.
     """
+    # 1. Try OHLCV (Best source)
     try:
         data = get_ohlcv_data(symbol, limit=1)
         if data:
             return data[-1]["close"]
     except Exception:
         pass
+
+    # 2. Try Ticker/Summary (Fallback)
+    try:
+        summary = get_market_summary([symbol])
+        for item in summary:
+            if item["symbol"] == symbol.upper():
+                return item["price"]
+    except Exception:
+        pass
+        
     return None
