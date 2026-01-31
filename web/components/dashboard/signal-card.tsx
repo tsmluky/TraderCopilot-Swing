@@ -163,7 +163,7 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
 
       {/* Overlay for Closed/Evaluated Signals to dim them */}
       {(signal.evaluation === 'evaluated' || signal.status === 'CLOSED' || (signal.pnl !== undefined)) && (
-        <div className="absolute inset-0 bg-background/40 backdrop-grayscale-[0.5] pointer-events-none z-10" />
+        <div className="absolute inset-0 bg-background/60 backdrop-grayscale z-10" />
       )}
 
       {/* Header */}
@@ -280,7 +280,24 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
           <span>{timeAgo(signal.timestamp)}</span>
         </div>
 
+        {/* Source Badge (New) */}
         <div className="flex items-center gap-2">
+          {/* Show Source: Strategy vs Scanner */}
+          {signal.source && (
+            <Badge variant="outline" className={cn(
+              "text-[9px] px-1.5 py-0 h-4 border-0",
+              signal.source.toLowerCase().includes('manual') || signal.source.toLowerCase().includes('scanner')
+                ? "bg-purple-500/10 text-purple-500"
+                : "bg-indigo-500/10 text-indigo-500"
+            )}>
+              {signal.source.toLowerCase().includes('manual') || signal.source.toLowerCase().includes('scanner') ? (
+                <span className="flex items-center gap-1"><Zap className="h-2 w-2" /> Scanner</span>
+              ) : (
+                <span className="flex items-center gap-1"><Activity className="h-2 w-2" /> Strategy</span>
+              )}
+            </Badge>
+          )}
+
           <Button
             variant="ghost"
             size="icon"
@@ -291,7 +308,7 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
             <MessageSquare className="h-3.5 w-3.5" />
           </Button>
 
-          {signal.status === 'ACTIVE' && (
+          {(signal.status === 'ACTIVE' || signal.status === 'WATCH' || signal.status === 'CREATED') && (
             <span className="flex items-center gap-1 text-[10px] font-bold text-success uppercase tracking-wider">
               <span className="relative flex h-1.5 w-1.5 ">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
