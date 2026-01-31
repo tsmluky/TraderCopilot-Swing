@@ -45,7 +45,6 @@ def get_ohlcv_data(
     exchanges_config = [
         {"id": "kraken", "class": ccxt.kraken, "timeout": 5000},
         {"id": "kucoin", "class": ccxt.kucoin, "timeout": 5000},
-        {"id": "bybit", "class": ccxt.bybit, "timeout": 5000},
     ]
 
     def _fetch_worker(cfg):

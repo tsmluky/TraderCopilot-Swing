@@ -203,6 +203,10 @@ class MeanReversionBollinger:
                         sl=round(sl, 6),
                         confidence=conf,
                         rationale=rationale,
+                        source="LITE",
+                        mode=self.META.mode,
+                        strategy_id=self.META.id,
+                        timeframe=tf,
                         extra={
                             "setup": "BB Reversion",
                             "rsi": round(rsi, 1),
@@ -243,6 +247,10 @@ class MeanReversionBollinger:
                         sl=round(sl, 6),
                         confidence=conf,
                         rationale=rationale,
+                        source="LITE",
+                        mode=self.META.mode,
+                        strategy_id=self.META.id,
+                        timeframe=tf,
                         extra={
                             "setup": "BB Reversion",
                             "rsi": round(rsi, 1),

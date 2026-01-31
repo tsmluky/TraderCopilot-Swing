@@ -146,7 +146,7 @@ class StrategyConfig(Base):
     total_signals = Column(Integer, default=0)
     win_rate = Column(Float, default=0.0)
 
-    params_json = Column(Text, nullable=True)
+    # params_json = Column(Text, nullable=True)
 
 
 

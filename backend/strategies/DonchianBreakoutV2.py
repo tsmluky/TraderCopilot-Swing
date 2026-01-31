@@ -199,6 +199,10 @@ class DonchianBreakoutV2:
                         sl=round(sl, 6),
                         confidence=conf,
                         rationale=rationale,
+                        source="LITE",
+                        mode=self.META.mode,
+                        strategy_id=self.META.id,
+                        timeframe=timeframe,
                         extra={
                             "setup": "Donchian Breakout + RSI",
                             "trend": "Bullish",
@@ -236,6 +240,10 @@ class DonchianBreakoutV2:
                         sl=round(sl, 6),
                         confidence=conf,
                         rationale=rationale,
+                        source="LITE",
+                        mode=self.META.mode,
+                        strategy_id=self.META.id,
+                        timeframe=timeframe,
                         extra={
                             "setup": "Donchian Breakout + RSI",
                             "trend": "Bearish",
@@ -244,6 +252,7 @@ class DonchianBreakoutV2:
                         },
                     )
                 )
+        return signals
     def analyze_watchlist(
         self,
         token: str,
