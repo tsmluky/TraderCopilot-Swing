@@ -102,25 +102,42 @@ class StrategyScheduler:
         self.dedupe_cache: Dict[str, datetime] = {}
         
     def acquire_lock(self, db: Session) -> bool:
+        """
+        Simple DB-based lock using `acquired_at`.
+        Refactored to match `models_db.SchedulerLock` (id, lock_name, acquired_at).
+        """
         now = datetime.utcnow()
-        lock = db.query(SchedulerLock).filter(
-            SchedulerLock.lock_name == "main_scheduler"
-        ).first()
-        if not lock:
-            lock = SchedulerLock(
-                lock_name="main_scheduler",
-                owner_id=self.lock_id,
-                expires_at=now + timedelta(seconds=self.lock_ttl)
-            )
-            db.add(lock)
-            db.commit()
-            return True
-        if lock.expires_at < now or lock.owner_id == self.lock_id:
-            lock.owner_id = self.lock_id
-            lock.expires_at = now + timedelta(seconds=self.lock_ttl)
-            db.commit()
-            return True
-        return False
+        try:
+            lock = db.query(SchedulerLock).filter(
+                SchedulerLock.lock_name == "main_scheduler"
+            ).with_for_update().first() # Row lock if possible
+
+            if not lock:
+                lock = SchedulerLock(
+                    lock_name="main_scheduler",
+                    acquired_at=now
+                )
+                db.add(lock)
+                db.commit()
+                return True
+            
+            # Check expiration
+            expiration = lock.acquired_at + timedelta(seconds=self.lock_ttl)
+            
+            if now > expiration:
+                # Lock is stale (dead worker) OR I am refreshing my own lock (if logic permits)
+                # In this simple model without owner_id, we just take it if expired.
+                lock.acquired_at = now
+                db.commit()
+                return True
+            
+            # Locked and fresh
+            return False
+            
+        except Exception as e:
+            LOG.error(f"Lock acquisition failed: {e}")
+            db.rollback()
+            return False
 
     def get_execution_tasks(self, now: datetime) -> List[Dict[str, Any]]:
         """
@@ -325,8 +342,8 @@ class StrategyScheduler:
             has_lock = False
             try:
                 has_lock = self.acquire_lock(db)
-            except Exception:
-                pass
+            except Exception as e:
+                LOG.error(f"Lock loop error: {e}")
             finally:
                 db.close()
 
