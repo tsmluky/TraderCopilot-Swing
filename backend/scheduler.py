@@ -56,11 +56,8 @@ def setup_worker_logging() -> logging.Logger:
 LOG = setup_worker_logging()
 
 # Global Instance (for import by main.py if needed)
-try:
-    scheduler_instance = StrategyScheduler()
-except Exception as e:
-    LOG.error(f"Failed to instantiate global StrategyScheduler: {e}")
-    scheduler_instance = None
+# Defined at the end of file to ensure class is loaded.
+
 
 
 
@@ -380,6 +377,15 @@ class StrategyScheduler:
 
             time.sleep(self.loop_interval)
 
+# Global Instance (for import by main.py if needed)
+try:
+    scheduler_instance = StrategyScheduler()
+except Exception as e:
+    LOG.error(f"Failed to instantiate global StrategyScheduler: {e}")
+    scheduler_instance = None
+
 if __name__ == "__main__":
-    scheduler = StrategyScheduler()
-    scheduler.run()
+    if scheduler_instance:
+        scheduler_instance.run()
+    else:
+        LOG.error("Cannot run scheduler: Instance failed to initialize.")
