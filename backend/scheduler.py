@@ -173,7 +173,7 @@ class StrategyScheduler:
         impl_map = {
             "TITAN_BREAKOUT": "donchian_v2",
             "FLOW_MASTER": "trend_following_native_v1",
-            "MEAN_REVERSION": "mean_reversion_rsi_v1"
+            "MEAN_REVERSION": "mean_reversion_v1"
         }
         impl_id = impl_map.get(task["strategy_code"], "").lower()
         
