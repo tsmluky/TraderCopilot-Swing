@@ -39,12 +39,13 @@ CSV_HEADERS = [
 ]
 
 
-def log_signal(signal: Signal) -> Optional[int]:
+def log_signal(signal: Signal, db_session: Any = None) -> Optional[int]:
     """
     Guarda una señal en DB (Canonical) y si tiene éxito, en CSV.
 
     Args:
         signal: Instancia del modelo Signal unificado
+        db_session: (Opcional) Sesión SQLalchemy existente para reutilizar.
 
     Returns:
         bool: True si se insertó una NUEVA señal, False si era duplicada o falló.
@@ -54,7 +55,7 @@ def log_signal(signal: Signal) -> Optional[int]:
     
     # === 1. Persistir en DB (CANONICAL SOURCE OF TRUTH) ===
     # Si falla dedupe aquí, abortamos todo lo demás.
-    saved_id, is_new = _write_to_db(signal, mode)
+    saved_id, is_new = _write_to_db(signal, mode, db_session=db_session)
     
     if not saved_id:
         return False
@@ -66,9 +67,6 @@ def log_signal(signal: Signal) -> Optional[int]:
     # === 2. Persistir en CSV (Solo si es nueva) ===
     token_lower = signal.token.lower()
     _write_to_csv(signal, mode, token_lower)
-    
-    # === 3. Push Notification (Mobile) ===
-    _send_push_notification(signal)
     
     # === 3. Push Notification (Mobile) ===
     _send_push_notification(signal)
@@ -107,7 +105,7 @@ def _snap_to_grid(dt: datetime, tf_str: str) -> datetime:
     return dt
 
 
-def _write_to_db(signal: Signal, mode: str) -> tuple[Optional[int], bool]:
+def _write_to_db(signal: Signal, mode: str, db_session: Any = None) -> tuple[Optional[int], bool]:
     """
     Retorna (id, is_new).
     is_new=True si se hizo INSERT.
@@ -151,7 +149,13 @@ def _write_to_db(signal: Signal, mode: str) -> tuple[Optional[int], bool]:
         if hasattr(signal, "is_saved") and hasattr(db_signal, "is_saved"):
             db_signal.is_saved = getattr(signal, "is_saved")
 
-        db = SessionLocal()
+        if db_session:
+            db = db_session
+            should_close = False
+        else:
+            db = SessionLocal()
+            should_close = True
+
         try:
             db.add(db_signal)
             db.commit()
@@ -176,7 +180,8 @@ def _write_to_db(signal: Signal, mode: str) -> tuple[Optional[int], bool]:
             return None, False
 
         finally:
-            db.close()
+            if should_close:
+                db.close()
 
     except ImportError as imp_err:
         print(f"[DB] ⚠️  Import Error: {imp_err}")

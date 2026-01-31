@@ -85,13 +85,17 @@ def get_signals(
             item["stopLoss"] = item.get("sl")
             item["type"] = item.get("direction", "NEUTRAL").upper() # Ensure UPPERCASE for UI mapping
             
-            # Compute Status
+            # Compute Status & Evaluation
             if s.evaluation:
                 item["status"] = "CLOSED"
+                item["evaluation"] = "evaluated"
+                item["pnl"] = s.evaluation.pnl_r
             elif s.source and "watchlist" in str(s.source).lower():
                 item["status"] = "WATCH"
+                item["evaluation"] = "pending"
             else:
                 item["status"] = "ACTIVE"
+                item["evaluation"] = "pending"
                 
             response.append(item)
             
@@ -227,13 +231,17 @@ def get_signal_by_id(
         item["stopLoss"] = item.get("sl")
         item["type"] = item.get("direction", "NEUTRAL").upper()
         
-        # Compute Status
+        # Compute Status & Evaluation
         if s.evaluation:
             item["status"] = "CLOSED"
+            item["evaluation"] = "evaluated"
+            item["pnl"] = s.evaluation.pnl_r
         elif s.source and "watchlist" in str(s.source).lower():
             item["status"] = "WATCH"
+            item["evaluation"] = "pending"
         else:
             item["status"] = "ACTIVE"
+            item["evaluation"] = "pending"
             
         return item
         

@@ -15,50 +15,61 @@ interface SignalCardProps {
   compact?: boolean
 }
 
-function EvaluationBadge({ status }: { status: EvaluationStatus }) {
-  const config = {
-    evaluated: {
-      label: 'Evaluated',
-      icon: Check,
-      className: 'badge-success',
-    },
-    pending: {
-      label: 'Pending',
-      icon: Loader2,
-      className: 'bg-warning-muted text-warning border-warning/20',
-      animate: true,
-    },
-    failed: {
-      label: 'Failed',
-      icon: X,
-      className: 'bg-short-muted text-short border-short/20',
-    },
+function EvaluationBadge({ status, pnl }: { status: EvaluationStatus | string, pnl?: number }) {
+  // Handle tracked/pending signals (or undefined status)
+  if (!status || status === 'pending' || status === 'ACTIVE') {
+    return (
+      <span className={cn(
+        'inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider',
+        'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+      )}>
+        <Loader2 className="h-2.5 w-2.5 animate-spin" />
+        Tracking
+      </span>
+    )
   }
 
+  // Handle Evaluated Signals with PnL
+  if (status === 'evaluated' || status === 'CLOSED') {
+    if (typeof pnl === 'number') {
+      const isWin = pnl > 0
+      const isLoss = pnl < 0
+      const isBE = pnl === 0
 
+      let colorClass = 'bg-gray-500/10 text-gray-500 border-gray-500/20'
+      let label = 'BE'
+      let Icon = Check
 
-  const badgeConfig = config[status as keyof typeof config]
+      if (isWin) {
+        colorClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+        label = `WIN +${pnl}R`
+        Icon = TrendingUp
+      } else if (isLoss) {
+        colorClass = 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+        label = `LOSS ${pnl}R`
+        Icon = ArrowDownRight
+      }
 
-  if (!badgeConfig) {
-    return null
+      return (
+        <span className={cn(
+          'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider',
+          colorClass
+        )}>
+          <Icon className="h-2.5 w-2.5" />
+          {label}
+        </span>
+      )
+    }
+    // Fallback if no PnL
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-secondary text-muted-foreground border-border">
+        <Check className="h-2.5 w-2.5" />
+        Evaluated
+      </span>
+    )
   }
 
-  const { label, icon: Icon, className, animate } = badgeConfig as {
-    label: string
-    icon: any
-    className: string
-    animate?: boolean
-  }
-
-  return (
-    <span className={cn(
-      'inline-flex items-center gap-1 rounded-md border px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider',
-      className
-    )}>
-      <Icon className={cn('h-2.5 w-2.5', animate && 'animate-spin')} />
-      {label}
-    </span>
-  )
+  return null
 }
 
 export function SignalCard({ signal, compact = false }: SignalCardProps) {
@@ -150,8 +161,13 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
         isLong ? 'bg-gradient-to-r from-transparent via-emerald-500 to-transparent' : 'bg-gradient-to-r from-transparent via-rose-500 to-transparent'
       )} />
 
+      {/* Overlay for Closed/Evaluated Signals to dim them */}
+      {(signal.evaluation === 'evaluated' || signal.status === 'CLOSED' || (signal.pnl !== undefined)) && (
+        <div className="absolute inset-0 bg-background/40 backdrop-grayscale-[0.5] pointer-events-none z-10" />
+      )}
+
       {/* Header */}
-      <div className="p-3 pb-2">
+      <div className="p-3 pb-2 relative z-20">
         <div className="flex items-start justify-between gap-1">
           {/* Token info */}
           <div className="flex items-center gap-2 overflow-hidden">
@@ -187,7 +203,7 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
               {signal.type}
             </span>
             <div className="flex justify-end">
-              <EvaluationBadge status={signal.evaluation} />
+              <EvaluationBadge status={signal.evaluation || 'pending'} pnl={signal.pnl} />
             </div>
           </div>
         </div>

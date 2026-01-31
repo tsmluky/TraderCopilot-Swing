@@ -118,16 +118,25 @@ function SignalRow({ signal, isLocked, onDelete }: { signal: Signal; isLocked: b
         {isClosed ? (
           <div className={cn(
             "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border",
-            signal.pnl !== undefined && signal.pnl >= 0
+            signal.pnl !== undefined && signal.pnl > 0
               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-500"
-              : "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-500"
+              : signal.pnl !== undefined && signal.pnl < 0
+                ? "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-500"
+                : "bg-gray-500/10 border-gray-500/20 text-gray-500"
           )}>
-            {signal.pnl !== undefined && signal.pnl >= 0 ? (
-              <CheckCircle className="h-3.5 w-3.5" />
+            {signal.pnl !== undefined && signal.pnl > 0 ? (
+              <TrendingUp className="h-3.5 w-3.5" />
+            ) : signal.pnl !== undefined && signal.pnl < 0 ? (
+              <ArrowDownRight className="h-3.5 w-3.5" />
             ) : (
-              <XCircle className="h-3.5 w-3.5" />
+              <CheckCircle className="h-3.5 w-3.5" />
             )}
-            {signal.pnl !== undefined ? formatPercent(signal.pnl) : '-'}
+
+            {signal.pnl !== undefined ? (
+              <>
+                {signal.pnl > 0 ? '+' : ''}{signal.pnl}R
+              </>
+            ) : '-'}
           </div>
         ) : (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-500 text-xs font-bold animate-pulse">
