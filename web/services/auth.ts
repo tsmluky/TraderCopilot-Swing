@@ -47,5 +47,19 @@ export const authService = {
             method: "PATCH",
             body: JSON.stringify({ timezone })
         });
+    },
+
+    recoverPassword: async (email: string) => {
+        return apiFetch("/auth/recover", {
+            method: "POST",
+            body: JSON.stringify({ email })
+        });
+    },
+
+    resetPassword: async (token: string, newPassword: string) => {
+        return apiFetch("/auth/reset", {
+            method: "POST",
+            body: JSON.stringify({ token, new_password: newPassword })
+        });
     }
 };
