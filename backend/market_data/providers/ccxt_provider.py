@@ -5,7 +5,7 @@ from typing import List
 from ..models import PriceSnapshot, OHLCVSlice, Candle, Timeframe
 
 # Puedes parametrizar esto desde .env si quieres
-_EXCHANGE_ID = "binance"  # Changed from mexc to binance for better stability
+_EXCHANGE_ID = "kraken"  # Changed to Kraken for US compatibility
 
 # Mapa simple token -> símbolo
 _SYMBOLS = {

@@ -43,7 +43,6 @@ def get_ohlcv_data(
     
     # Priority Exchanges (Concurrent Race)
     exchanges_config = [
-        {"id": "binance", "class": ccxt.binance, "timeout": 5000},
         {"id": "kraken", "class": ccxt.kraken, "timeout": 5000},
         {"id": "kucoin", "class": ccxt.kucoin, "timeout": 5000},
         {"id": "bybit", "class": ccxt.bybit, "timeout": 5000},
