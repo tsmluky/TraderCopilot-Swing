@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowUpRight, ArrowDownRight, Lock, Clock, Check, Loader2, X, AlertTriangle, TrendingUp, MessageSquare } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, Lock, Clock, Check, Loader2, X, AlertTriangle, TrendingUp, MessageSquare, Zap, Activity } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/lib/user-context'

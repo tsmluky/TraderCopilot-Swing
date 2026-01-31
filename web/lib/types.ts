@@ -27,6 +27,7 @@ export interface Signal {
   rationale?: string
   indicators?: any
   watchlist?: WatchItem[]
+  source?: string
 }
 
 export interface WatchItem {
