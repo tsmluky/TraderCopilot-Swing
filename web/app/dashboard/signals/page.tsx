@@ -349,7 +349,7 @@ export default function SignalsPage() {
         />
         <StatCard
           label="Net P&L"
-          value={formatPercent(totalPnl)}
+          value={`${totalPnl > 0 ? '+' : ''}${totalPnl.toFixed(2)}R`}
           icon={totalPnl >= 0 ? TrendingUp : TrendingDown}
           colorClass={totalPnl >= 0 ? "from-emerald-500/10 to-emerald-500/5" : "from-rose-500/10 to-rose-500/5"}
           subtext="Cumulative return"
