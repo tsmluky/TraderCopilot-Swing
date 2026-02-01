@@ -1,6 +1,6 @@
 from database import get_db
 from models_db import Signal
-import sys
+
 
 db = next(get_db())
 signals = db.query(Signal).order_by(Signal.timestamp.desc()).limit(5).all()
