@@ -34,7 +34,7 @@ from routers.logs import router as logs_router
 from routers.strategies import router as strategies_router
 from routers.system import router as system_router
 from routers.admin import router as admin_router
-from routers.alerts import router as alerts_router
+
 from routers.advisor import router as advisor_router
 
 from core.entitlements import get_user_entitlements
@@ -130,7 +130,7 @@ app.include_router(strategies_router, prefix="/strategies", tags=["Strategies"])
 app.include_router(system_router, prefix="/system", tags=["System"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 app.include_router(logs_router, prefix="/logs", tags=["Logs"])
-app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"])
+
 app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
 
 from fastapi.responses import FileResponse
@@ -456,7 +456,7 @@ app.include_router(logs_router, prefix="/logs", tags=["Logs"])
 app.include_router(strategies_router, prefix="/strategies", tags=["Strategies"])
 app.include_router(system_router, prefix="/system", tags=["System"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
-app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"])
+
 app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
 
 

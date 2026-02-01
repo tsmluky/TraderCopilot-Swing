@@ -283,7 +283,10 @@ def _send_push_notification(signal: Signal, db_session: Any = None):
                 # Public/System Signal -> DO NOT BROADCAST HERE.
                 # Scheduler handles "Fan-Out" based on Plans/Entitlements.
                 # This prevents double-alerts and respects strict plan filtering.
-                print(f"[TELEGRAM] Signal Logger: Skipping broadcast for System Signal {signal.token}. Scheduler should handle it.")
+                print(
+                    f"[TELEGRAM] Signal Logger: Skipping broadcast for System Signal {signal.token}. "
+                    "Scheduler should handle it."
+                )
                 targets = []
 
             print(f"[TELEGRAM] Broadcasting to {len(targets)} recipients.")
