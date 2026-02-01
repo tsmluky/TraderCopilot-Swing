@@ -31,22 +31,77 @@ async def get_marketplace(
     # 1. Calculate Entitlements / Offerings
     offerings_data = get_user_entitlements(current_user)
     
-    # 2. Enrich with Stats (Win Rate, Signals, etc.) - Dynamic Calculation per Strategy Code?
-    # For MVP, we might show Global Stats per Strategy Code, or per specific Offering ID.
-    # Since existing signals have 'strategy_id' like 'titan_btc_4h', we can try to find stats.
-    # BUT, the new system uses 'strategy_code' and entitlements.
-    # Let's attach basic stats if available, or 0.
+    # 2. Enrich with Stats
+    # We query the DB for each offering to get real metrics.
+    # We aggregate by matching the strategy_id pattern.
     
-    # We'll just return the structure as computed by core/entitlements.
-    # The frontend expects "win_rate" etc. logic? 
-    # The previous code calculated it live. 
-    # For performance, we can skip live calc for now or do a quick aggregation if needed.
-    # Let's keep it lightweight.
-    
-    # Just return raw offering data for now. Frontend will render chips.
-    # If stats are needed, we can query `SignalEvaluation` by strategy_id matching the ID conventions.
-    
+    for offering in offerings_data["offerings"]:
+        stats = _calculate_stats(db, offering["strategy_code"], offering["timeframe"])
+        offering["win_rate"] = stats["win_rate"]
+        offering["total_signals"] = stats["total_signals"]
+        offering["avg_return"] = stats["avg_return"]
+
+    # Also for locked offerings (so users see what they are missing)
+    for offering in offerings_data["locked_offerings"]:
+        stats = _calculate_stats(db, offering["strategy_code"], offering["timeframe"])
+        offering["win_rate"] = stats["win_rate"]
+        offering["total_signals"] = stats["total_signals"]
+        offering["avg_return"] = stats["avg_return"]
+
     return offerings_data
+
+
+def _calculate_stats(db: Session, strategy_code: str, timeframe: str) -> Dict[str, Any]:
+    """
+    Aggregates stats for a given strategy code and timeframe.
+    Matches strategy_id like "{strategy_code}_{timeframe}".
+    e.g. TITAN_BREAKOUT_4H
+    """
+    try:
+        # Construct the exact ID used by Scheduler
+        target_id = f"{strategy_code}_{timeframe}"
+        
+        # 1. Total Signals
+        # We also look for legacy IDs if needed, but for now stick to the new standard.
+        # If the system is fresh, standard is fine.
+        total = db.query(Signal).filter(
+            Signal.strategy_id == target_id,
+            Signal.is_saved == 1
+        ).count()
+        
+        if total == 0:
+            return {"win_rate": "N/A", "total_signals": 0, "avg_return": "0.0"}
+
+        # 2. Win Rate (Evaluated Signals Only)
+        from models_db import SignalEvaluation
+        
+        evals = (
+            db.query(SignalEvaluation)
+            .join(Signal)
+            .filter(Signal.strategy_id == target_id)
+            .all()
+        )
+        
+        if not evals:
+             return {"win_rate": "N/A", "total_signals": total, "avg_return": "0.0"}
+             
+        wins = sum(1 for e in evals if e.result == "WIN")
+        count = len(evals)
+        win_rate = (wins / count * 100) if count > 0 else 0
+        
+        # 3. Avg Return (PnL)
+        pnl_sum = sum(e.pnl_r for e in evals)
+        avg_return = (pnl_sum / count) if count > 0 else 0.0
+
+        return {
+            "win_rate": f"{round(win_rate, 1)}",
+            "total_signals": total,
+            "avg_return": f"{round(avg_return, 1)}"
+        }
+        
+    except Exception as e:
+        print(f"[STATS] Error calculating for {strategy_code}: {e}")
+        return {"win_rate": "N/A", "total_signals": 0, "avg_return": "0.0"}
 
 
 # === Deprecated Endpoints ===

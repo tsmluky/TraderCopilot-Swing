@@ -147,6 +147,7 @@ def _ensure_sqlite_users_columns(engine) -> None:
             "stripe_subscription_id": "VARCHAR",
             "stripe_price_id": "VARCHAR",
             "plan_status": "VARCHAR",
+            "telegram_username": "VARCHAR",
         }
 
         with engine.begin() as conn:

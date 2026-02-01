@@ -280,10 +280,11 @@ def _send_push_notification(signal: Signal, db_session: Any = None):
                 if u and u.telegram_chat_id:
                     targets.append(u.telegram_chat_id)
             else:
-                # Public/System Signal -> Broadcast to all with Chat ID
-                # (Optimizable: Filter by plan/entitlement later)
-                users = db.query(User).filter(User.telegram_chat_id.isnot(None)).all()
-                targets = [u.telegram_chat_id for u in users if u.telegram_chat_id]
+                # Public/System Signal -> DO NOT BROADCAST HERE.
+                # Scheduler handles "Fan-Out" based on Plans/Entitlements.
+                # This prevents double-alerts and respects strict plan filtering.
+                print(f"[TELEGRAM] Signal Logger: Skipping broadcast for System Signal {signal.token}. Scheduler should handle it.")
+                targets = []
 
             print(f"[TELEGRAM] Broadcasting to {len(targets)} recipients.")
             for chat_id in targets:

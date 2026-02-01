@@ -320,6 +320,8 @@ class StrategyScheduler:
         # We use a cache key to avoid spamming the same global signal repeated times 
         # (log_signal handles idempotency DB-side, but duplicate execution might trigger this)
         
+        LOG.info(f"[Fan-Out] Found {len(users)} users for plan {plan}. Sending alerts...")
+
         msg = (
             f"⚡ <b>{plan} ALERT</b>\n"
             f"{'🟢' if sig.direction=='long' else '🔴'} <b>{sig.token} {sig.direction.upper()}</b>\n"
@@ -329,10 +331,17 @@ class StrategyScheduler:
             f"Target: {sig.tp}"
         )
         
+        sent_count = 0
         for u in users:
             # Simple check if user wants alerts? Assuming 'Yes' if ChatID present for MVP.
             # In future: check User preferences.
-            send_telegram(msg, chat_id=u.telegram_chat_id)
+            res = send_telegram(msg, chat_id=u.telegram_chat_id)
+            if res.get("ok"):
+                sent_count += 1
+            else:
+                LOG.error(f"[Fan-Out] Failed to send to {u.id} (Chat {u.telegram_chat_id}): {res}")
+        
+        LOG.info(f"[Fan-Out] Summary: Sent {sent_count}/{len(users)} alerts for {sig.token}.")
 
 
     def run(self):

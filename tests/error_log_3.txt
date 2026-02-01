@@ -1,0 +1,69 @@
+[CONFIG] Loading environment from: C:\Users\lukx\Desktop\TraderCopilot-Swing\backend\.env
+[DB DEBUG] Original URL starts with: sqlite:///./dev_...
+[DB DEBUG] Final URL starts with: sqlite:///./dev_local.db...
+[DB] Using Configured Database
+[SECURITY] SECRET_KEY loaded from environment.
+[LIMITER] WARNING: Using MemoryStorage (Not suitable for multi-worker production).
+
+=== 1. Strategy Stats Verification ===
+Strategy: TITAN_BREAKOUT_4H -> {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+Strategy: FLOW_MASTER_4H -> {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+Strategy: MEAN_REVERSION_1H -> {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+
+=== 2. Telegram Users Verification ===
+Traceback (most recent call last):
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such column: users.telegram_username
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\lukx\Desktop\TraderCopilot-Swing\tests\verify_fixes.py", line 72, in <module>
+    users = verify_telegram_users(db)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lukx\Desktop\TraderCopilot-Swing\tests\verify_fixes.py", line 42, in verify_telegram_users
+    users = db.query(User).filter(User.telegram_chat_id.isnot(None)).all()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2704, in all
+    return self._iter().all()  # type: ignore
+           ^^^^^^^^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2857, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: users.telegram_username
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.hashed_password AS users_hashed_password, users.role AS users_role, users.created_at AS users_created_at, users."plan" AS users_plan, users.plan_expires_at AS users_plan_expires_at, users.billing_provider AS users_billing_provider, users.stripe_customer_id AS users_stripe_customer_id, users.stripe_subscription_id AS users_stripe_subscription_id, users.stripe_price_id AS users_stripe_price_id, users.plan_status AS users_plan_status, users.telegram_chat_id AS users_telegram_chat_id, users.telegram_username AS users_telegram_username 
+FROM users 
+WHERE users.telegram_chat_id IS NOT NULL]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

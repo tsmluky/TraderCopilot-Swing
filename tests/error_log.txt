@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+[CONFIG] Loading environment from: C:\Users\lukx\Desktop\TraderCopilot-Swing\backend\.env
+[DB DEBUG] Original URL starts with: sqlite:///./dev_...
+[DB DEBUG] Final URL starts with: sqlite:///./dev_local.db...
+[DB] Using Configured Database
+  File "C:\Users\lukx\Desktop\TraderCopilot-Swing\tests\verify_fixes.py", line 14, in <module>
+    from routers.strategies import _calculate_stats
+  File "C:\Users\lukx\Desktop\TraderCopilot-Swing\backend\routers\strategies.py", line 14, in <module>
+    from routers.auth_new import get_current_user
+  File "C:\Users\lukx\Desktop\TraderCopilot-Swing\backend\routers\auth_new.py", line 15, in <module>
+    from core.security import (
+  File "C:\Users\lukx\Desktop\TraderCopilot-Swing\backend\core\security.py", line 20, in <module>
+    print("[SECURITY] \u2705 SECRET_KEY loaded from environment.")
+  File "C:\Users\lukx\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 11: character maps to <undefined>
