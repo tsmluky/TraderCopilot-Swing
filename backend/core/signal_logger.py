@@ -282,7 +282,7 @@ def _send_push_notification(signal: Signal, db_session: Any = None):
             else:
                 # Public/System Signal -> Broadcast to all with Chat ID
                 # (Optimizable: Filter by plan/entitlement later)
-                users = db.query(User).filter(User.telegram_chat_id != None).all()
+                users = db.query(User).filter(User.telegram_chat_id.isnot(None)).all()
                 targets = [u.telegram_chat_id for u in users if u.telegram_chat_id]
 
             print(f"[TELEGRAM] Broadcasting to {len(targets)} recipients.")
