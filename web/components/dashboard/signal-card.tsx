@@ -291,30 +291,27 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
                 : "bg-indigo-500/10 text-indigo-500"
             )}>
               {signal.source.toLowerCase().includes('manual') || signal.source.toLowerCase().includes('scanner') ? (
-                <span className="flex items-center gap-1"><Zap className="h-2 w-2" /> Scanner</span>
+                <span className="flex items-center gap-1"><Zap className="h-2 w-2" /> Monitor</span>
               ) : (
                 <span className="flex items-center gap-1">
                   <Activity className="h-2 w-2" />
                   {/* Strategy Name Mapping */}
                   {(() => {
-                    const sid = (signal.strategy_id || '').toLowerCase();
-                    const src = (signal.source || '').toLowerCase();
+                    const sid = (signal.strategy_id || '').toUpperCase();
+                    const src = (signal.source || '').toUpperCase();
 
-                    // --- STRICT MAPPING (No Guesswork) ---
-                    // 1. Titan Breakout (Donchian V2)
-                    if (sid === 'donchian_v2') return 'Titan Breakout';
+                    // --- FLEXIBLE MAPPING ---
+                    // 1. Titan Breakout
+                    if (sid.includes('TITAN') || sid.includes('DONCHIAN')) return 'Titan Breakout';
 
-                    // 2. Flow Master (Trend Following)
-                    if (sid === 'trend_following_native_v1') return 'Flow Master';
+                    // 2. Flow Master
+                    if (sid.includes('FLOW') || sid.includes('TREND')) return 'Flow Master';
 
-                    // 3. Mean Reversion (Bollinger/RSI)
-                    if (sid === 'mean_reversion_v1' || sid === 'mean_reversion_rsi_v1') return 'Mean Reversion';
+                    // 3. Mean Reversion
+                    if (sid.includes('MEAN') || sid.includes('REVERSION')) return 'Mean Reversion';
 
-                    // 4. Market Scanner (Manual/External)
-                    if (src.includes('scanner') || src.includes('manual')) return 'Market Scanner';
-
-                    // 5. Fallback for Legacy/Unknown -> Market Scanner (Safe default)
-                    return 'Market Scanner';
+                    // 4. Fallback -> Monitor
+                    return 'Quant Monitor';
                   })()}
                 </span>
               )}
@@ -330,16 +327,6 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
           >
             <MessageSquare className="h-3.5 w-3.5" />
           </Button>
-
-          {(signal.status === 'ACTIVE' || signal.status === 'WATCH' || signal.status === 'CREATED') && (
-            <span className="flex items-center gap-1 text-[10px] font-bold text-success uppercase tracking-wider">
-              <span className="relative flex h-1.5 w-1.5 ">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
-              </span>
-              Active
-            </span>
-          )}
         </div>
       </div>
     </div>
