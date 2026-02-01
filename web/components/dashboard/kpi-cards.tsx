@@ -11,6 +11,8 @@ export interface KPIData {
   drawdownChange?: number;
   signalsChange?: number;
   totalR: number;
+  wins7d?: number;
+  losses7d?: number;
 }
 
 interface KPICardsProps {
@@ -60,13 +62,14 @@ export function KPICards({ data, isLoading }: KPICardsProps) {
       theme: 'orange'
     },
     {
-      label: 'Total Signals',
-      value: data.last7dSignals.toString(),
-      change: hasSignals && data.signalsChange ? `${data.signalsChange}` : '',
-      changeDirection: (data.signalsChange || 0) >= 0 ? 'up' : 'down' as const,
-      subtext: 'last 7 days',
+      label: 'Weekly Outcomes',
+      value: `${data.wins7d || 0}W / ${data.losses7d || 0}L`,
+      change: '',
+      changeDirection: 'up' as const,
+      subtext: 'wins / losses (7d)',
       icon: Activity,
-      theme: 'purple'
+      theme: 'purple',
+      isCustomValue: true // Flag for custom rendering if needed, though we format string above
     }
   ]
 
@@ -125,9 +128,18 @@ export function KPICards({ data, isLoading }: KPICardsProps) {
 
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black tracking-tight text-foreground tabular-nums">
-                    {kpi.value}
-                  </span>
+                  {kpi.label === 'Weekly Outcomes' ? (
+                    <div className="flex items-baseline gap-2 text-2xl font-black tracking-tight tabular-nums">
+                      <span className="text-emerald-500">{data.wins7d || 0}W</span>
+                      <span className="text-muted-foreground/30 text-lg">/</span>
+                      <span className="text-rose-500">{data.losses7d || 0}L</span>
+                    </div>
+                  ) : (
+                    <span className="text-2xl font-black tracking-tight text-foreground tabular-nums">
+                      {kpi.value}
+                    </span>
+                  )}
+
                   {kpi.change && (
                     <span className={cn("flex items-center text-xs font-bold", kpi.changeDirection === 'up' ? 'text-emerald-600 dark:text-emerald-500' : 'text-rose-600 dark:text-rose-500')}>
                       {kpi.changeDirection === 'up' ? <ArrowUpRight className="h-3 w-3 mr-0.5" /> : <ArrowDownRight className="h-3 w-3 mr-0.5" />}

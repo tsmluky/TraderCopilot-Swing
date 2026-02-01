@@ -44,7 +44,9 @@ export function DashboardOverview() {
         avgReturn: s.signals_evaluated_7d > 0 ? (s.pnl_7d / s.signals_evaluated_7d) : 0, // Real Average R per Trade
         maxDrawdown: 0,
         last7dSignals: s.open_signals || 0,
-        totalR: s.pnl_7d || 0 // Store Total R separately for Performance Card
+        totalR: s.pnl_7d || 0, // Store Total R separately for Performance Card
+        wins7d: s.wins_7d || 0,
+        losses7d: s.losses_7d || 0
       })
 
       // Map Signals

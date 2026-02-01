@@ -415,12 +415,36 @@ def compute_stats_summary(db: Session, user: User):
     q_pnl = apply_filters(q_pnl).filter(SignalEvaluation.evaluated_at >= week_ago)
     pnl_7d = q_pnl.scalar() or 0.0
 
+    # 6) Wins 7d
+    q_wins_7d = db.query(func.count(SignalEvaluation.id)).join(Signal)
+    q_wins_7d = apply_filters(q_wins_7d).filter(
+        SignalEvaluation.evaluated_at >= week_ago,
+        SignalEvaluation.result == "WIN",
+    )
+    wins_7d = q_wins_7d.scalar() or 0
+
+    # 7) Losses 7d
+    q_losses_7d = db.query(func.count(SignalEvaluation.id)).join(Signal)
+    q_losses_7d = apply_filters(q_losses_7d).filter(
+        SignalEvaluation.evaluated_at >= week_ago,
+        SignalEvaluation.result == "LOSS",
+    )
+    losses_7d = q_losses_7d.scalar() or 0
+
+    # 8) Eval 7d (Total evaluated in last 7 days)
+    q_eval_7d = db.query(func.count(SignalEvaluation.id)).join(Signal)
+    q_eval_7d = apply_filters(q_eval_7d).filter(SignalEvaluation.evaluated_at >= week_ago)
+    eval_7d_count = q_eval_7d.scalar() or 0
+
     return {
         "win_rate_24h": round(win_rate_24h, 1),
         "signals_evaluated_24h": int(eval_24h_count),
         "signals_total_evaluated": int(total_eval),
         "open_signals": int(open_signals_count),
         "pnl_7d": round(float(pnl_7d), 2),
+        "wins_7d": int(wins_7d),
+        "losses_7d": int(losses_7d),
+        "signals_evaluated_7d": int(eval_7d_count),
     }
 
 
@@ -439,6 +463,9 @@ def stats_summary(user_id: int, db: Session = Depends(get_db)):
             "signals_total_evaluated": 0,
             "open_signals": 0,
             "pnl_7d": 0.0,
+            "wins_7d": 0,
+            "losses_7d": 0,
+            "signals_evaluated_7d": 0,
         }
 
 

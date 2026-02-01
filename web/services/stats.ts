@@ -7,6 +7,9 @@ export interface DashboardStats {
         signals_evaluated_24h: number;
         open_signals: number;
         pnl_7d: number;
+        signals_evaluated_7d: number;  // Was missing in interface but present in usage
+        wins_7d: number;
+        losses_7d: number;
     };
     chart: Array<{ date: string; wins: number; losses: number }>;
 }

@@ -30,6 +30,9 @@ def get_dashboard_stats(
                 "signals_total_evaluated": 0,
                 "open_signals": 0,
                 "pnl_7d": 0.0,
+                "signals_evaluated_7d": 0,
+                "wins_7d": 0,
+                "losses_7d": 0,
             },
             "chart": [],
         }
@@ -115,6 +118,34 @@ def compute_stats_summary(db: Session, user: User):
         q_eval_7d = q_eval_7d.filter(Signal.timestamp >= user.created_at)
     signals_evaluated_7d = q_eval_7d.scalar() or 0
 
+    # Wins Last 7d
+    q_wins_7d = (
+        db.query(func.count(SignalEvaluation.id))
+        .join(Signal)
+        .filter(
+            SignalEvaluation.evaluated_at >= week_ago,
+            SignalEvaluation.result == "WIN"
+        )
+    )
+    q_wins_7d = visible_filter(q_wins_7d)
+    if user.created_at:
+        q_wins_7d = q_wins_7d.filter(Signal.timestamp >= user.created_at)
+    wins_7d = q_wins_7d.scalar() or 0
+
+    # Losses Last 7d
+    q_losses_7d = (
+        db.query(func.count(SignalEvaluation.id))
+        .join(Signal)
+        .filter(
+            SignalEvaluation.evaluated_at >= week_ago,
+            SignalEvaluation.result == "LOSS"
+        )
+    )
+    q_losses_7d = visible_filter(q_losses_7d)
+    if user.created_at:
+        q_losses_7d = q_losses_7d.filter(Signal.timestamp >= user.created_at)
+    losses_7d = q_losses_7d.scalar() or 0
+
     return {
         "win_rate_24h": round(win_rate_24h, 1),
         "signals_evaluated_24h": eval_24h_count,
@@ -122,6 +153,8 @@ def compute_stats_summary(db: Session, user: User):
         "open_signals": open_signals,
         "pnl_7d": round(pnl_7d, 2),
         "signals_evaluated_7d": signals_evaluated_7d,
+        "wins_7d": int(wins_7d),
+        "losses_7d": int(losses_7d),
     }
 
 
