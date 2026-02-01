@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from datetime import datetime, timedelta
 from database import get_db
 from routers.auth_new import get_current_user
@@ -40,25 +40,27 @@ def compute_stats_summary(db: Session, user: User):
     week_ago = datetime.utcnow() - timedelta(days=7)
     test_sources = ["audit_script", "verification"]
 
+    # Common filter for user visibility (Own + System)
+    def visible_filter(q):
+        return q.filter(
+            or_(Signal.user_id == user.id, Signal.user_id.is_(None)),
+            Signal.source.notin_(test_sources),
+            Signal.is_saved == 1
+        )
+
     # Total Evaluated (All Time)
     q_total = db.query(func.count(SignalEvaluation.id)).join(Signal)
-    q_total = q_total.filter(
-        Signal.source.notin_(test_sources),
-        Signal.user_id == user.id,
-        Signal.is_saved == 1,
-    )
+    q_total = visible_filter(q_total)
+    
     if user.created_at:
         q_total = q_total.filter(Signal.timestamp >= user.created_at)
     total_eval = q_total.scalar() or 0
 
     # Evaluations Last 24h
     q_eval_24 = db.query(func.count(SignalEvaluation.id)).join(Signal)
-    q_eval_24 = q_eval_24.filter(
-        SignalEvaluation.evaluated_at >= day_ago,
-        Signal.source.notin_(test_sources),
-        Signal.user_id == user.id,
-        Signal.is_saved == 1,
-    )
+    q_eval_24 = q_eval_24.filter(SignalEvaluation.evaluated_at >= day_ago)
+    q_eval_24 = visible_filter(q_eval_24)
+
     if user.created_at:
         q_eval_24 = q_eval_24.filter(Signal.timestamp >= user.created_at)
     eval_24h_count = q_eval_24.scalar() or 0
@@ -69,12 +71,11 @@ def compute_stats_summary(db: Session, user: User):
         .join(Signal)
         .filter(
             SignalEvaluation.evaluated_at >= day_ago,
-            SignalEvaluation.result == "WIN",
-            Signal.source.notin_(test_sources),
-            Signal.user_id == user.id,
-            Signal.is_saved == 1,
+            SignalEvaluation.result == "WIN"
         )
     )
+    q_wins = visible_filter(q_wins)
+
     if user.created_at:
         q_wins = q_wins.filter(Signal.timestamp >= user.created_at)
     wins_24h = q_wins.scalar() or 0
@@ -85,13 +86,10 @@ def compute_stats_summary(db: Session, user: User):
     open_q = (
         db.query(func.count(Signal.id))
         .outerjoin(SignalEvaluation, SignalEvaluation.signal_id == Signal.id)
-        .filter(
-            Signal.source.notin_(test_sources),
-            Signal.user_id == user.id,
-            Signal.is_saved == 1,
-            SignalEvaluation.id.is_(None),
-        )
+        .filter(SignalEvaluation.id.is_(None))
     )
+    open_q = visible_filter(open_q)
+
     if user.created_at:
         open_q = open_q.filter(Signal.timestamp >= user.created_at)
     open_signals = int(open_q.scalar() or 0)
@@ -100,13 +98,10 @@ def compute_stats_summary(db: Session, user: User):
     q_pnl = (
         db.query(func.sum(SignalEvaluation.pnl_r))
         .join(Signal)
-        .filter(
-            SignalEvaluation.evaluated_at >= week_ago,
-            Signal.source.notin_(test_sources),
-            Signal.user_id == user.id,
-            Signal.is_saved == 1,
-        )
+        .filter(SignalEvaluation.evaluated_at >= week_ago)
     )
+    q_pnl = visible_filter(q_pnl)
+
     if user.created_at:
         q_pnl = q_pnl.filter(Signal.timestamp >= user.created_at)
     pnl_7d = q_pnl.scalar() or 0.0
@@ -129,8 +124,8 @@ def get_performance_chart(db: Session, user: User):
         .join(Signal)
         .filter(
             SignalEvaluation.evaluated_at >= week_ago,
+            or_(Signal.user_id == user.id, Signal.user_id.is_(None)),
             Signal.source.notin_(test_sources),
-            Signal.user_id == user.id,
             Signal.is_saved == 1,
         )
         .all()

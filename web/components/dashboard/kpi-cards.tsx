@@ -51,7 +51,7 @@ export function KPICards({ data, isLoading }: KPICardsProps) {
     },
     {
       label: 'Performance (7d)',
-      value: hasSignals ? `+${data.avgReturn * data.last7dSignals}%` : '--', // Mocked estimation
+      value: hasSignals ? `${(data.avgReturn * data.last7dSignals) > 0 ? '+' : ''}${(data.avgReturn * data.last7dSignals).toFixed(2)}%` : '--', // Mocked estimation
       change: '',
       changeDirection: 'up' as const,
       subtext: 'estimated yield',

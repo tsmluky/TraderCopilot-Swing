@@ -237,23 +237,41 @@ def _write_to_csv(signal: Signal, mode: str, token_lower: str) -> None:
 
 
 def _send_push_notification(signal: Signal):
-    """Encapsulated Push Logic."""
+    """Encapsulated Push & Telegram Logic."""
     try:
-        from notify import send_push_notification
+        from notify import send_push_notification, send_telegram
 
         title = f"New Signal: {signal.direction.upper()} {signal.token}"
         body = (
             f"Entry: {signal.entry} | TP: {signal.tp} | SL: {signal.sl}\n"
             f"Strategy: {signal.strategy_id or 'Unknown'}"
         )
+        
+        # 1. Telegram Alert (Priority)
+        # We send to the default channel (Entitlement/User mapping is complex here, 
+        # so we fallback to the Env Var configured chat_id for now).
+        # Formatting message for Telegram (HTML)
+        tg_msg = (
+            f"<b>🚀 New Signal: {signal.token} {signal.direction.upper()}</b>\n\n"
+            f"⚡ <b>Entry:</b> {signal.entry}\n"
+            f"🎯 <b>TP:</b> {signal.tp}\n"
+            f"🛑 <b>SL:</b> {signal.sl}\n"
+            f"📊 <b>Confidence:</b> {signal.confidence}%\n"
+            f"🧠 <b>Reason:</b> {signal.rationale}\n\n"
+            f"<i>Strategy: {signal.strategy_id}</i>"
+        )
+        # If signal has specific user, we might want to target them, 
+        # but simpler to broadcast to Main Channel for MVP if user_id is None.
+        send_telegram(tg_msg)
+
+        # 2. Web Push
         res = send_push_notification(
             title, body, data={"token": signal.token, "type": "signal"}
         )
         if res.get("success", 0) > 0:
             print(f"[PUSH] 🔔 Sent ({res['success']} devices).")
-        # Fail silently if 0
     except Exception as push_err:
-        print(f"[PUSH] ❌ Error: {push_err}")
+        print(f"[NOTIFY] ❌ Error: {push_err}")
 
 
 def signal_from_dict(data: Dict[str, Any], mode: str, strategy_id: str) -> Signal:

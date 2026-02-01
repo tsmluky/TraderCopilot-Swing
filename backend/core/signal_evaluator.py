@@ -11,7 +11,7 @@ from core.market_data_api import get_current_price
 # Minimum age to evaluate (avoid instant evaluation on creation)
 MIN_SIGNAL_AGE_MINUTES = 5
 # Timeout for signals (e.g., 24h)
-SIGNAL_TIMEOUT_HOURS = 24
+SIGNAL_TIMEOUT_HOURS = 72
 
 
 def evaluate_pending_signals(db: Session) -> int:
@@ -78,23 +78,9 @@ def evaluate_pending_signals(db: Session) -> int:
                     result = "LOSS"
                     exit_price = sig.sl
 
-            # --- Check Timeout ---
-            if not result:
-                age = datetime.utcnow() - sig.timestamp
-                if age > timedelta(hours=SIGNAL_TIMEOUT_HOURS):
-                    # Timeout - Calculate result at current price
-                    pnl_pct = 0.0
-                    if sig.direction.lower() == "long":
-                        pnl_pct = (current_price - sig.entry) / sig.entry
-                    else:
-                        pnl_pct = (sig.entry - current_price) / sig.entry
-
-                    if pnl_pct > 0.005:
-                        result = "WIN"  # > 0.5% profit
-                    elif pnl_pct < -0.005:
-                        result = "LOSS"  # < -0.5% loss
-                    else:
-                        result = "BE"  # Break Even / Stagnant
+            # --- Check Timeout (Disabled) ---
+            # Signals will remain active indefinitely until TP or SL is hit.
+            # (Timeout logic removed by user request)
 
             # --- Save Evaluation if Result Found ---
             if result:

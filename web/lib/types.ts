@@ -12,6 +12,7 @@ export interface Signal {
   id: string
   token: Token
   timeframe: Timeframe
+  strategy_id?: string
   type: SignalType
   entryPrice: number
   entryRangeHigh?: number

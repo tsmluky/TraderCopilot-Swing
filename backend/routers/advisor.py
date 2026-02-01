@@ -235,7 +235,7 @@ Prices (Source: Live Exchange):
         "- Usa párrafos cortos o bullets. Evita muros de texto.\n"
         "- Tono humano: 'Yo buscaría...', 'El riesgo aquí es...', "
         "'Me gusta la zona de...'.\n"
-        "- Responde SIEMPRE en ESPAÑOL (Castellano) neutro/profesional."
+        "- Adapta tu idioma al del Usuario: Si escribe en Inglés, responde en Inglés. Si escribe en Español (o duda), responde en Español."
     )
 
     if profile_context:

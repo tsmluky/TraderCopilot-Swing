@@ -293,7 +293,13 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
               {signal.source.toLowerCase().includes('manual') || signal.source.toLowerCase().includes('scanner') ? (
                 <span className="flex items-center gap-1"><Zap className="h-2 w-2" /> Scanner</span>
               ) : (
-                <span className="flex items-center gap-1"><Activity className="h-2 w-2" /> Strategy</span>
+                <span className="flex items-center gap-1">
+                  <Activity className="h-2 w-2" />
+                  {/* Strategy Name Mapping */}
+                  {['donchian_v2', 'strategy_001'].some(id => (signal.strategy_id || '').toLowerCase().includes(id)) ? 'Titan Breakout' :
+                    ['mean_reversion_v1', 'bollinger'].some(id => (signal.strategy_id || '').toLowerCase().includes(id)) ? 'Mean Reversion' :
+                      'Strategy'}
+                </span>
               )}
             </Badge>
           )}
