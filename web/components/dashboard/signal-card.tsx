@@ -286,9 +286,33 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
           {signal.source && (
             <div className={cn(
               "flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-sm transition-all duration-300",
-              signal.source.toLowerCase().includes('manual') || signal.source.toLowerCase().includes('scanner')
-                ? "bg-gradient-to-r from-cyan-500/5 to-blue-500/5 border-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:border-cyan-500/40 hover:shadow-cyan-500/10"
-                : "bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-violet-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:border-indigo-500/40 hover:shadow-[0_0_10px_-4px_rgba(99,102,241,0.5)]"
+              (() => {
+                const sid = (signal.strategy_id || '').toUpperCase();
+                const src = (signal.source || '').toLowerCase();
+
+                // 1. Scanner / Manual -> Blue/Cyan (Tech look)
+                if (src.includes('manual') || src.includes('scanner')) {
+                  return "bg-gradient-to-r from-blue-500/5 to-cyan-500/5 border-blue-500/20 text-blue-500 dark:text-blue-400 hover:border-blue-500/40 hover:shadow-blue-500/10";
+                }
+
+                // 2. Titan Breakout -> Orange/Amber
+                if (sid.includes('TITAN') || sid.includes('DONCHIAN')) {
+                  return "bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400 hover:border-orange-500/40 hover:shadow-orange-500/10";
+                }
+
+                // 3. Flow Master -> Emerald/Teal
+                if (sid.includes('FLOW') || sid.includes('TREND')) {
+                  return "bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:border-emerald-500/40 hover:shadow-emerald-500/10";
+                }
+
+                // 4. Mean Reversion -> Purple/Pink
+                if (sid.includes('MEAN') || sid.includes('REVERSION')) {
+                  return "bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400 hover:border-purple-500/40 hover:shadow-purple-500/10";
+                }
+
+                // 5. Default Strategy -> Indigo
+                return "bg-gradient-to-r from-indigo-500/10 to-violet-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400";
+              })()
             )}>
               {signal.source.toLowerCase().includes('manual') || signal.source.toLowerCase().includes('scanner') ? (
                 <>
@@ -298,14 +322,23 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
               ) : (
                 <>
                   <Activity className="h-2.5 w-2.5" />
-                  <span className="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent filter drop-shadow-sm">
+                  <span className={cn(
+                    "bg-clip-text text-transparent filter drop-shadow-sm bg-gradient-to-r",
+                    (() => {
+                      const sid = (signal.strategy_id || '').toUpperCase();
+                      if (sid.includes('TITAN')) return "from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400";
+                      if (sid.includes('FLOW')) return "from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400";
+                      if (sid.includes('MEAN')) return "from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400";
+                      return "from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400";
+                    })()
+                  )}>
                     {(() => {
                       const sid = (signal.strategy_id || '').toUpperCase();
 
                       if (sid.includes('TITAN') || sid.includes('DONCHIAN')) return 'Titan Breakout';
                       if (sid.includes('FLOW') || sid.includes('TREND')) return 'Flow Master';
                       if (sid.includes('MEAN') || sid.includes('REVERSION')) return 'Mean Reversion';
-                      return 'Quant Strategy';
+                      return 'Market Scanner';
                     })()}
                   </span>
                 </>
