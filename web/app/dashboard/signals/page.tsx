@@ -48,11 +48,37 @@ const timeAgo = (date: Date | string) => {
   return d.toLocaleDateString()
 }
 
+// Helper for Strategy Identification
+const getStrategyLabel = (signal: Signal) => {
+  // Normalize confidence
+  const confVal = signal.confidence <= 1 ? signal.confidence * 100 : signal.confidence;
+
+  // 1. Low Confidence -> Scanner
+  if (confVal < 50) return 'Market Scanner';
+
+  // 2. High Confidence -> Identify Strategy
+  const sid = (signal.strategy_id || '').toLowerCase()
+  const rat = (signal.rationale || '').toLowerCase()
+  // const src = (signal.source || '').toLowerCase()
+
+  if (sid === 'donchian_v2') return 'Titan Breakout'
+  if (sid === 'trend_following_native_v1') return 'Flow Master'
+  if (sid.includes('mean_reversion')) return 'Mean Reversion'
+
+  // Heuristics
+  if (rat.includes('donchian') || rat.includes('breakout')) return 'Titan Breakout'
+  if (rat.includes('mean') || rat.includes('reversion') || rat.includes('rsi')) return 'Mean Reversion'
+  if (rat.includes('ema') || rat.includes('trend')) return 'Flow Master'
+
+  return 'Titan Breakout' // Default High-Conf
+}
+
 function SignalRow({ signal, isLocked, onDelete }: { signal: Signal; isLocked: boolean; onDelete: (id: string) => void }) {
   const tokenKey = signal.token as keyof typeof TOKEN_INFO
   const tokenInfo = TOKEN_INFO[tokenKey] || { name: signal.token, color: '#888' }
   const isLong = signal.type === 'LONG'
   const isClosed = signal.status === 'CLOSED'
+  const strategyLabel = getStrategyLabel(signal)
 
   if (isLocked) {
     return (
@@ -68,7 +94,7 @@ function SignalRow({ signal, isLocked, onDelete }: { signal: Signal; isLocked: b
             </div>
           </div>
         </TableCell>
-        <TableCell colSpan={7} className="text-center">
+        <TableCell colSpan={8} className="text-center">
           <div className="absolute inset-0 flex items-center justify-center">
             <Badge variant="outline" className="gap-2 bg-white/80 dark:bg-black/50 backdrop-blur-md border-black/5 dark:border-white/10 text-muted-foreground group-hover/locked:bg-primary/5 group-hover/locked:dark:bg-primary/20 group-hover/locked:text-primary group-hover/locked:border-primary/20 transition-all cursor-not-allowed">
               <Lock className="w-3 h-3" /> Upgrade to View
@@ -91,11 +117,28 @@ function SignalRow({ signal, isLocked, onDelete }: { signal: Signal; isLocked: b
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-sm text-foreground">{signal.token}</span>
-            <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-              USDT <span className="w-1 h-1 rounded-full bg-muted-foreground/50" /> {signal.timeframe}
-            </span>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[9px] px-1 h-4 border-black/10 dark:border-white/10 text-muted-foreground font-normal">
+                {signal.timeframe}
+              </Badge>
+              {/* Mobile-ish Strategy Label inline for small desktop */}
+              <span className="text-[10px] text-muted-foreground font-medium truncate max-w-[80px] md:hidden">
+                {strategyLabel}
+              </span>
+            </div>
           </div>
         </div>
+      </TableCell>
+      {/* Strategy Column */}
+      <TableCell>
+        <Badge variant="outline" className={cn(
+          "text-[10px] px-1.5 py-0.5 h-5 font-medium border-0",
+          strategyLabel === 'Titan Breakout' ? "bg-indigo-500/10 text-indigo-500" :
+            strategyLabel === 'Flow Master' ? "bg-blue-500/10 text-blue-500" :
+              "bg-purple-500/10 text-purple-500"
+        )}>
+          {strategyLabel}
+        </Badge>
       </TableCell>
       <TableCell>
         <Badge
@@ -378,6 +421,7 @@ export default function SignalsPage() {
                   <TableHeader className="bg-black/5 dark:bg-black/20 border-b border-black/5 dark:border-white/5">
                     <TableRow className="hover:bg-transparent border-0">
                       <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-6 h-12">Asset</TableHead>
+                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Strategy</TableHead>
                       <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Direction</TableHead>
                       <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Entry</TableHead>
                       <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-widest h-12">Target</TableHead>
