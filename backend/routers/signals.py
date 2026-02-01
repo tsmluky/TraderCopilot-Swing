@@ -88,6 +88,11 @@ def get_signals(
             # Explicitly ensure strategy_id and source are present
             item["strategy_id"] = s.strategy_id
             item["source"] = s.source
+
+            
+            # Explicitly ensure strategy_id and source are present
+            item["strategy_id"] = s.strategy_id
+            item["source"] = s.source
             
             # Compute Status & Evaluation
             if s.evaluation:
