@@ -296,9 +296,21 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
                 <span className="flex items-center gap-1">
                   <Activity className="h-2 w-2" />
                   {/* Strategy Name Mapping */}
-                  {['donchian_v2', 'strategy_001'].some(id => (signal.strategy_id || '').toLowerCase().includes(id)) ? 'Titan Breakout' :
-                    ['mean_reversion_v1', 'bollinger'].some(id => (signal.strategy_id || '').toLowerCase().includes(id)) ? 'Mean Reversion' :
-                      'Strategy'}
+                  {(() => {
+                    const sid = (signal.strategy_id || '').toLowerCase();
+                    const src = (signal.source || '').toLowerCase();
+
+                    // Helper for debug - user won't see this but console will log if needed
+                    // console.log('Badge Debug:', { id: signal.id, sid, src });
+
+                    if (sid.includes('donchian') || sid.includes('breakout')) return 'Titan Breakout';
+                    if (sid.includes('mean') || sid.includes('reversion') || sid.includes('bollinger')) return 'Mean Reversion';
+
+                    // Fallback based on Source if Strategy ID is missing
+                    if (src.includes('strategy')) return 'Titan Breakout'; // Default to Titan if generic strategy
+
+                    return 'Strategy';
+                  })()}
                 </span>
               )}
             </Badge>

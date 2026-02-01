@@ -106,12 +106,22 @@ def compute_stats_summary(db: Session, user: User):
         q_pnl = q_pnl.filter(Signal.timestamp >= user.created_at)
     pnl_7d = q_pnl.scalar() or 0.0
 
+    # Evaluated Count Last 7d (for proper Average calc)
+    q_eval_7d = db.query(func.count(SignalEvaluation.id)).join(Signal)
+    q_eval_7d = q_eval_7d.filter(SignalEvaluation.evaluated_at >= week_ago)
+    q_eval_7d = visible_filter(q_eval_7d)
+    
+    if user.created_at:
+        q_eval_7d = q_eval_7d.filter(Signal.timestamp >= user.created_at)
+    signals_evaluated_7d = q_eval_7d.scalar() or 0
+
     return {
         "win_rate_24h": round(win_rate_24h, 1),
         "signals_evaluated_24h": eval_24h_count,
         "signals_total_evaluated": total_eval,
         "open_signals": open_signals,
         "pnl_7d": round(pnl_7d, 2),
+        "signals_evaluated_7d": signals_evaluated_7d,
     }
 
 

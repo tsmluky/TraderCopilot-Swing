@@ -101,6 +101,9 @@ function AdvisorContent() {
     scrollToBottom()
   }, [messages, isTyping])
 
+  /* State for Language Preference */
+  const [language, setLanguage] = useState<'es' | 'en'>('es')
+
   const handleSend = async (textOverride?: string) => {
     const text = textOverride || input
     if (!text.trim() || isTyping) return
@@ -123,11 +126,12 @@ function AdvisorContent() {
       }))
 
       // Inject Context if active
-      const contextPayload = activeSignal ? {
-        token: activeSignal.token,
-        timeframe: activeSignal.timeframe,
-        signal_data: activeSignal
-      } : undefined
+      const contextPayload = {
+        token: activeSignal?.token,
+        timeframe: activeSignal?.timeframe,
+        signal_data: activeSignal || undefined,
+        language: language // Pass selected language
+      }
 
       const response: any = await advisorService.chat(history, contextPayload)
 
@@ -177,7 +181,27 @@ function AdvisorContent() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <span className="bg-gradient-to-r from-indigo-500 to-cyan-500 dark:from-indigo-400 dark:to-cyan-400 bg-clip-text text-transparent">AI Advisor</span>
-            <Badge className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 text-xs px-2 py-0.5 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+            <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5 border border-border/50">
+              <button
+                onClick={() => setLanguage('en')}
+                className={cn(
+                  "text-[10px] font-bold px-2 py-0.5 rounded-md transition-all",
+                  language === 'en' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLanguage('es')}
+                className={cn(
+                  "text-[10px] font-bold px-2 py-0.5 rounded-md transition-all",
+                  language === 'es' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                ES
+              </button>
+            </div>
+            <Badge className="ml-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 text-xs px-2 py-0.5 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
               <Sparkles className="h-3 w-3 mr-1" />
               INTELLIGENCE
             </Badge>

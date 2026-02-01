@@ -10,6 +10,7 @@ export interface KPIData {
   avgReturnChange?: number;
   drawdownChange?: number;
   signalsChange?: number;
+  totalR: number;
 }
 
 interface KPICardsProps {
@@ -42,16 +43,16 @@ export function KPICards({ data, isLoading }: KPICardsProps) {
     },
     {
       label: 'Avg Return',
-      value: hasSignals ? `${data.avgReturn > 0 ? '+' : ''}${data.avgReturn}%` : '--',
+      value: hasSignals ? `${data.avgReturn > 0 ? '+' : ''}${data.avgReturn.toFixed(2)}R` : '--',
       change: hasSignals && data.avgReturnChange ? `${data.avgReturnChange}%` : '',
       changeDirection: (data.avgReturnChange || 0) >= 0 ? 'up' : 'down' as const,
-      subtext: 'per signal',
+      subtext: 'per signal (avg)',
       icon: TrendingUp,
       theme: 'blue'
     },
     {
       label: 'Performance (7d)',
-      value: hasSignals ? `${data.avgReturn > 0 ? '+' : ''}${data.avgReturn}R` : '--', // Using avgReturn field as PnL sum for now if backend sends sum
+      value: hasSignals ? `${data.totalR > 0 ? '+' : ''}${data.totalR.toFixed(2)}R` : '--',
       change: '',
       changeDirection: 'up' as const,
       subtext: 'total R-multiple',

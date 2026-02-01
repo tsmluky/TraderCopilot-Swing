@@ -22,7 +22,8 @@ export function DashboardOverview() {
     winRate: 0,
     avgReturn: 0,
     maxDrawdown: 0,
-    last7dSignals: 0
+    last7dSignals: 0,
+    totalR: 0
   })
   const [signals, setSignals] = useState<Signal[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -40,9 +41,10 @@ export function DashboardOverview() {
       const s = statsData.summary || {}
       setStats({
         winRate: s.win_rate_24h || 0,
-        avgReturn: s.pnl_7d || 0, // Now represents Sum of R
+        avgReturn: s.signals_evaluated_7d > 0 ? (s.pnl_7d / s.signals_evaluated_7d) : 0, // Real Average R per Trade
         maxDrawdown: 0,
-        last7dSignals: s.open_signals || 0
+        last7dSignals: s.open_signals || 0,
+        totalR: s.pnl_7d || 0 // Store Total R separately for Performance Card
       })
 
       // Map Signals

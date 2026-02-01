@@ -34,7 +34,8 @@ class ChatMessage(BaseModel):
 class ChatContext(BaseModel):
     token: Optional[str] = None
     timeframe: Optional[str] = None
-    signal_data: Optional[Dict[str, Any]] = None  # Active signal details if any
+    signal_data: Optional[Dict[str, Any]] = None
+    language: Optional[str] = "es"  # Default to Spanish per user preference
 
 
 class ChatRequest(BaseModel):
@@ -212,6 +213,14 @@ Prices (Source: Live Exchange):
 """
 
     # 5. Define System Persona (Contract of Identity)
+    selected_lang = req.context.language if (req.context and req.context.language) else "es"
+    
+    lang_instruction = ""
+    if selected_lang == "en":
+        lang_instruction = "Responde SIEMPRE en INGLÉS (English). Do not speak Spanish."
+    else:
+        lang_instruction = "Responde SIEMPRE en ESPAÑOL (Castellano) neutro/profesional."
+
     system_instruction = (
         "Soy **TraderCopilot Advisor**, tu copiloto automatizado de análisis táctico. "
         "No soy un asesor financiero humano.\n"
@@ -235,8 +244,7 @@ Prices (Source: Live Exchange):
         "- Usa párrafos cortos o bullets. Evita muros de texto.\n"
         "- Tono humano: 'Yo buscaría...', 'El riesgo aquí es...', "
         "'Me gusta la zona de...'.\n"
-        "- Adapta tu idioma al del Usuario: Si escribe en Inglés, responde en Inglés. "
-        "Si escribe en Español (o duda), responde en Español."
+        f"- IDIOMA OBLIGATORIO: {lang_instruction}"
     )
 
     if profile_context:
