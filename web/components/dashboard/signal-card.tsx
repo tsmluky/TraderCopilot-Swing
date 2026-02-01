@@ -282,40 +282,35 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
 
         {/* Source Badge (New) */}
         <div className="flex items-center gap-2">
-          {/* Show Source: Strategy vs Scanner */}
+          {/* Show Source: Strategy vs Scanner - PREMIUM LABEL v2 */}
           {signal.source && (
-            <Badge variant="outline" className={cn(
-              "text-[9px] px-1.5 py-0 h-4 border-0",
+            <div className={cn(
+              "flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-sm transition-all duration-300",
               signal.source.toLowerCase().includes('manual') || signal.source.toLowerCase().includes('scanner')
-                ? "bg-purple-500/10 text-purple-500"
-                : "bg-indigo-500/10 text-indigo-500"
+                ? "bg-gradient-to-r from-cyan-500/5 to-blue-500/5 border-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:border-cyan-500/40 hover:shadow-cyan-500/10"
+                : "bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-violet-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:border-indigo-500/40 hover:shadow-[0_0_10px_-4px_rgba(99,102,241,0.5)]"
             )}>
               {signal.source.toLowerCase().includes('manual') || signal.source.toLowerCase().includes('scanner') ? (
-                <span className="flex items-center gap-1"><Zap className="h-2 w-2" /> Monitor</span>
+                <>
+                  <Zap className="h-2.5 w-2.5 opacity-80" />
+                  <span className="opacity-90">Monitor</span>
+                </>
               ) : (
-                <span className="flex items-center gap-1">
-                  <Activity className="h-2 w-2" />
-                  {/* Strategy Name Mapping */}
-                  {(() => {
-                    const sid = (signal.strategy_id || '').toUpperCase();
-                    const src = (signal.source || '').toUpperCase();
+                <>
+                  <Activity className="h-2.5 w-2.5" />
+                  <span className="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent filter drop-shadow-sm">
+                    {(() => {
+                      const sid = (signal.strategy_id || '').toUpperCase();
 
-                    // --- FLEXIBLE MAPPING ---
-                    // 1. Titan Breakout
-                    if (sid.includes('TITAN') || sid.includes('DONCHIAN')) return 'Titan Breakout';
-
-                    // 2. Flow Master
-                    if (sid.includes('FLOW') || sid.includes('TREND')) return 'Flow Master';
-
-                    // 3. Mean Reversion
-                    if (sid.includes('MEAN') || sid.includes('REVERSION')) return 'Mean Reversion';
-
-                    // 4. Fallback -> Monitor
-                    return 'Quant Monitor';
-                  })()}
-                </span>
+                      if (sid.includes('TITAN') || sid.includes('DONCHIAN')) return 'Titan Breakout';
+                      if (sid.includes('FLOW') || sid.includes('TREND')) return 'Flow Master';
+                      if (sid.includes('MEAN') || sid.includes('REVERSION')) return 'Mean Reversion';
+                      return 'Quant Strategy';
+                    })()}
+                  </span>
+                </>
               )}
-            </Badge>
+            </div>
           )}
 
           <Button
