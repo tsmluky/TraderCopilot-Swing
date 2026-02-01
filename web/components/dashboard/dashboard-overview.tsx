@@ -40,7 +40,7 @@ export function DashboardOverview() {
       const s = statsData.summary || {}
       setStats({
         winRate: s.win_rate_24h || 0,
-        avgReturn: s.pnl_7d || 0,
+        avgReturn: s.pnl_7d || 0, // Now represents Sum of R
         maxDrawdown: 0,
         last7dSignals: s.open_signals || 0
       })

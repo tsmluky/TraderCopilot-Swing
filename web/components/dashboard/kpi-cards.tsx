@@ -51,10 +51,10 @@ export function KPICards({ data, isLoading }: KPICardsProps) {
     },
     {
       label: 'Performance (7d)',
-      value: hasSignals ? `${(data.avgReturn * data.last7dSignals) > 0 ? '+' : ''}${(data.avgReturn * data.last7dSignals).toFixed(2)}%` : '--', // Mocked estimation
+      value: hasSignals ? `${data.avgReturn > 0 ? '+' : ''}${data.avgReturn}R` : '--', // Using avgReturn field as PnL sum for now if backend sends sum
       change: '',
       changeDirection: 'up' as const,
-      subtext: 'estimated yield',
+      subtext: 'total R-multiple',
       icon: Zap,
       theme: 'orange'
     },
