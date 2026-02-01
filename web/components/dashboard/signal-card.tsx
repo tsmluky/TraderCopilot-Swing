@@ -299,17 +299,20 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
                   {(() => {
                     const sid = (signal.strategy_id || '').toLowerCase();
                     const src = (signal.source || '').toLowerCase();
+                    const rat = (signal.rationale || '').toLowerCase();
 
-                    // Helper for debug - user won't see this but console will log if needed
-                    // console.log('Badge Debug:', { id: signal.id, sid, src });
-
+                    // 1. ID Checks (Primary)
                     if (sid.includes('donchian') || sid.includes('breakout')) return 'Titan Breakout';
                     if (sid.includes('mean') || sid.includes('reversion') || sid.includes('bollinger')) return 'Mean Reversion';
 
-                    // Fallback based on Source if Strategy ID is missing
+                    // 2. Rationale Heuristics (Legacy/Fallback)
+                    if (rat.includes('donchian') || rat.includes('breakout')) return 'Titan Breakout';
+                    if (rat.includes('mean') || rat.includes('reversion') || rat.includes('rsi')) return 'Mean Reversion';
+
+                    // 3. Source Fallbacks
                     if (src.includes('strategy')) return 'Titan Breakout'; // Default to Titan if generic strategy
 
-                    return 'Strategy';
+                    return 'Titan Breakout'; // Ultimate fallback (Flagship strategy)
                   })()}
                 </span>
               )}
