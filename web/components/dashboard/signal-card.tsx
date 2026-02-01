@@ -299,20 +299,22 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
                   {(() => {
                     const sid = (signal.strategy_id || '').toLowerCase();
                     const src = (signal.source || '').toLowerCase();
-                    const rat = (signal.rationale || '').toLowerCase();
 
-                    // 1. ID Checks (Primary)
-                    if (sid.includes('donchian') || sid.includes('breakout')) return 'Titan Breakout';
-                    if (sid.includes('mean') || sid.includes('reversion') || sid.includes('bollinger')) return 'Mean Reversion';
+                    // --- STRICT MAPPING (No Guesswork) ---
+                    // 1. Titan Breakout (Donchian V2)
+                    if (sid === 'donchian_v2') return 'Titan Breakout';
 
-                    // 2. Rationale Heuristics (Legacy/Fallback)
-                    if (rat.includes('donchian') || rat.includes('breakout')) return 'Titan Breakout';
-                    if (rat.includes('mean') || rat.includes('reversion') || rat.includes('rsi')) return 'Mean Reversion';
+                    // 2. Flow Master (Trend Following)
+                    if (sid === 'trend_following_native_v1') return 'Flow Master';
 
-                    // 3. Source Fallbacks
-                    if (src.includes('strategy')) return 'Titan Breakout'; // Default to Titan if generic strategy
+                    // 3. Mean Reversion (Bollinger/RSI)
+                    if (sid === 'mean_reversion_v1' || sid === 'mean_reversion_rsi_v1') return 'Mean Reversion';
 
-                    return 'Titan Breakout'; // Ultimate fallback (Flagship strategy)
+                    // 4. Market Scanner (Manual/External)
+                    if (src.includes('scanner') || src.includes('manual')) return 'Market Scanner';
+
+                    // 5. Fallback for Legacy/Unknown -> Market Scanner (Safe default)
+                    return 'Market Scanner';
                   })()}
                 </span>
               )}
