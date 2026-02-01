@@ -69,7 +69,7 @@ def log_signal(signal: Signal, db_session: Any = None) -> Optional[int]:
     _write_to_csv(signal, mode, token_lower)
     
     # === 3. Push Notification (Mobile) ===
-    _send_push_notification(signal)
+    _send_push_notification(signal, db_session=db_session)
     
     return saved_id
 
@@ -236,10 +236,12 @@ def _write_to_csv(signal: Signal, mode: str, token_lower: str) -> None:
         print(f"[CSV] ❌ Error: {e}")
 
 
-def _send_push_notification(signal: Signal):
+def _send_push_notification(signal: Signal, db_session: Any = None):
     """Encapsulated Push & Telegram Logic."""
     try:
         from notify import send_push_notification, send_telegram
+        from database import SessionLocal
+        from models_db import User
 
         title = f"New Signal: {signal.direction.upper()} {signal.token}"
         body = (
@@ -247,10 +249,7 @@ def _send_push_notification(signal: Signal):
             f"Strategy: {signal.strategy_id or 'Unknown'}"
         )
         
-        # 1. Telegram Alert (Priority)
-        # We send to the default channel (Entitlement/User mapping is complex here, 
-        # so we fallback to the Env Var configured chat_id for now).
-        # Formatting message for Telegram (HTML)
+        # 1. Telegram Alert (Broadcasting to DB Users)
         tg_msg = (
             f"<b>🚀 New Signal: {signal.token} {signal.direction.upper()}</b>\n\n"
             f"⚡ <b>Entry:</b> {signal.entry}\n"
@@ -260,9 +259,46 @@ def _send_push_notification(signal: Signal):
             f"🧠 <b>Reason:</b> {signal.rationale}\n\n"
             f"<i>Strategy: {signal.strategy_id}</i>"
         )
-        # If signal has specific user, we might want to target them, 
-        # but simpler to broadcast to Main Channel for MVP if user_id is None.
-        send_telegram(tg_msg)
+
+        # Resolve Target Users
+        # If signal is isolated to a user, send only to them.
+        # If signal is system (None), send to ALL subscribed users.
+        
+        # We need a DB session
+        local_session = False
+        if not db_session:
+             db = SessionLocal()
+             local_session = True
+        else:
+             db = db_session
+
+        try:
+            targets = []
+            if signal.user_id:
+                # Private Signal
+                u = db.query(User).filter(User.id == signal.user_id).first()
+                if u and u.telegram_chat_id:
+                    targets.append(u.telegram_chat_id)
+            else:
+                # Public/System Signal -> Broadcast to all with Chat ID
+                # (Optimizable: Filter by plan/entitlement later)
+                users = db.query(User).filter(User.telegram_chat_id != None).all()
+                targets = [u.telegram_chat_id for u in users if u.telegram_chat_id]
+
+            print(f"[TELEGRAM] Broadcasting to {len(targets)} recipients.")
+            for chat_id in targets:
+                res = send_telegram(tg_msg, chat_id=chat_id)
+                if not res.get("ok"):
+                    print(f"[TELEGRAM] ❌ Failed to send to {chat_id}: {res}")
+                else:
+                    # print(f"[TELEGRAM] ✅ Sent to {chat_id}")
+                    pass
+
+        except Exception as e:
+            print(f"[TELEGRAM] ❌ DB Lookup Error: {e}")
+        finally:
+            if local_session:
+                db.close()
 
         # 2. Web Push
         res = send_push_notification(
@@ -270,6 +306,7 @@ def _send_push_notification(signal: Signal):
         )
         if res.get("success", 0) > 0:
             print(f"[PUSH] 🔔 Sent ({res['success']} devices).")
+
     except Exception as push_err:
         print(f"[NOTIFY] ❌ Error: {push_err}")
 
