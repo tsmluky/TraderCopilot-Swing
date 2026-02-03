@@ -40,7 +40,7 @@ export function DashboardOverview() {
       // Backend: { summary: { total_signals, win_rate_24h, signals_generated_24h, ... } }
       const s = statsData.summary || {}
       setStats({
-        winRate: s.win_rate_24h || 0,
+        winRate: s.win_rate_30d || 0,
         avgReturn: s.signals_evaluated_7d > 0 ? (s.pnl_7d / s.signals_evaluated_7d) : 0, // Real Average R per Trade
         maxDrawdown: 0,
         last7dSignals: s.open_signals || 0,
