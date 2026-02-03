@@ -59,13 +59,22 @@ def _calculate_stats(db: Session, strategy_code: str, timeframe: str) -> Dict[st
     """
     try:
         # Construct the exact ID used by Scheduler
-        target_id = f"{strategy_code}_{timeframe}"
-        
         # 1. Total Signals
-        # We also look for legacy IDs if needed, but for now stick to the new standard.
-        # If the system is fresh, standard is fine.
+        # MAPPING: Map Product Code (TITAN_BREAKOUT) to Internal Prefix (Donchian)
+        prefix_map = {
+             "TITAN_BREAKOUT": "Donchian",
+             "FLOW_MASTER": "TrendFollowing",
+             "MEAN_REVERSION": "MeanReversion"
+        }
+        metric_prefix = prefix_map.get(strategy_code, strategy_code)
+        
+        # Query: strategy_id LIKE 'Donchian_%' AND timeframe = '4H'
+        # This aggregates Donchian_BTC, Donchian_ETH signals for the 4H view.
+        search_pattern = f"{metric_prefix}_%"
+
         total = db.query(Signal).filter(
-            Signal.strategy_id == target_id,
+            Signal.strategy_id.like(search_pattern),
+            Signal.timeframe == timeframe,
             Signal.is_saved == 1
         ).count()
         
@@ -78,7 +87,10 @@ def _calculate_stats(db: Session, strategy_code: str, timeframe: str) -> Dict[st
         evals = (
             db.query(SignalEvaluation)
             .join(Signal)
-            .filter(Signal.strategy_id == target_id)
+            .filter(
+                Signal.strategy_id.like(search_pattern),
+                Signal.timeframe == timeframe
+            )
             .all()
         )
         
@@ -141,13 +153,40 @@ async def get_persona_history(
     """
     
     # Try exact match first
-    signals = (
-        db.query(Signal)
-        .filter(Signal.strategy_id == id) # e.g. TITAN_BREAKOUT_4H
-        .order_by(Signal.timestamp.desc())
-        .limit(50)
-        .all()
-    )
+    # Try exact match or pattern match
+    # Re-derive search pattern (quick hack, ideally shared logic)
+    prefix_map = {
+            "TITAN_BREAKOUT": "Donchian",
+            "FLOW_MASTER": "TrendFollowing",
+            "MEAN_REVERSION": "MeanReversion"
+    }
+    # ID is passed as TITAN_BREAKOUT_4H usually?
+    # Logic in get_marketplace passes offering['id'] = TITAN_BREAKOUT_4H
+    parts = id.split('_')
+    if len(parts) >= 2:
+         # simple heuristic, might be cleaner to pass code+tf
+         # Assuming ID is {CODE}_{TF}
+         tf = parts[-1] 
+         code = "_".join(parts[:-1])
+         metric_prefix = prefix_map.get(code, code)
+         search_pattern = f"{metric_prefix}_%_{tf}"
+         
+         signals = (
+            db.query(Signal)
+            .filter(Signal.strategy_id.like(search_pattern))
+            .order_by(Signal.timestamp.desc())
+            .limit(50)
+            .all()
+        )
+    else: 
+        # Fallback
+        signals = (
+            db.query(Signal)
+            .filter(Signal.strategy_id == id) # e.g. TITAN_BREAKOUT_4H
+            .order_by(Signal.timestamp.desc())
+            .limit(50)
+            .all()
+        )
     
     # Format
     history = []
