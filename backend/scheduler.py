@@ -239,7 +239,7 @@ class StrategyScheduler:
                  sigs = strategy_instance.generate_signals(
                      tokens=[token],
                      timeframe=task["timeframe"]
-                 )
+                 ) or []
                  
                  # 4. Enrich Signals with Explicit IDs
                  for s in sigs:
