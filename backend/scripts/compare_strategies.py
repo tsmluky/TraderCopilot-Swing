@@ -2,14 +2,13 @@
 import os
 import sys
 import pandas as pd
-import numpy as np
-from datetime import datetime
+import pandas as pd
 
 # Fix path to import core backend modules
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from strategies.DonchianBreakoutV2 import DonchianBreakoutV2
-from strategies.TrendFollowingNative import TrendFollowingNative
+
 
 DATA_PATH = r"C:\Users\lukx\Desktop\velasccxt"
 
@@ -129,7 +128,8 @@ def print_stats(name, trades):
 def run_comparison():
     print("Loading BTC 4H Data...")
     df = load_data("BTC", "4h")
-    if df is None: return
+    if df is None:
+        return
 
     print(f"Loaded {len(df)} candles.\n")
 

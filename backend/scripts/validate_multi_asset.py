@@ -2,7 +2,7 @@
 import os
 import sys
 import pandas as pd
-import numpy as np
+
 import glob
 
 # Fix path to import core backend modules
@@ -35,17 +35,21 @@ def load_all_data(tf="4h"):
     return datasets
 
 def calculate_max_drawdown(equity_curve):
-    if not equity_curve: return 0.0
+    if not equity_curve:
+        return 0.0
     peak = -99999
     max_dd = 0
     for value in equity_curve:
-        if value > peak: peak = value
+        if value > peak:
+            peak = value
         dd = peak - value
-        if dd > max_dd: max_dd = dd
+        if dd > max_dd:
+            max_dd = dd
     return max_dd
 
 def simulate_trades(signals, df):
-    if not signals: return 0, 0, 0, 0
+    if not signals:
+        return 0, 0, 0, 0
     
     df = df.sort_values('timestamp').reset_index(drop=True)
     time_map = {t: i for i, t in enumerate(df['timestamp'])}
@@ -56,7 +60,8 @@ def simulate_trades(signals, df):
     
     for sig in signals:
         start_idx = time_map.get(sig.timestamp)
-        if start_idx is None: continue
+        if start_idx is None:
+            continue
         
         entry = sig.entry
         tp = sig.tp

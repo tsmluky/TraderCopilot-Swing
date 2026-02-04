@@ -2,9 +2,7 @@
 import os
 import sys
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt # Optional, but good for calc
-from datetime import datetime
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -15,7 +13,8 @@ DATA_PATH = r"C:\Users\lukx\Desktop\velasccxt"
 
 def load_data(token="BTC", tf="4h"):
     path = os.path.join(DATA_PATH, f"{token}_{tf}.csv")
-    if not os.path.exists(path): return None
+    if not os.path.exists(path):
+        return None
     df = pd.read_csv(path)
     if 'timestamp' in df.columns:
         if df['timestamp'].iloc[0] > 1e11:
@@ -29,7 +28,8 @@ def calculate_max_drawdown(equity_curve):
     Calc Max Drawdown from equity curve (list of cumulative R).
     Returns Max DD (in R) and Max DD %.
     """
-    if not equity_curve: return 0.0
+    if not equity_curve:
+        return 0.0
     
     peak = -99999
     max_dd = 0
@@ -70,7 +70,8 @@ def run_detailed_simulation(name, strategy, df):
     
     for sig in signals:
         start_idx = time_map.get(sig.timestamp)
-        if start_idx is None: continue
+        if start_idx is None:
+            continue
         
         entry = sig.entry
         tp = sig.tp
@@ -118,7 +119,7 @@ def run_detailed_simulation(name, strategy, df):
     losses = total_trades - wins
     win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
     total_r = sum(trades)
-    avg_r = total_r / total_trades if total_trades > 0 else 0
+
     max_dd = calculate_max_drawdown(equity)
     
     # Implied RR (Average Winner / Average Loser)
@@ -141,7 +142,8 @@ def main():
         
     logger("Loading Data...")
     df = load_data("BTC", "4h")
-    if df is None: return
+    if df is None:
+        return
 
     # 1. Donchian "Premium"
     # D=20, TP=3.0, SL=1.2

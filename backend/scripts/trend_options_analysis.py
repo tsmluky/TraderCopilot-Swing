@@ -2,8 +2,7 @@
 import os
 import sys
 import pandas as pd
-import numpy as np
-from datetime import datetime
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -13,7 +12,8 @@ DATA_PATH = r"C:\Users\lukx\Desktop\velasccxt"
 
 def load_data(token="BTC", tf="4h"):
     path = os.path.join(DATA_PATH, f"{token}_{tf}.csv")
-    if not os.path.exists(path): return None
+    if not os.path.exists(path):
+        return None
     df = pd.read_csv(path)
     if 'timestamp' in df.columns:
         if df['timestamp'].iloc[0] > 1e11:
@@ -23,13 +23,16 @@ def load_data(token="BTC", tf="4h"):
     return df
 
 def calculate_max_drawdown(equity_curve):
-    if not equity_curve: return 0.0
+    if not equity_curve:
+        return 0.0
     peak = -99999
     max_dd = 0
     for value in equity_curve:
-        if value > peak: peak = value
+        if value > peak:
+            peak = value
         dd = peak - value
-        if dd > max_dd: max_dd = dd
+        if dd > max_dd:
+            max_dd = dd
     return max_dd
 
 def logger(msg):
@@ -54,7 +57,8 @@ def run_simulation(name, strategy, df):
     
     for sig in signals:
         start_idx = time_map.get(sig.timestamp)
-        if start_idx is None: continue
+        if start_idx is None:
+            continue
         
         entry = sig.entry
         tp = sig.tp
@@ -97,7 +101,8 @@ def run_simulation(name, strategy, df):
 
     # Stats
     total = len(trades)
-    if total == 0: return
+    if total == 0:
+        return
     
     wins = len([t for t in trades if t > 0])
     losses = total - wins
@@ -105,9 +110,7 @@ def run_simulation(name, strategy, df):
     total_r = sum(trades)
     max_dd = calculate_max_drawdown(equity)
     
-    avg_win = sum([t for t in trades if t > 0]) / wins if wins > 0 else 0
-    avg_loss = sum([abs(t) for t in trades if t < 0]) / losses if losses > 0 else 0
-    # profit_factor = sum([t for t in trades if t > 0]) / sum([abs(t) for t in trades if t < 0]) if losses > 0 else 999 
+
 
     logger(f"Trades: {total} | WR: {win_rate:.1f}%")
     logger(f"Return: {total_r:.2f} R")
@@ -119,7 +122,8 @@ def main():
         f.write("TREND FOLLOWING OPTIONS REPORT\n")
         
     df = load_data("BTC", "4h")
-    if df is None: return
+    if df is None:
+        return
 
     # Option 1: TURBO (The Aggressive Baseline)
     # EMA 9/21, TP 8.0, SL 1.5

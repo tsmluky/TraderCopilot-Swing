@@ -2,9 +2,7 @@
 import os
 import sys
 import pandas as pd
-import numpy as np
 from itertools import product
-from datetime import datetime
 
 # Fix path to import core backend modules
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -39,14 +37,15 @@ def simulate_trades(signals, df):
     
     for sig in signals:
         start_idx = time_map.get(sig.timestamp)
-        if start_idx is None: continue
+        if start_idx is None:
+            continue
         
         entry = sig.entry
         tp = sig.tp
         sl = sig.sl
         direction = sig.direction
         
-        result = "OPEN"
+
         pnl_r = 0.0
         
         # Fast forward simulation
@@ -55,13 +54,15 @@ def simulate_trades(signals, df):
         
         # Optimization: Slicing is faster than iterating rows
         future = df.iloc[start_idx+1:]
-        if future.empty: continue
+        if future.empty:
+            continue
         
         # Vectorized check attempt (simplified for robustness)
         # Iterating is slow for Grid Search, but robust for logic. 
         # For this script, we'll iterate but break fast.
         
-        for i in range(start_idx + 1, min(len(df), start_idx + 500)): # Cap holding period to avoid infinite loops in bad logic
+        for i in range(start_idx + 1, min(len(df), start_idx + 500)):
+            # Cap holding period to avoid infinite loops in bad logic
             row = df.iloc[i]
             if direction == 'long':
                 if row['high'] >= tp:
@@ -91,7 +92,8 @@ def simulate_trades(signals, df):
 def run_grid_search():
     print("Loading BTC 4H Data...")
     df = load_data("BTC", "4h")
-    if df is None: return
+    if df is None:
+        return
 
     # --- DONCHIAN OPTIMIZATION ---
     print("\n>>> OPTIMIZING DONCHIAN BREAKOUT <<<")

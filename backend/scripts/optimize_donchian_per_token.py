@@ -2,7 +2,7 @@
 import os
 import sys
 import pandas as pd
-import numpy as np
+
 import glob
 from itertools import product
 
@@ -34,7 +34,8 @@ def load_all_data(tf="4h"):
     return datasets
 
 def simulate_trades(signals, df):
-    if not signals: return 0.0, 0, 0, 0.0
+    if not signals:
+        return 0.0, 0, 0, 0.0
     
     df = df.sort_values('timestamp').reset_index(drop=True)
     time_map = {t: i for i, t in enumerate(df['timestamp'])}
@@ -47,14 +48,16 @@ def simulate_trades(signals, df):
     
     for sig in signals:
         start_idx = time_map.get(sig.timestamp)
-        if start_idx is None: continue
+        if start_idx is None:
+            continue
         
         entry = sig.entry
         tp = sig.tp
         sl = sig.sl
         direction = sig.direction
         
-        if entry == sl: continue # Avoid div by zero
+        if entry == sl:
+            continue  # Avoid div by zero
 
         rr_ratio = abs(tp - entry) / abs(entry - sl)
         
@@ -67,19 +70,19 @@ def simulate_trades(signals, df):
         # Simple loop is safer than vectorization for logic with break
         for i in range(start_idx + 1, end_idx):
             h = high_arr[i]
-            l = low_arr[i]
+            low_val = low_arr[i]
             
             if direction == 'long':
                 if h >= tp:
                     pnl_r = rr_ratio
                     result = "WIN"
                     break
-                if l <= sl:
+                if low_val <= sl:
                     pnl_r = -1.0
                     result = "LOSS"
                     break
             else:
-                if l <= tp:
+                if low_val <= tp:
                     pnl_r = rr_ratio
                     result = "WIN"
                     break
@@ -91,7 +94,8 @@ def simulate_trades(signals, df):
         if result != "OPEN":
             trades.append(pnl_r)
 
-    if not trades: return 0.0, 0, 0, 0.0
+    if not trades:
+        return 0.0, 0, 0, 0.0
     
     total_r = sum(trades)
     count = len(trades)
@@ -99,15 +103,17 @@ def simulate_trades(signals, df):
     wr = wins / count
     
     # Calc Max DD approx
-    equity = [0]
+    # equity = [0] # unused
     agg = 0
     peak = -999
     max_dd = 0
     for t in trades:
         agg += t
-        if agg > peak: peak = agg
+        if agg > peak:
+            peak = agg
         dd = peak - agg
-        if dd > max_dd: max_dd = dd
+        if dd > max_dd:
+            max_dd = dd
         
     return total_r, max_dd, count, wr
 
@@ -141,7 +147,7 @@ def run_deep_dive():
         
         # Run Grid
         # Count iterations
-        total_iter = len(periods) * len(tps) * len(sls)
+
         # logger(f"Testing {total_iter} combinations...")
         
         for p, tp, sl in product(periods, tps, sls):
@@ -174,13 +180,14 @@ def run_deep_dive():
         
         logger(f"--- RESULTS: {token} ---")
         logger(f"BASELINE (20/3.0/1.2): {r_b:.2f} R (DD: {dd_b:.2f}, WR: {wr_b:.1%})")
-        logger(f"OPTIMAL  ({best_config['p']}/{best_config['tp']}/{best_config['sl']})  : {best_config['r']:.2f} R (DD: {best_config['dd']:.2f}, WR: {best_config['wr']:.1%})")
+        logger(f"OPTIMAL  ({best_config['p']}/{best_config['tp']}/{best_config['sl']})  : "
+               f"{best_config['r']:.2f} R (DD: {best_config['dd']:.2f}, WR: {best_config['wr']:.1%})")
         
         improvement = best_config['r'] - r_b
         if improvement > 5:
             logger(f"[!!!] SIGNIFICANT IMPROVEMENT: +{improvement:.2f} R")
         else:
-            logger(f"[OK] Baseline is solid (Delta < 5R)")
+            logger("[OK] Baseline is solid (Delta < 5R)")
 
 if __name__ == "__main__":
     run_deep_dive()
