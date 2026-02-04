@@ -205,7 +205,6 @@ class StrategyScheduler:
 
         try:
              # Run Generator
-             LOG.info(f"DEBUG: strategy_impl type: {type(strategy_impl)}")
              # return list of Signal objects (or dicts)
              signals = strategy_impl.generate_signals(
                  tokens=task["tokens"],
