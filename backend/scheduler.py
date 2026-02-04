@@ -319,14 +319,24 @@ class StrategyScheduler:
             User.telegram_chat_id.isnot(None)
         ).all()
         
-        if not users:
+        # 3. Dedupe & Send
+        # We use a set of Chat IDs to handle users + fallback admin ID
+        target_chat_ids = {u.telegram_chat_id for u in users if u.telegram_chat_id}
+        
+        # Add Admin Fallback (from Env)
+        # This fixes the issue where a dev/admin user exists without a DB User record
+        admin_chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        if admin_chat_id:
+             target_chat_ids.add(admin_chat_id)
+
+        if not target_chat_ids:
             return
 
         # 3. Dedupe & Send
         # We use a cache key to avoid spamming the same global signal repeated times 
         # (log_signal handles idempotency DB-side, but duplicate execution might trigger this)
         
-        LOG.info(f"[Fan-Out] Found {len(users)} users for plan {plan}. Sending alerts...")
+        LOG.info(f"[Fan-Out] Found {len(target_chat_ids)} recipients (Users + Admin) for plan {plan}. Sending alerts...")
 
         msg = (
             f"⚡ <b>{plan} ALERT</b>\n"
@@ -338,16 +348,16 @@ class StrategyScheduler:
         )
         
         sent_count = 0
-        for u in users:
+        for chat_id in target_chat_ids:
             # Simple check if user wants alerts? Assuming 'Yes' if ChatID present for MVP.
             # In future: check User preferences.
-            res = send_telegram(msg, chat_id=u.telegram_chat_id)
+            res = send_telegram(msg, chat_id=chat_id)
             if res.get("ok"):
                 sent_count += 1
             else:
-                LOG.error(f"[Fan-Out] Failed to send to {u.id} (Chat {u.telegram_chat_id}): {res}")
+                LOG.error(f"[Fan-Out] Failed to send to Chat {chat_id}: {res}")
         
-        LOG.info(f"[Fan-Out] Summary: Sent {sent_count}/{len(users)} alerts for {sig.token}.")
+        LOG.info(f"[Fan-Out] Summary: Sent {sent_count}/{len(target_chat_ids)} alerts for {sig.token}.")
 
 
     def run(self):
