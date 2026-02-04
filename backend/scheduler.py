@@ -235,11 +235,11 @@ class StrategyScheduler:
                              token=item["token"],
                              direction=item["side"], # 'long' or 'short' bias
                              entry=item["trigger_price"], # Pivot price
-                             tp=None, 
-                             sl=None, 
+                             tp=item.get("tp"), 
+                             sl=item.get("sl"), 
                              confidence=0.0, # 0.0 explicitly marks it as WATCH/NEUTRAL
                              rationale=f"[WATCHLIST] {item['reason']}",
-                             strategy_id=task["strategy_code"],
+                             strategy_id=f"{task['strategy_code']}_{task['timeframe']}", # Correct ID for aggregation
                              mode=task["plan"],
                              timeframe=task["timeframe"],
                              source="ENGINE",

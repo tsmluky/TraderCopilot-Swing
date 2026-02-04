@@ -310,6 +310,8 @@ class DonchianBreakoutV2:
                 "timeframe": timeframe,
                 "side": "long",
                 "trigger_price": round(upper, 2),
+                "tp": round(upper + (self.tp_atr * atr), 2),
+                "sl": round(upper - (self.sl_atr * atr), 2),
                 "distance_atr": round(dist_to_upper_atr, 3),
                 "reason": (
                     f"Near Donchian upper. Need breakout. Dist ≈ {dist_to_upper_atr:.2f} ATR. "
@@ -327,6 +329,8 @@ class DonchianBreakoutV2:
                 "timeframe": timeframe,
                 "side": "short",
                 "trigger_price": round(lower, 2),
+                "tp": round(lower - (self.tp_atr * atr), 2),
+                "sl": round(lower + (self.sl_atr * atr), 2),
                 "distance_atr": round(dist_to_lower_atr, 3),
                 "reason": (
                     f"Near Donchian lower. Need breakdown. Dist ≈ {dist_to_lower_atr:.2f} ATR. "
