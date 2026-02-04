@@ -280,15 +280,17 @@ class MeanReversionBollinger:
         if df is None or len(df) < 50:
             return []
 
-        df = df.copy().reset_index(drop=True)
         df["sma"], df["upper"], df["lower"] = self._bollinger_bands(df)
         df["rsi"] = self._rsi(df, self.rsi_period)
+        df["atr"] = self._compute_atr(df) # Needed for SL calc
         
         last = df.iloc[-1]
         close = float(last["close"])
         upper = float(last["upper"])
         lower = float(last["lower"])
         rsi = float(last["rsi"])
+        sma = float(last["sma"])
+        atr = float(last["atr"])
 
         items = []
         
@@ -297,12 +299,22 @@ class MeanReversionBollinger:
         dist_lower = (close - lower) / close * 100
         if dist_lower < near_percent and dist_lower > 0:
              # Approaching support
+             # Tentative TP/SL assuming entry at LOWER band
+             tentative_entry = lower
+             tentative_tp = sma if self.tp_method == "SMA" else (tentative_entry + (self.tp_atr_mult * atr))
+             tentative_sl = tentative_entry - (self.sl_atr_mult * atr)
+             # Dynamic confidence based on RSI
+             conf = self._confidence(rsi, 0.0)
+             
              items.append({
                 "strategy_id": self.META.id,
                 "token": token_u,
                 "timeframe": timeframe,
                 "side": "long",
                 "trigger_price": round(lower, 2),
+                "tp": round(tentative_tp, 2),
+                "sl": round(tentative_sl, 2),
+                "confidence": round(conf, 2),
                 "distance_pct": round(dist_lower, 2),
                 "reason": f"Approaching Lower BB. RSI is {rsi:.1f}."
             })
@@ -310,12 +322,21 @@ class MeanReversionBollinger:
         # Near Upper Band?
         dist_upper = (upper - close) / close * 100
         if dist_upper < near_percent and dist_upper > 0:
+             # Tentative TP/SL assuming entry at UPPER band
+             tentative_entry = upper
+             tentative_tp = sma if self.tp_method == "SMA" else (tentative_entry - (self.tp_atr_mult * atr))
+             tentative_sl = tentative_entry + (self.sl_atr_mult * atr)
+             conf = self._confidence(rsi, 0.0)
+
              items.append({
                 "strategy_id": self.META.id,
                 "token": token_u,
                 "timeframe": timeframe,
                 "side": "short",
                 "trigger_price": round(upper, 2),
+                "tp": round(tentative_tp, 2),
+                "sl": round(tentative_sl, 2),
+                "confidence": round(conf, 2),
                 "distance_pct": round(dist_upper, 2),
                 "reason": f"Approaching Upper BB. RSI is {rsi:.1f}."
             })

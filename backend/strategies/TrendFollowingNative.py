@@ -295,12 +295,14 @@ class TrendFollowingNative:
         df["ema_fast"] = df["close"].ewm(span=self.ema_fast, adjust=False).mean()
         df["ema_slow"] = df["close"].ewm(span=self.ema_slow, adjust=False).mean()
         df["adx"] = self._adx(df)
+        df["atr"] = self._atr(df) # Needed for SL/TP calc
 
         last = df.iloc[-1]
         if pd.isna(last["adx"]) or pd.isna(last["ema_fast"]) or pd.isna(last["ema_slow"]):
             return []
 
         adx = float(last["adx"])
+        atr = float(last["atr"])
         close = float(last["close"])
         ef = float(last["ema_fast"])
         es = float(last["ema_slow"])
@@ -317,12 +319,29 @@ class TrendFollowingNative:
         if gap <= near_cross:
             bias = "long" if ef > es else "short"
             # trigger price proxy: ema_slow (the level to cross)
+            trigger_price = round(es, 2)
+            
+            # Tentative TP/SL
+            # If long, TP = Trigger + ATR*Mult
+            if bias == "long":
+                tentative_tp = trigger_price + (self.tp_atr * atr)
+                tentative_sl = trigger_price - (self.sl_atr * atr)
+            else:
+                tentative_tp = trigger_price - (self.tp_atr * atr)
+                tentative_sl = trigger_price + (self.sl_atr * atr)
+            
+            # Confidence from ADX
+            conf = self._confidence_bucket(adx)
+
             items.append({
                 "strategy_id": self.META.id,
                 "token": token_u,
                 "timeframe": timeframe,
                 "side": bias,
-                "trigger_price": round(es, 2),
+                "trigger_price": trigger_price,
+                "tp": round(tentative_tp, 2),
+                "sl": round(tentative_sl, 2),
+                "confidence": round(conf, 2),
                 # Gap shown as % (frontend expects 'distance_atr')
                 "distance_atr": round(gap * 100, 2),
                 "reason": (
