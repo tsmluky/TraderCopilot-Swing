@@ -277,7 +277,7 @@ class StrategyScheduler:
                 # Enrich Signal
                 # strategy_id used to be specific instance ID 'titan_btc_4h'.
                 # Now we can use the Entitlement ID 'TITAN_BREAKOUT_4H' or similar.
-                offering_id = f"{task['strategy_code']}_{task['timeframe']}"
+                offering_id = f"{task['strategy_code']}_{task['timeframe'].upper()}"
                 
                 sig.source = f"PLAN:{task['plan']}:{offering_id}"
                 sig.strategy_id = offering_id
