@@ -254,7 +254,7 @@ class StrategyScheduler:
 
              return signals or []
         except Exception as e:
-            LOG.error("Task failed %s: %s", task["key"], e)
+            LOG.exception("Task failed %s", task["key"])
             return []
 
     def process_and_persist_signals(self, signals: List[Any], task: Dict[str, Any]):
