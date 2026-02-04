@@ -5,7 +5,15 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from datetime import datetime, timedelta
 
+import asyncio
 from fastapi import FastAPI, Depends, HTTPException, Request
+import sys
+
+# Windows Encoding Fix
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except AttributeError:
+    pass
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -261,29 +269,37 @@ async def on_startup():
             else:
                 LOG.info("User Schema integrity check passed.")
 
-            # === PATCH: Signals Table (Independent Check) ===
             try:
                 # Check if is_saved exists
-                # SQLite fallback: PRAGMA table_info(signals)
-                # But generic approach: Try selecting it.
-                # Simplest for SQLite: Just try ADD COLUMN, catch 'duplicate column' error.
-                # BUT we need to commit it.
-                
-                # Let's just try running the ALTER. 
-                # SQLite allows ADD COLUMN even if it exists? No, it throws.
-                # But Postgres/others throw.
-                # We can't rely on information_schema for sqlite easily via SQLA text without exact dialect.
-                
-                # Just FORCE check via try/except on ADD
                 conn.execute(text("ALTER TABLE signals ADD COLUMN is_saved INTEGER DEFAULT 0"))
                 conn.commit()
                 LOG.info("Signals Schema Patch APPLIED (is_saved added).")
             except Exception:
-                # Likely "duplicate column name" -> It exists.
                 conn.rollback()
-                # LOG.info(f"Signals Schema Patch skipped (likely exists): {e}")
                 pass
+
+            # === PATCH: Advisor/Copilot Profiles ===
+            try:
+                # Missing columns: trader_style, risk_tolerance, time_horizon, custom_instructions
+                # We blindly try to add them. If they exist, it fails harmlessly.
+                for col in ["trader_style", "risk_tolerance", "time_horizon"]:
+                    try:
+                        conn.execute(text(f"ALTER TABLE copilot_profiles ADD COLUMN {col} VARCHAR DEFAULT 'BALANCED'"))
+                        LOG.info(f"Copilot Schema Patch: Added {col}")
+                    except Exception:
+                        pass
                 
+                try:
+                    conn.execute(text("ALTER TABLE copilot_profiles ADD COLUMN custom_instructions TEXT"))
+                    LOG.info("Copilot Schema Patch: Added custom_instructions")
+                except Exception:
+                    pass
+
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                LOG.error("Copilot Schema Patch failed")
+
     except Exception:
         LOG.exception("Emergency Schema Patch failed")
 
@@ -310,7 +326,6 @@ async def on_startup():
     if args_run_bot == "true":
         try:
             LOG.info("🚀 Starting Telegram Bot (Polling Mode)...")
-            import asyncio
             from telegram_listener import start_telegram_bot_async
             
             # Use the running loop to schedule the task

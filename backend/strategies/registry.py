@@ -129,7 +129,7 @@ def load_default_strategies():
     
     diff = current_ids - allowed_ids
     if diff:
-        print(f"❌ [SECURITY] Unauthorized strategies detected: {diff}")
+        print(f" [SECURITY] Unauthorized strategies detected: {diff}")
         # Sanitize
         for illegal in diff:
             del r._strategies[illegal]

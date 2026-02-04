@@ -105,7 +105,7 @@ def run_simulation(name, strategy, df):
         return
     
     wins = len([t for t in trades if t > 0])
-    losses = total - wins
+
     win_rate = (wins / total * 100)
     total_r = sum(trades)
     max_dd = calculate_max_drawdown(equity)
@@ -138,7 +138,9 @@ def main():
     # Option 3: STEADY (Classic Trend)
     # EMA 20/50, TP 4.0, SL 1.3
     # Slower entry, but looking for solid moves
-    s3 = TrendFollowingNative(ema_fast=20, ema_slow=50, tp_atr=4.0, sl_atr=1.3, min_adx=25) # Slightly higher ADX for quality
+    s3 = TrendFollowingNative(
+        ema_fast=20, ema_slow=50, tp_atr=4.0, sl_atr=1.3, min_adx=25
+    )  # Slightly higher ADX for quality
     run_simulation("3. STEADY (Classic Approach)", s3, df)
 
 if __name__ == "__main__":
