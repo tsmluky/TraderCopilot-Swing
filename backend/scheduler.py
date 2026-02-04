@@ -239,7 +239,8 @@ class StrategyScheduler:
                              sl=item.get("sl"), 
                              confidence=item.get("confidence", 0.0), # Use strategy confidence
                              rationale=f"[WATCHLIST] {item['reason']}",
-                             strategy_id=f"{task['strategy_code']}_{task['timeframe'].upper()}", # Correct ID for aggregation
+                             # Correct ID for aggregation
+                             strategy_id=f"{task['strategy_code']}_{task['timeframe'].upper()}",
                              mode=task["plan"],
                              timeframe=task["timeframe"],
                              source="ENGINE",
@@ -257,7 +258,7 @@ class StrategyScheduler:
                      signals.extend(watchlist_signals[:2]) 
 
              return signals or []
-        except Exception as e:
+        except Exception:
             LOG.exception("Task failed %s", task["key"])
             return []
 
