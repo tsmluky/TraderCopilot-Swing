@@ -336,7 +336,7 @@ class StrategyScheduler:
         # We use a cache key to avoid spamming the same global signal repeated times 
         # (log_signal handles idempotency DB-side, but duplicate execution might trigger this)
         
-        LOG.info(f"[Fan-Out] Found {len(target_chat_ids)} recipients (Users + Admin) for plan {plan}. Sending alerts...")
+        LOG.info(f"[Fan-Out] Found {len(target_chat_ids)} recipients (Plan+Admin) for {plan}. Sending...")
 
         msg = (
             f"⚡ <b>{plan} ALERT</b>\n"
