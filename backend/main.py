@@ -4,11 +4,6 @@ import threading
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from datetime import datetime, timedelta
-import asyncio
-import sys
-
-# Windows Unicode Console Fix
-sys.stdout.reconfigure(encoding='utf-8')
 
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -289,19 +284,6 @@ async def on_startup():
                 # LOG.info(f"Signals Schema Patch skipped (likely exists): {e}")
                 pass
                 
-            # === PATCH: Copilot Profiles (Advisor) ===
-            try:
-                # Add missing Advisor columns if they don't exist
-                conn.execute(text("ALTER TABLE copilot_profiles ADD COLUMN trader_style VARCHAR DEFAULT 'BALANCED'"))
-                conn.execute(text("ALTER TABLE copilot_profiles ADD COLUMN risk_tolerance VARCHAR DEFAULT 'MODERATE'"))
-                conn.execute(text("ALTER TABLE copilot_profiles ADD COLUMN time_horizon VARCHAR DEFAULT 'SWING'"))
-                conn.execute(text("ALTER TABLE copilot_profiles ADD COLUMN custom_instructions TEXT"))
-                conn.commit()
-                LOG.info("Copilot Profiles Schema Patch APPLIED.")
-            except Exception:
-                conn.rollback()
-                pass
-                
     except Exception:
         LOG.exception("Emergency Schema Patch failed")
 
@@ -391,7 +373,6 @@ def entitlements(user_id: int, db: Session = Depends(get_db)):
 def compute_stats_summary(db: Session, user: User):
     day_ago = datetime.utcnow() - timedelta(hours=24)
     week_ago = datetime.utcnow() - timedelta(days=7)
-    month_ago = datetime.utcnow() - timedelta(days=30)
     test_sources = ["audit_script", "verification"]
 
     def apply_filters(q):
@@ -457,31 +438,6 @@ def compute_stats_summary(db: Session, user: User):
 
     return {
         "win_rate_24h": round(win_rate_24h, 1),
-        "signals_evaluated_24h": int(eval_24h_count),
-        "signals_total_evaluated": int(total_eval),
-        "open_signals": int(open_signals_count),
-        "pnl_7d": round(float(pnl_7d), 2),
-        "wins_7d": int(wins_7d),
-        "losses_7d": int(losses_7d),
-        "signals_evaluated_7d": int(eval_7d_count),
-    }
-
-    # 9) Win Rate 30d (Better KPI for dashboard "vs last 30 days")
-    q_eval_30 = db.query(func.count(SignalEvaluation.id)).join(Signal)
-    q_eval_30 = apply_filters(q_eval_30).filter(SignalEvaluation.evaluated_at >= month_ago)
-    eval_30d_count = q_eval_30.scalar() or 0
-
-    q_wins_30 = db.query(func.count(SignalEvaluation.id)).join(Signal)
-    q_wins_30 = apply_filters(q_wins_30).filter(
-        SignalEvaluation.evaluated_at >= month_ago,
-        SignalEvaluation.result == "WIN",
-    )
-    wins_30d = q_wins_30.scalar() or 0
-    win_rate_30d = (wins_30d / eval_30d_count * 100) if eval_30d_count > 0 else 0
-
-    return {
-        "win_rate_24h": round(win_rate_24h, 1),
-        "win_rate_30d": round(win_rate_30d, 1),
         "signals_evaluated_24h": int(eval_24h_count),
         "signals_total_evaluated": int(total_eval),
         "open_signals": int(open_signals_count),

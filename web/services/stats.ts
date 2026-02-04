@@ -4,7 +4,6 @@ import { apiFetch } from "@/lib/api-client";
 export interface DashboardStats {
     summary: {
         win_rate_24h: number;
-        win_rate_30d: number;
         signals_evaluated_24h: number;
         open_signals: number;
         pnl_7d: number;

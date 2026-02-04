@@ -85,13 +85,13 @@ class Signal(BaseModel):
     tp: Optional[float] = Field(
         None,
         description="Take profit sugerido",
-        ge=0,
+        gt=0,
     )
 
     sl: Optional[float] = Field(
         None,
         description="Stop loss sugerido",
-        ge=0,
+        gt=0,
     )
 
     confidence: Optional[float] = Field(
@@ -169,8 +169,8 @@ class SignalCreate(BaseModel):
         ..., description="Dirección: long|short|neutral", max_length=10
     )
     entry: float = Field(..., description="Precio de entrada", gt=0)
-    tp: Optional[float] = Field(None, description="Take profit", ge=0)
-    sl: Optional[float] = Field(None, description="Stop loss", ge=0)
+    tp: Optional[float] = Field(None, description="Take profit", gt=0)
+    sl: Optional[float] = Field(None, description="Stop loss", gt=0)
     confidence: Optional[float] = Field(
         None, description="Confianza 0-1", ge=0.0, le=1.0
     )

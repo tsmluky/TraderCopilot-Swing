@@ -24,7 +24,6 @@ from sqlalchemy.orm import Session
 
 # Core
 from strategies.registry import get_registry, load_default_strategies
-from strategies.params import get_strategy_params
 from core.signal_logger import log_signal
 from core.entitlements import PLANS
 from notify import send_telegram
@@ -205,85 +204,54 @@ class StrategyScheduler:
             return []
 
         try:
-             # Refactored Loop: "Strategy per Token" (15 Strategies Mode)
-             # Instead of passing all tokens to one instance, we iterate and instantiate
-             # the strategy with specific params for EACH token.
+             # Run Generator
+             # return list of Signal objects (or dicts)
+             signals = strategy_impl.generate_signals(
+                 tokens=task["tokens"],
+                 timeframe=task["timeframe"]
+             )
              
-             # Map Offering Code to Internal Prefix
-             prefix_map = {
-                 "donchian_v2": "Donchian",
-                 "trend_following_native_v1": "TrendFollowing",
-                 "mean_reversion_v1": "MeanReversion"
-             }
-             metric_prefix = prefix_map.get(impl_id, impl_id)
-
-             all_signals = []
+             # MARKETING/ACTIVITY BOOST:
+             # If no confirmed trades, check for "Watchlist" items (Near-Misses)
+             # and convert them to 'WATCH' type signals to show activity.
+             # Only do this for 'PRO' plan to add value? No, do it for all to show system matches.
              
-             for token in task["tokens"]:
-                 # 1. Get Params for this specific token (e.g. SOL might have wider stops)
-                 params = get_strategy_params(impl_id, token)
+             if not signals:
+                 # Check watchlist for each token?
+                 # Strategy analyze_watchlist takes 1 token at a time usually
+                 watchlist_signals = []
+                 from core.schemas import Signal # Ensure imported
+                 from datetime import datetime
                  
-                 # 2. Instantiate Strategy
-                 # strategy_impl is an INSTANCE returned by registry.get()
-                 # We need the CLASS to create a fresh one with specific params.
-                 StrategyClass = type(strategy_impl)
-                 
-                 try:
-                     strategy_instance = StrategyClass(**params)
-                 except TypeError as te:
-                     LOG.warning(f"Param mismatch for {impl_id} on {token}: {te}. Using defaults.")
-                     strategy_instance = StrategyClass()
-
-                 # 3. Generate Signal (Single Token)
-                 # We execute just for this token to ensure parameters are isolated
-                 sigs = strategy_instance.generate_signals(
-                     tokens=[token],
-                     timeframe=task["timeframe"]
-                 ) or []
-                 
-                 # 4. Enrich Signals with Explicit IDs
-                 for s in sigs:
-                    # Construct specific ID: Donchian_BTC (No timeframe suffix per request)
-                    s.strategy_id = f"{metric_prefix}_{token.upper()}"
-                    s.source = f"PLAN:{task['plan']}:{task['strategy_code']}" 
-                    all_signals.append(s)
-
-                 # 5. Activity/Watchlist Logic (Per Token)
-                 if not sigs:
-                     try:
-                         # Ensure imported locally if not at top
-                         from core.schemas import Signal 
+                 for t in task["tokens"]:
+                     items = strategy_impl.analyze_watchlist(t, task["timeframe"])
+                     for item in items:
+                         # Convert dict to Signal (Activity Mode)
+                         # direction = item['side']
+                         # confidence = 0 (Neutral / Watch)
                          
-                         items = strategy_instance.analyze_watchlist(token, task["timeframe"])
-                         for item in items:
-                             w_sig = Signal(
-                                 timestamp=datetime.utcnow(),
-                                 token=item["token"],
-                                 direction=item["side"],
-                                 entry=item["trigger_price"],
-                                 tp=0.0,
-                                 sl=0.0,
-                                 confidence=0.0,
-                                 rationale=f"[WATCHLIST] {item['reason']}",
-                                 # Explicit ID: Donchian_BTC
-                                 strategy_id=f"{metric_prefix}_{token.upper()}",
-                                 source=f"WATCH:{task['plan']}:{task['strategy_code']}",
-                                 mode=task["plan"],
-                                 timeframe=task["timeframe"],
-                                 extra={
-                                     "setup": "Watchlist Monitor",
-                                     "distance_atr": item.get("distance_atr"),
-                                     "is_watchlist": True
-                                 }
-                             )
-                             # Limit 1 watchlist item per token per run 
-                             all_signals.append(w_sig)
-                             break 
-                     except Exception as we:
-                         LOG.warning(f"Watchlist check failed for {token}: {we}")
+                         w_sig = Signal(
+                             timestamp=datetime.utcnow(),
+                             token=item["token"],
+                             direction=item["side"], # 'long' or 'short' bias
+                             entry=item["trigger_price"], # Pivot price
+                             tp=0.0,
+                             sl=0.0,
+                             confidence=0.0, # 0.0 explicitly marks it as WATCH/NEUTRAL
+                             rationale=f"[WATCHLIST] {item['reason']}",
+                             extra={
+                                 "setup": "Watchlist Monitor",
+                                 "distance_atr": item.get("distance_atr"),
+                                 "is_watchlist": True
+                             }
+                         )
+                         watchlist_signals.append(w_sig)
+                 
+                 # Limit watchlist noise? Maybe just top 1 per task?
+                 if watchlist_signals:
+                     signals.extend(watchlist_signals[:2]) 
 
-             return all_signals
-
+             return signals or []
         except Exception as e:
             LOG.error("Task failed %s: %s", task["key"], e)
             return []
@@ -301,17 +269,13 @@ class StrategyScheduler:
             # 1. Persist Master Signals
             cnt = 0
             for sig in signals:
-                if not sig.strategy_id:
-                     # Fallback if somehow missing - Use simplified format
-                     # This might happen if 'signals' passed in didn't go through the enrichment loop above
-                     # But in execute_task we append enriched signals.
-                     # Default fallback:
-                     sig.strategy_id = f"{task['strategy_code']}_{task['strategy_code']}" # Ugly but failsafe
-
-                # Ensure source is set if not already
-                if not sig.source:
-                     sig.source = f"PLAN:{task['plan']}:{task['strategy_code']}"
-
+                # Enrich Signal
+                # strategy_id used to be specific instance ID 'titan_btc_4h'.
+                # Now we can use the Entitlement ID 'TITAN_BREAKOUT_4H' or similar.
+                offering_id = f"{task['strategy_code']}_{task['timeframe']}"
+                
+                sig.source = f"PLAN:{task['plan']}:{offering_id}"
+                sig.strategy_id = offering_id
                 sig.mode = task["plan"] # Scope
                 sig.user_id = None # Master Signal
                 sig.is_saved = 1
