@@ -235,10 +235,14 @@ class StrategyScheduler:
                              token=item["token"],
                              direction=item["side"], # 'long' or 'short' bias
                              entry=item["trigger_price"], # Pivot price
-                             tp=0.0,
-                             sl=0.0,
+                             tp=None, 
+                             sl=None, 
                              confidence=0.0, # 0.0 explicitly marks it as WATCH/NEUTRAL
                              rationale=f"[WATCHLIST] {item['reason']}",
+                             strategy_id=task["strategy_code"],
+                             mode=task["plan"],
+                             timeframe=task["timeframe"],
+                             source="ENGINE",
                              extra={
                                  "setup": "Watchlist Monitor",
                                  "distance_atr": item.get("distance_atr"),
