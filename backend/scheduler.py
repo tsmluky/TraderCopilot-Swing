@@ -243,6 +243,7 @@ class StrategyScheduler:
                              mode=task["plan"],
                              timeframe=task["timeframe"],
                              source="ENGINE",
+                             is_saved=1, # Explicitly mark as valid for Strategy Hub counting
                              extra={
                                  "setup": "Watchlist Monitor",
                                  "distance_atr": item.get("distance_atr"),
