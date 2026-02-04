@@ -222,6 +222,18 @@ async def on_startup():
     except Exception:
         LOG.exception("Alembic Migrations failed!")
 
+    # === ONE-TIME CLEANUP (Added by User Request) ===
+    # This runs securely inside the container on startup
+    try:
+        LOG.warning("🧹 STARTUP CLEANUP: Wiping Signals...")
+        with engine.connect() as conn:
+            conn.execute(text("DELETE FROM signal_evaluations"))
+            conn.execute(text("DELETE FROM signals"))
+            conn.commit()
+            LOG.info("✅ STARTUP CLEANUP: All signals deleted.")
+    except Exception as e:
+        LOG.error(f"Startup Cleanup Failed: {e}")
+
     # 2) EMERGENCY PATCH: Raw SQL Fallback (Self-Healing)
     try:
         LOG.info("Running Emergency Schema Patch (Raw SQL)...")
@@ -500,6 +512,9 @@ app.include_router(system_router, prefix="/system", tags=["System"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 
 app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
+
+
+
 
 
 if __name__ == "__main__":
