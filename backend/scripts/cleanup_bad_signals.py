@@ -40,7 +40,7 @@ def cleanup_signals():
             res_signals = conn.execute(del_signals)
             
             conn.commit()
-            print(f"✅ Cleanup Complete!")
+            print("✅ Cleanup Complete!")
             print(f"   - Removed {res_evals.rowcount} evaluations.")
             print(f"   - Removed {res_signals.rowcount} signals.")
 
