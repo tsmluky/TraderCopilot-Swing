@@ -304,6 +304,10 @@ class DonchianBreakoutV2:
         long_bias = close > ema200
         dist_to_upper_atr = (upper - close) / atr
         if long_bias and dist_to_upper_atr >= 0 and dist_to_upper_atr <= near_atr:
+            # Dynamic Confidence: Closer = Higher. 
+            # Range: 0.5 (at margin) -> 0.9 (at breakout)
+            conf_score = 0.5 + (0.4 * (1.0 - (dist_to_upper_atr / near_atr)))
+            
             items.append({
                 "strategy_id": self.META.id,
                 "token": token_u,
@@ -313,6 +317,7 @@ class DonchianBreakoutV2:
                 "tp": round(upper + (self.tp_atr * atr), 2),
                 "sl": round(upper - (self.sl_atr * atr), 2),
                 "distance_atr": round(dist_to_upper_atr, 3),
+                "confidence": round(conf_score, 2),
                 "reason": (
                     f"Near Donchian upper. Need breakout. Dist ≈ {dist_to_upper_atr:.2f} ATR. "
                     "Trend: bullish (above EMA200)."
@@ -323,6 +328,9 @@ class DonchianBreakoutV2:
         short_bias = close < ema200
         dist_to_lower_atr = (close - lower) / atr
         if short_bias and dist_to_lower_atr >= 0 and dist_to_lower_atr <= near_atr:
+             # Dynamic Confidence: Closer = Higher.
+            conf_score = 0.5 + (0.4 * (1.0 - (dist_to_lower_atr / near_atr)))
+            
             items.append({
                 "strategy_id": self.META.id,
                 "token": token_u,
@@ -332,6 +340,7 @@ class DonchianBreakoutV2:
                 "tp": round(lower - (self.tp_atr * atr), 2),
                 "sl": round(lower + (self.sl_atr * atr), 2),
                 "distance_atr": round(dist_to_lower_atr, 3),
+                "confidence": round(conf_score, 2),
                 "reason": (
                     f"Near Donchian lower. Need breakdown. Dist ≈ {dist_to_lower_atr:.2f} ATR. "
                     "Trend: bearish (below EMA200)."

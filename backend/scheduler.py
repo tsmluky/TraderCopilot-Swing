@@ -237,9 +237,9 @@ class StrategyScheduler:
                              entry=item["trigger_price"], # Pivot price
                              tp=item.get("tp"), 
                              sl=item.get("sl"), 
-                             confidence=0.0, # 0.0 explicitly marks it as WATCH/NEUTRAL
+                             confidence=item.get("confidence", 0.0), # Use strategy confidence
                              rationale=f"[WATCHLIST] {item['reason']}",
-                             strategy_id=f"{task['strategy_code']}_{task['timeframe']}", # Correct ID for aggregation
+                             strategy_id=f"{task['strategy_code']}_{task['timeframe'].upper()}", # Correct ID for aggregation
                              mode=task["plan"],
                              timeframe=task["timeframe"],
                              source="ENGINE",
