@@ -63,9 +63,9 @@ def _calculate_stats(db: Session, strategy_code: str, timeframe: str) -> Dict[st
         
         # 1. Total Signals
         # We also look for legacy IDs if needed, but for now stick to the new standard.
-        # If the system is fresh, standard is fine.
+        # Use ilike to handle case mismatches (old signals might be _1d)
         total = db.query(Signal).filter(
-            Signal.strategy_id == target_id,
+            Signal.strategy_id.ilike(target_id),
             Signal.is_saved == 1
         ).count()
         
@@ -78,7 +78,7 @@ def _calculate_stats(db: Session, strategy_code: str, timeframe: str) -> Dict[st
         evals = (
             db.query(SignalEvaluation)
             .join(Signal)
-            .filter(Signal.strategy_id == target_id)
+            .filter(Signal.strategy_id.ilike(target_id))
             .all()
         )
         

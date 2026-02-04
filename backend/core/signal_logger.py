@@ -82,7 +82,7 @@ def _snap_to_grid(dt: datetime, tf_str: str) -> datetime:
     """
     dt = dt.replace(second=0, microsecond=0)
     
-    match = re.match(r"(\d+)([mhd])", tf_str)
+    match = re.match(r"(\d+)([mhd])", tf_str.lower())
     if not match:
         return dt # Fallback: return truncated seconds
         

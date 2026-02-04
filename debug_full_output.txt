@@ -1,0 +1,70 @@
+[DB DEBUG] Original URL starts with: sqlite:///./dev_...
+[DB DEBUG] Final URL starts with: sqlite:///./dev_local.db...
+[DB] Using Configured Database
+[SECURITY WARNING] SECRET_KEY not set. Using insecure default for DEV ONLY.
+[LIMITER] WARNING: Using MemoryStorage (Not suitable for multi-worker production).
+--- Simulating GET /strategies/marketplace for PRO user ---
+Found 9 offerings.
+Strategy: TITAN_BREAKOUT | TF: 1H
+  -> Generated ID: TITAN_BREAKOUT_1H
+  -> Stats: {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+     [WARNING] count is 0. Checking DB details...
+     DB Check: Saved=1 -> 0
+     DB Check: Any     -> 0
+     DB Check: Lower   -> 0
+Strategy: TITAN_BREAKOUT | TF: 4H
+  -> Generated ID: TITAN_BREAKOUT_4H
+  -> Stats: {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+     [WARNING] count is 0. Checking DB details...
+     DB Check: Saved=1 -> 0
+     DB Check: Any     -> 0
+     DB Check: Lower   -> 0
+Strategy: TITAN_BREAKOUT | TF: 1D
+  -> Generated ID: TITAN_BREAKOUT_1D
+  -> Stats: {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+     [WARNING] count is 0. Checking DB details...
+     DB Check: Saved=1 -> 0
+     DB Check: Any     -> 0
+     DB Check: Lower   -> 0
+Strategy: FLOW_MASTER | TF: 1H
+  -> Generated ID: FLOW_MASTER_1H
+  -> Stats: {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+     [WARNING] count is 0. Checking DB details...
+     DB Check: Saved=1 -> 0
+     DB Check: Any     -> 0
+     DB Check: Lower   -> 0
+Strategy: FLOW_MASTER | TF: 4H
+  -> Generated ID: FLOW_MASTER_4H
+  -> Stats: {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+     [WARNING] count is 0. Checking DB details...
+     DB Check: Saved=1 -> 0
+     DB Check: Any     -> 0
+     DB Check: Lower   -> 0
+Strategy: FLOW_MASTER | TF: 1D
+  -> Generated ID: FLOW_MASTER_1D
+  -> Stats: {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+     [WARNING] count is 0. Checking DB details...
+     DB Check: Saved=1 -> 0
+     DB Check: Any     -> 0
+     DB Check: Lower   -> 0
+Strategy: MEAN_REVERSION | TF: 1H
+  -> Generated ID: MEAN_REVERSION_1H
+  -> Stats: {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+     [WARNING] count is 0. Checking DB details...
+     DB Check: Saved=1 -> 0
+     DB Check: Any     -> 0
+     DB Check: Lower   -> 0
+Strategy: MEAN_REVERSION | TF: 4H
+  -> Generated ID: MEAN_REVERSION_4H
+  -> Stats: {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+     [WARNING] count is 0. Checking DB details...
+     DB Check: Saved=1 -> 0
+     DB Check: Any     -> 0
+     DB Check: Lower   -> 0
+Strategy: MEAN_REVERSION | TF: 1D
+  -> Generated ID: MEAN_REVERSION_1D
+  -> Stats: {'win_rate': 'N/A', 'total_signals': 0, 'avg_return': '0.0'}
+     [WARNING] count is 0. Checking DB details...
+     DB Check: Saved=1 -> 0
+     DB Check: Any     -> 0
+     DB Check: Lower   -> 0
