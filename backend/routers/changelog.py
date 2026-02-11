@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 from pydantic import BaseModel
 from datetime import datetime
 import json
@@ -50,7 +50,7 @@ def get_changelog(db: Session = Depends(get_db)):
         try:
             if log.changes:
                 changes_list = json.loads(log.changes)
-        except:
+        except Exception:
             pass
             
         results.append(ChangelogResponse(
