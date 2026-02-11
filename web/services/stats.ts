@@ -15,8 +15,8 @@ export interface DashboardStats {
 }
 
 export const statsService = {
-    getDashboardStats: async () => {
-        return apiFetch<DashboardStats>("/stats/dashboard");
+    getDashboardStats: async (source: string = 'ALL') => {
+        return apiFetch<DashboardStats>(`/stats/dashboard?source_filter=${source}`);
     },
 
     getStatsSummary: async () => {

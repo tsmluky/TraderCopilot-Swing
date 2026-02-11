@@ -2,8 +2,8 @@ import { apiFetch } from "@/lib/api-client";
 import { Signal } from "@/lib/types";
 
 export const signalsService = {
-    getRecent: async (limit = 50, offset = 0) => {
-        return apiFetch(`/signals/?limit=${limit}&offset=${offset}`);
+    getRecent: async (limit = 50, offset = 0, source: string = 'ALL') => {
+        return apiFetch(`/signals/?limit=${limit}&offset=${offset}&source_filter=${source}`);
     },
 
     getById: async (id: string) => {

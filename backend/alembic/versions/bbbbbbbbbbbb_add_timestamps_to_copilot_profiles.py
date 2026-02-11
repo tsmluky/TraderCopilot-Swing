@@ -31,8 +31,15 @@ def upgrade():
         op.add_column('copilot_profiles', sa.Column('updated_at', sa.DateTime(), nullable=True))
     
     # Optional: Backfill existing rows with current time (idempotent query)
-    op.execute("UPDATE copilot_profiles SET created_at = NOW() WHERE created_at IS NULL")
-    op.execute("UPDATE copilot_profiles SET updated_at = NOW() WHERE updated_at IS NULL")
+    # Use sqlalchemy expression to be dialect agnostic (sqlite vs postgres)
+    copilot_profiles = sa.table('copilot_profiles', sa.column('created_at'), sa.column('updated_at'))
+    
+    op.execute(
+        copilot_profiles.update().where(copilot_profiles.c.created_at.is_(None)).values(created_at=sa.func.now())
+    )
+    op.execute(
+        copilot_profiles.update().where(copilot_profiles.c.updated_at.is_(None)).values(updated_at=sa.func.now())
+    )
 
 
 def downgrade():

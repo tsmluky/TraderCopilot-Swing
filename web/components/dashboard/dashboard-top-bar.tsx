@@ -18,6 +18,8 @@ interface DashboardTopBarProps {
   selectedTimeframe: Timeframe | 'ALL'
   onTokenChange: (token: Token | 'ALL') => void
   onTimeframeChange: (timeframe: Timeframe | 'ALL') => void
+  sourceFilter: 'ALL' | 'MANUAL' | 'STRATEGY'
+  onSourceFilterChange: (filter: 'ALL' | 'MANUAL' | 'STRATEGY') => void
 }
 
 export function DashboardTopBar({
@@ -25,6 +27,8 @@ export function DashboardTopBar({
   selectedTimeframe,
   onTokenChange,
   onTimeframeChange,
+  sourceFilter,
+  onSourceFilterChange,
 }: DashboardTopBarProps) {
   const { user } = useUser()
   // Adjust features to safe defaults
@@ -115,6 +119,48 @@ export function DashboardTopBar({
               </button>
             )
           })}
+        </div>
+        {/* Source Filter (New) */}
+        <div className="bg-black/5 dark:bg-black/20 backdrop-blur-md p-1 rounded-xl border border-black/5 dark:border-white/5 flex items-center">
+          <span className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 opacity-50">
+            Source
+          </span>
+          <button
+            onClick={() => onSourceFilterChange('ALL')}
+            className={cn(
+              'px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300',
+              sourceFilter === 'ALL'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+            )}
+          >
+            All
+          </button>
+          <div className="w-px h-4 bg-black/10 dark:bg-white/10 mx-1" />
+
+          <button
+            onClick={() => onSourceFilterChange('MANUAL')}
+            className={cn(
+              'px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300',
+              sourceFilter === 'MANUAL'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+            )}
+          >
+            Scanner
+          </button>
+
+          <button
+            onClick={() => onSourceFilterChange('STRATEGY')}
+            className={cn(
+              'px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300',
+              sourceFilter === 'STRATEGY'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+            )}
+          >
+            Strategies
+          </button>
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import { useUser } from '@/lib/user-context'
 import type { Token, Timeframe, Signal } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { statsService } from '@/services/stats'
 import { signalsService } from '@/services/signals'
 
@@ -17,6 +18,7 @@ export function DashboardOverview() {
   const { canAccessTelegram, user } = useUser()
   const [selectedToken, setSelectedToken] = useState<Token | 'ALL'>('ALL')
   const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe | 'ALL'>('ALL')
+  const [sourceFilter, setSourceFilter] = useState<'ALL' | 'MANUAL' | 'STRATEGY'>('ALL')
 
   const [stats, setStats] = useState<any>({
     winRate: 0,
@@ -32,8 +34,8 @@ export function DashboardOverview() {
     setIsLoading(true)
     try {
       const [statsData, signalsData] = await Promise.all([
-        statsService.getDashboardStats(),
-        signalsService.getRecent(50)
+        statsService.getDashboardStats(sourceFilter),
+        signalsService.getRecent(50, 0, sourceFilter)
       ])
 
       // Map Stats: Adapting backend summary to UI expectations
@@ -63,7 +65,7 @@ export function DashboardOverview() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [sourceFilter]) // Refetch when source filter changes
 
   return (
     <div className="space-y-4">
@@ -73,7 +75,11 @@ export function DashboardOverview() {
         selectedTimeframe={selectedTimeframe}
         onTokenChange={setSelectedToken}
         onTimeframeChange={setSelectedTimeframe}
+        sourceFilter={sourceFilter}
+        onSourceFilterChange={setSourceFilter}
       />
+
+
 
       {/* KPI Cards */}
       <KPICards data={stats} isLoading={isLoading} />
@@ -91,7 +97,6 @@ export function DashboardOverview() {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {/* Telegram Status Card */}
           {/* Telegram Status Card */}
           {canAccessTelegram() ? (
             <Card className="bg-white dark:bg-card/40 backdrop-blur-xl border-black/5 dark:border-white/5 overflow-hidden group hover:border-primary/20 transition-all duration-500 shadow-sm dark:shadow-none">

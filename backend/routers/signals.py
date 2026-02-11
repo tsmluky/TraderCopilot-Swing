@@ -1,4 +1,6 @@
 from datetime import datetime
+import json
+import ast
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -33,6 +35,7 @@ def get_signals(
     offset: int = 0,
     token: Optional[str] = None,
     strategy_id: Optional[str] = None,
+    source_filter: str = "ALL", # ALL, MANUAL, STRATEGY
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -61,6 +64,12 @@ def get_signals(
             
         if strategy_id:
             query = query.filter(Signal.strategy_id == strategy_id)
+            
+        # Source Filter
+        if source_filter == "MANUAL":
+            query = query.filter(Signal.source == "manual_scanner")
+        elif source_filter == "STRATEGY":
+            query = query.filter(Signal.source != "manual_scanner")
             
         # Hard filter out "verification" signals from audit
         query = query.filter(Signal.source != "verification")
@@ -137,10 +146,14 @@ def create_manual_signal(
     Manually create/accept a signal (e.g. from Scanner Watchlist).
     """
     try:
+        # Prepare Extra Data with Original Strategy ID
+        extra_data = payload.extra or {}
+        extra_data["original_strategy_id"] = payload.strategy_id
+        
         # Convert to Schema
         sig_data = SignalSchema(
             timestamp=datetime.utcnow(),
-            strategy_id=payload.strategy_id,
+            strategy_id="MARKET_SCANNER", # Standardized ID for Filter
             mode="MANUAL",
             token=payload.token.upper(),
             timeframe=payload.timeframe,
@@ -151,8 +164,9 @@ def create_manual_signal(
             confidence=payload.confidence,
             rationale=payload.rationale,
             source="manual_scanner",
-            extra=payload.extra,
-            user_id=current_user.id
+            extra=extra_data,
+            user_id=current_user.id,
+            is_saved=1
         )
         
         saved_id = log_signal(sig_data)
@@ -180,8 +194,35 @@ def accept_signal(
         if signal.user_id and signal.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized")
 
-        # 3. Flip to saved
+        # 3. Flip to saved & Standardize ID
         signal.is_saved = 1
+        
+        # Standardize as Market Scanner Signal if not already
+        if signal.strategy_id != "MARKET_SCANNER":
+            # Hydrate current extra (Handle legacy raw_response)
+            current_extra = {}
+            if signal.extra:
+                try:
+                    current_extra = json.loads(signal.extra)
+                except Exception:
+                    pass
+            elif signal.raw_response:
+                try:
+                    # Legacy fallback: raw_response stored str(dict)
+                    current_extra = ast.literal_eval(signal.raw_response)
+                except Exception:
+                    pass
+
+            current_extra["original_strategy_id"] = signal.strategy_id
+            
+            # Save back as JSON string
+            signal.extra = json.dumps(current_extra)
+            signal.strategy_id = "MARKET_SCANNER"
+            signal.source = "manual_scanner"
+            
+            # Optional: Clear raw_response to avoid confusion? 
+            # signal.raw_response = None 
+
         db.commit()
         
         return {"status": "accepted", "id": signal_id}
@@ -193,32 +234,6 @@ def accept_signal(
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-@router.delete("/{signal_id}", response_model=Dict[str, Any])
-def delete_signal(
-    signal_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Delete a specific signal.
-    """
-    try:
-        signal = db.query(Signal).filter(Signal.id == signal_id).first()
-        if not signal:
-            raise HTTPException(status_code=404, detail="Signal not found")
-        
-        # Ownership check: Only owner or admin can delete
-        # For now, simplistic check: if it has a user_id, it must match.
-        if signal.user_id and signal.user_id != current_user.id:
-             raise HTTPException(status_code=403, detail="Not authorized to delete this signal")
-
-        db.delete(signal)
-        db.commit()
-        return {"status": "deleted", "id": signal_id}
-        
-    except Exception as e:
-        print(f"[SIGNALS] Delete Error: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.get("/{signal_id}", response_model=Dict[str, Any])
 def get_signal_by_id(
@@ -270,4 +285,55 @@ def get_signal_by_id(
         raise
     except Exception as e:
         print(f"[SIGNALS] Get By ID Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+@router.delete("/{signal_id}", response_model=Dict[str, Any])
+def delete_signal(
+    signal_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a signal and its associated data (evaluations).
+    """
+    try:
+        # 1. Find signal
+        signal = db.query(Signal).filter(Signal.id == signal_id).first()
+        if not signal:
+            raise HTTPException(status_code=404, detail="Signal not found")
+
+        # 2. Ownership / Permission Check
+        # User can delete their own signals.
+        # System signals (user_id is NULL) can represent shared strategies. 
+        # Requirement: "borrarla completamente de la base de datos de ese usuario en particular"
+        # Since 'System' signals are shared, deleting them deletes for EVERYONE.
+        # IF the intention is to "Hide" it from this user, we should use 'is_hidden'.
+        # BUT the user asked "borrarla completamente".
+        # If the user is ADMIN, allow everything.
+        # If the user is OWNER of the signal, allow.
+        
+        is_owner = signal.user_id == current_user.id
+        is_admin = current_user.role == "admin"
+        
+        if not (is_owner or is_admin):
+             # If it's a shared signal, checking if we should just "Hide" it?
+             # For now, strictly follow "Delete" semantics but protect shared data.
+             raise HTTPException(status_code=403, detail="Not authorized to delete this signal (System Signal).")
+
+        # 3. Cascade Delete (Evaluation)
+        from models_db import SignalEvaluation
+        db.query(SignalEvaluation).filter(SignalEvaluation.signal_id == signal_id).delete()
+
+        # 4. Delete Signal
+        db.delete(signal)
+        db.commit()
+
+        return {"status": "deleted", "id": signal_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[SIGNALS] Delete Error: {e}")
+        db.rollback()
         raise HTTPException(status_code=500, detail="Internal Server Error")

@@ -332,11 +332,12 @@ def build_lite_swing_signal(
                         try:
                             # Looser params for On-Demand "Weak Signal" checking
                             # We want to show SOMETHING if the user asks.
+                            # Donchian/MeanRev use 'near_percent' (default 1.5/1.0 -> Relax to 3.0)
+                            # TrendFollowing uses 'near_gap_pct' (default 0.5 -> Relax to 1.0)
                             w_items = strat.analyze_watchlist(
                                 token_u, timeframe, context=context, 
-                                near_atr=3.0,  # Relaxed from 1.5
-                                near_cross=0.08, # Relaxed from 0.03
-                                near_pct=0.03 # Relaxed from 0.015 (MeanReversion)
+                                near_percent=3.0, 
+                                near_gap_pct=1.0
                             )
                             if w_items:
                                 all_watch_items.extend(w_items)

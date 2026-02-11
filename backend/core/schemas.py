@@ -11,7 +11,7 @@ Objetivo: Permitir un único punto de entrada para logging, API y evaluación.
 from __future__ import annotations
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, validator as pydantic_validator
 
 
 class Signal(BaseModel):
@@ -131,6 +131,16 @@ class Signal(BaseModel):
         description="Estado de guardado por usuario: 0=No, 1=Si",
     )
 
+    @pydantic_validator("extra", pre=True)
+    def parse_extra_json(cls, v):
+        if isinstance(v, str):
+            try:
+                import json
+                return json.loads(v)
+            except ValueError:
+                return {} # or v?
+        return v
+    
     class Config:
         json_schema_extra = {
             "example": {

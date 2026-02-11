@@ -128,7 +128,11 @@ export function SignalsFeed({
       {/* Signal Grid */}
       <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {paginatedSignals.map((signal) => (
-          <SignalCard key={signal.id} signal={signal} />
+          <SignalCard
+            key={signal.id}
+            signal={signal}
+            onDeleteSuccess={onRefresh}
+          />
         ))}
       </div>
 

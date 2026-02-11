@@ -9,7 +9,6 @@ Responsabilidad única: recibir una instancia de Signal y persistirla
 en el formato adecuado para logs CSV y base de datos.
 """
 
-from __future__ import annotations
 import csv
 import re
 from datetime import datetime
@@ -62,7 +61,7 @@ def log_signal(signal: Signal, db_session: Any = None) -> Optional[int]:
     
     # Si ya existía, retornamos False y no hacemos CSV/Push (idempotency)
     if not is_new:
-        return False
+        return saved_id
 
     # === 2. Persistir en CSV (Solo si es nueva) ===
     token_lower = signal.token.lower()

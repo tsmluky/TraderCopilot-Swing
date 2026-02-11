@@ -1,6 +1,17 @@
 'use client'
 
-import { ArrowUpRight, ArrowDownRight, Lock, Clock, Check, Loader2, X, AlertTriangle, TrendingUp, MessageSquare, Zap, Activity } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, Lock, Clock, Check, Loader2, X, AlertTriangle, TrendingUp, MessageSquare, Zap, Activity, Trash2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/lib/user-context'
@@ -9,10 +20,14 @@ import { TOKEN_INFO } from '@/lib/types'
 import { formatPrice, timeAgo } from '@/lib/formatters'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { signalsService } from '@/services/signals'
+import { toast } from 'sonner'
+import { useState } from 'react'
 
 interface SignalCardProps {
   signal: Signal
   compact?: boolean
+  onDeleteSuccess?: () => void
 }
 
 function EvaluationBadge({ status, pnl }: { status: EvaluationStatus | string, pnl?: number }) {
@@ -72,9 +87,10 @@ function EvaluationBadge({ status, pnl }: { status: EvaluationStatus | string, p
   return null
 }
 
-export function SignalCard({ signal, compact = false }: SignalCardProps) {
+export function SignalCard({ signal, compact = false, onDeleteSuccess }: SignalCardProps) {
   const { canAccessToken, canAccessTimeframe } = useUser()
   const router = useRouter()
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const isTokenLocked = !canAccessToken(signal.token)
   const isTimeframeLocked = !canAccessTimeframe(signal.timeframe)
@@ -91,6 +107,20 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
 
   // Clean raw audit markers from rationale for display
   const displayRationale = signal.rationale?.replace(/\| AUDIT:.*$/, '')?.trim() || "No rationale provided."
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      await signalsService.deleteSignal(signal.id.toString())
+      toast.success("Signal deleted")
+      if (onDeleteSuccess) onDeleteSuccess()
+    } catch (error) {
+      console.error("Failed to delete signal", error)
+      toast.error("Failed to delete signal")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // Locked state
   if (isLocked) {
@@ -139,9 +169,40 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
               {displayRationale}
             </p>
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{timeAgo(signal.timestamp)}</span>
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3" />
+              <span>{timeAgo(signal.timestamp)}</span>
+            </div>
+            <div>
+              {/* Delete Button for Neutral too */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded-full hover:bg-red-500/10 hover:text-red-500 text-muted-foreground/50 transition-colors"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Signal?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this signal.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         </div>
       </div>
@@ -210,7 +271,7 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
       </div>
 
       {/* Body */}
-      <div className="px-3 pb-3 space-y-2">
+      <div className="px-3 pb-3 space-y-2 relative z-20">
         {/* Entry range - highlighted */}
         <div className="rounded-lg bg-secondary/50 p-2">
           <div className="flex items-center justify-between mb-1">
@@ -274,7 +335,7 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between border-t border-border/50 px-3 py-2 bg-secondary/5">
+      <div className="flex items-center justify-between border-t border-border/50 px-3 py-2 bg-secondary/5 relative z-20">
         <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
           <Clock className="h-3 w-3" />
           <span>{timeAgo(signal.timestamp)}</span>
@@ -355,6 +416,36 @@ export function SignalCard({ signal, compact = false }: SignalCardProps) {
           >
             <MessageSquare className="h-3.5 w-3.5" />
           </Button>
+
+          {/* DELETE BUTTON - ADDED HERE to preserve layout */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                disabled={isDeleting}
+                title="Delete Signal"
+              >
+                {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Signal?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete this signal and remove it from your statistics.
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white">
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>

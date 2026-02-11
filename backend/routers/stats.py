@@ -11,15 +11,17 @@ router = APIRouter(tags=["Stats"], dependencies=[Depends(get_current_user)])
 
 @router.get("/dashboard")
 def get_dashboard_stats(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    source_filter: str = "ALL",  # ALL, MANUAL, STRATEGY
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
 ):
     """
     Returns aggregated stats and chart data for the dashboard.
     User-scoped: shows signals created by the user or system signals visible to them.
     """
     try:
-        summary = compute_stats_summary(db, current_user)
-        chart_data = get_performance_chart(db, current_user)
+        summary = compute_stats_summary(db, current_user, source_filter)
+        chart_data = get_performance_chart(db, current_user, source_filter)
         return {"summary": summary, "chart": chart_data}
     except Exception as e:
         print(f"[STATS] Error calculating dashboard stats: {e}")
@@ -38,18 +40,27 @@ def get_dashboard_stats(
         }
 
 
-def compute_stats_summary(db: Session, user: User):
+def compute_stats_summary(db: Session, user: User, source_filter: str = "ALL"):
     day_ago = datetime.utcnow() - timedelta(hours=24)
     week_ago = datetime.utcnow() - timedelta(days=7)
     test_sources = ["audit_script", "verification"]
 
     # Common filter for user visibility (Own + System)
     def visible_filter(q):
-        return q.filter(
+        # Base visibility
+        q = q.filter(
             or_(Signal.user_id == user.id, Signal.user_id.is_(None)),
             Signal.source.notin_(test_sources),
             Signal.is_saved == 1
         )
+        
+        # Apply Source Filter
+        if source_filter == "MANUAL":
+            q = q.filter(Signal.source == "manual_scanner")
+        elif source_filter == "STRATEGY":
+            q = q.filter(Signal.source != "manual_scanner")
+            
+        return q
 
     # Total Evaluated (All Time)
     q_total = db.query(func.count(SignalEvaluation.id)).join(Signal)
@@ -158,11 +169,11 @@ def compute_stats_summary(db: Session, user: User):
     }
 
 
-def get_performance_chart(db: Session, user: User):
+def get_performance_chart(db: Session, user: User, source_filter: str = "ALL"):
     week_ago = datetime.utcnow() - timedelta(days=7)
     test_sources = ["audit_script", "verification"]
 
-    active_evals = (
+    query = (
         db.query(SignalEvaluation.evaluated_at, SignalEvaluation.result)
         .join(Signal)
         .filter(
@@ -171,8 +182,15 @@ def get_performance_chart(db: Session, user: User):
             Signal.source.notin_(test_sources),
             Signal.is_saved == 1,
         )
-        .all()
     )
+
+    # Apply Source Filter
+    if source_filter == "MANUAL":
+        query = query.filter(Signal.source == "manual_scanner")
+    elif source_filter == "STRATEGY":
+        query = query.filter(Signal.source != "manual_scanner")
+
+    active_evals = query.all()
 
     from collections import defaultdict
 
