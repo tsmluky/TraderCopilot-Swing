@@ -51,7 +51,7 @@ export function AppSidebar() {
   const { state } = useSidebar()
   const isCollapsed = state === 'collapsed'
 
-  const planLabel = user?.plan === 'FREE' ? 'Trial' : user?.plan === 'TRADER' ? 'SwingLite' : 'SwingPro'
+  const planLabel = user?.plan === 'FREE' ? 'Trial' : user?.plan === 'TRADER' ? 'SwingLite' : user?.plan === 'OWNER' ? 'Owner' : 'SwingPro'
 
   return (
     <TooltipProvider delayDuration={0}>

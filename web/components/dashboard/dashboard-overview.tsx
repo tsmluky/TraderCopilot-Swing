@@ -153,8 +153,8 @@ export function DashboardOverview() {
             </CardContent>
           </Card>
 
-          {/* Gating Restrictions Info - Hide for PRO */}
-          {(!user || user.plan !== 'PRO') && (
+          {/* Gating Restrictions Info - Hide for PRO and OWNER */}
+          {(!user || !['PRO', 'OWNER'].includes(user.plan)) && (
             <Card className="bg-white dark:bg-card/50 border-black/10 dark:border-border border-dashed shadow-sm dark:shadow-none">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground leading-relaxed">

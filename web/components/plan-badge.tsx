@@ -26,6 +26,11 @@ export function PlanBadge() {
       icon: Crown,
       className: 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20',
     },
+    OWNER: {
+      label: 'Owner',
+      icon: Crown,
+      className: 'bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20',
+    },
   }
 
   const planKey = (user.plan || 'FREE').toUpperCase()

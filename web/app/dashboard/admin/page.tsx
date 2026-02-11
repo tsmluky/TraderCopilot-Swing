@@ -191,6 +191,22 @@ export default function AdminPage() {
                 </Card>
             </div>
 
+            {/* Management Links */}
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:bg-card/80 transition-colors cursor-pointer" onClick={() => router.push('/dashboard/admin/changelog')}>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <Activity className="h-5 w-5 text-indigo-500" />
+                            Changelog
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">Manage application updates, release notes, and version history.</p>
+                        <Button variant="outline" size="sm" className="w-full">Manage Updates</Button>
+                    </CardContent>
+                </Card>
+            </div>
+
             {/* User Management */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">

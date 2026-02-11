@@ -9,6 +9,7 @@ import { useUser } from '@/lib/user-context'
 import { PLAN_FEATURES, TOKEN_INFO } from '@/lib/types'
 import type { Token, Timeframe } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { ChangelogModal } from '@/components/changelog-modal'
 
 const ALL_TOKENS: Token[] = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP']
 const ALL_TIMEFRAMES: Timeframe[] = ['1H', '4H', '1D']
@@ -164,8 +165,12 @@ export function DashboardTopBar({
         </div>
       </div>
 
-      {/* Upgrade Button (Only for Non-PRO) */}
+      {/* Right Side Actions */}
       <div className="flex items-center gap-3">
+        {/* Changelog / What's New */}
+        <ChangelogModal />
+
+        {/* Upgrade Button (Only for Non-PRO) */}
         {user?.plan !== 'PRO' && (
           <Link href="/pricing">
             <Button size="sm" className="gap-2 h-9 px-4 bg-gradient-to-r from-primary to-blue-600 border-0 shadow-lg shadow-primary/20 hover:scale-105 transition-all">

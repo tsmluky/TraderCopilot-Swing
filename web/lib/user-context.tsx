@@ -58,7 +58,9 @@ export function useUser() {
   const rawPlan = (authUser?.plan || 'FREE').toUpperCase();
   let normalizedPlan: Plan = 'FREE';
 
-  if (rawPlan.includes('PRO') || rawPlan.includes('OWNER')) {
+  if (rawPlan.includes('OWNER')) {
+    normalizedPlan = 'OWNER';
+  } else if (rawPlan.includes('PRO')) {
     normalizedPlan = 'PRO';
   } else if (rawPlan.includes('TRADER') || rawPlan.includes('BASIC')) {
     normalizedPlan = 'TRADER';
@@ -96,11 +98,11 @@ export function useUser() {
     setPlan: () => { }, // noop
     isTrialExpired,
     canAccessToken: (t: Token) => {
-      if (normalizedPlan === 'PRO') return true;
+      if (normalizedPlan === 'PRO' || normalizedPlan === 'OWNER') return true;
       return allowedTokens.includes(t);
     },
     canAccessTimeframe: (tf: Timeframe) => {
-      if (normalizedPlan === 'PRO') return true;
+      if (normalizedPlan === 'PRO' || normalizedPlan === 'OWNER') return true;
       return canAccessTimeframe(tf);
     },
     canAccessAdvisor: () => canAccessAdvisor,

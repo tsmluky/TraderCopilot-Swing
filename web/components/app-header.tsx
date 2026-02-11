@@ -48,7 +48,9 @@ export function AppHeader() {
         ? 'Trial'
         : user.plan === 'TRADER'
           ? 'SwingLite'
-          : 'SwingPro'
+          : user.plan === 'OWNER'
+            ? 'Owner'
+            : 'SwingPro'
 
   return (
     <header className="sticky top-0 z-40 w-full">

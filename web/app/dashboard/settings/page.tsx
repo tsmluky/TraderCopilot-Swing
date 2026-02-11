@@ -152,8 +152,14 @@ export default function SettingsPage() {
                     <CardDescription className="text-base mt-0.5">Manage your billing and tier capabilities</CardDescription>
                   </div>
                 </div>
-                <Badge variant={['PRO', 'SWINGPRO', 'OWNER'].includes(user?.plan?.toUpperCase() || '') ? 'default' : 'secondary'} className="px-5 py-1.5 h-auto text-sm shadow-glow-sm uppercase tracking-wider font-bold rounded-lg">
-                  {user?.plan || 'Free'}
+                <Badge
+                  variant={['PRO', 'SWINGPRO', 'OWNER'].includes(user?.plan?.toUpperCase() || '') ? 'default' : 'secondary'}
+                  className={cn(
+                    "px-5 py-1.5 h-auto text-sm shadow-glow-sm uppercase tracking-wider font-bold rounded-lg",
+                    user?.plan === 'OWNER' && "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20"
+                  )}
+                >
+                  {user?.plan === 'OWNER' ? 'Owner Access' : (user?.plan || 'Free')}
                 </Badge>
               </div>
             </CardHeader>

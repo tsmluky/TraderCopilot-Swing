@@ -1,4 +1,4 @@
-export type Plan = 'FREE' | 'TRADER' | 'PRO'
+export type Plan = 'FREE' | 'TRADER' | 'PRO' | 'OWNER'
 
 export type Token = 'BTC' | 'ETH' | 'SOL' | 'BNB' | 'XRP'
 
@@ -98,6 +98,13 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     hasAdvisor: true,
     hasTelegram: true,
     signalHistoryDays: 90,
+  },
+  OWNER: {
+    tokens: ['BTC', 'ETH', 'SOL', 'BNB', 'XRP'],
+    timeframes: ['1H', '4H', '1D'],
+    hasAdvisor: true,
+    hasTelegram: true,
+    signalHistoryDays: 999,
   },
 }
 

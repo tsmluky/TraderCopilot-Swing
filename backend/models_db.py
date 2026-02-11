@@ -231,3 +231,16 @@ class WatchAlert(Base):
 
     enabled = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Changelog(Base):
+    __tablename__ = "changelog"
+
+    id = Column(Integer, primary_key=True)
+    version = Column(String, unique=True, index=True)
+    date = Column(String) # YYYY-MM-DD
+    title = Column(String)
+    description = Column(Text)
+    changes = Column(Text) # JSON list as string
+    type = Column(String) # major, minor, patch
+    created_at = Column(DateTime, default=datetime.utcnow)

@@ -41,6 +41,7 @@ from routers.logs import router as logs_router
 from routers.strategies import router as strategies_router
 from routers.system import router as system_router
 from routers.admin import router as admin_router
+from routers.changelog import router as changelog_router
 
 from routers.advisor import router as advisor_router
 
@@ -142,6 +143,7 @@ app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"])
 
 
 app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
+app.include_router(changelog_router)
 
 from fastapi.responses import FileResponse
 
