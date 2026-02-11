@@ -1,0 +1,31 @@
+Loading Data for BTC 1h...
+
+Starting Scenario Comparison: 4 versions...
+
+Finished v1_Standard: PnL 9.56 R
+Finished v10_Legacy_Replica: PnL 0.2 R
+Finished v11_Legacy_Loose: PnL -16.8 R
+Finished v7_SmartFilter: PnL 7.94 R
+
+
+>>> COMPARISON RESULTS <<<
++--------------------+-----------+----------------+--------+---------+----------+---------------------------------------------------+
+| Version            | WinRate   |   TotalR (PnL) |   AvgR |   MaxDD |   Trades | Description                                       |
++====================+===========+================+========+=========+==========+===================================================+
+| v1_Standard        | 68.21%    |           9.56 |   0.03 |   15.03 |      302 | Baseline: MA200 Filter + Dynamic TP               |
++--------------------+-----------+----------------+--------+---------+----------+---------------------------------------------------+
+| v10_Legacy_Replica | 31.27%    |           0.2  |   0    |   44.6  |      387 | Legacy: Fixed 2.2R TP / 1.0R SL. No Trend Filter. |
++--------------------+-----------+----------------+--------+---------+----------+---------------------------------------------------+
+| v11_Legacy_Loose   | 30.71%    |         -16.8  |  -0.02 |   48.2  |      964 | Legacy: High Freq (BB 1.5). Fixed 2.2R TP.        |
++--------------------+-----------+----------------+--------+---------+----------+---------------------------------------------------+
+| v7_SmartFilter     | 85.19%    |           7.94 |   0.29 |    1.55 |       27 | Reference: High Winrate Option                    |
++--------------------+-----------+----------------+--------+---------+----------+---------------------------------------------------+
+
+
+Markdown Table:
+| Version            | WinRate   |   TotalR (PnL) |   AvgR |   MaxDD |   Trades | Description                                       |
+|--------------------|-----------|----------------|--------|---------|----------|---------------------------------------------------|
+| v1_Standard        | 68.21%    |           9.56 |   0.03 |   15.03 |      302 | Baseline: MA200 Filter + Dynamic TP               |
+| v10_Legacy_Replica | 31.27%    |           0.2  |   0    |   44.6  |      387 | Legacy: Fixed 2.2R TP / 1.0R SL. No Trend Filter. |
+| v11_Legacy_Loose   | 30.71%    |         -16.8  |  -0.02 |   48.2  |      964 | Legacy: High Freq (BB 1.5). Fixed 2.2R TP.        |
+| v7_SmartFilter     | 85.19%    |           7.94 |   0.29 |    1.55 |       27 | Reference: High Winrate Option                    |

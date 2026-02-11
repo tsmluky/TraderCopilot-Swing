@@ -5,6 +5,7 @@ import { TrendingUp, Lock, ArrowUpRight, Clock, Zap, Activity, Waves, RotateCcw 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -31,9 +32,11 @@ interface ConsolidatedStrategyCardProps {
     strategyCode: string
     description: string
     variants: StrategyOffering[] // List of offerings for this strategy (e.g. 1H, 4H, 1D)
+    isEnabled: boolean
+    onToggle: (enabled: boolean) => void
 }
 
-export function ConsolidatedStrategyCard({ strategyName, strategyCode, description, variants }: ConsolidatedStrategyCardProps) {
+export function ConsolidatedStrategyCard({ strategyName, strategyCode, description, variants, isEnabled, onToggle }: ConsolidatedStrategyCardProps) {
     // Sort variants by timeframe logic (1H -> 4H) and exclude 1D
     const sortedVariants = useMemo(() => {
         const order = ["1H", "4H", "1D", "1W"]
@@ -52,7 +55,7 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
 
     // THEME LOGIC
     const theme = useMemo(() => {
-        if (strategyCode === 'TITAN_BREAKOUT') {
+        if (strategyCode === 'DONCHIAN_V2') {
             return {
                 accent: "text-orange-500",
                 bgGradient: "from-orange-500/10 to-purple-500/5",
@@ -62,17 +65,18 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                 glow: "from-orange-500/20 to-purple-600/20",
                 chartColor: "#f97316" // orange-500
             }
-        } else if (strategyCode === 'MEAN_REVERSION' || strategyCode === 'mean_reversion_v1') {
+        } else if (strategyCode === 'SUPER_TREND') {
             return {
-                accent: "text-fuchsia-500",
-                bgGradient: "from-fuchsia-500/10 to-pink-500/5",
-                buttonActive: "bg-fuchsia-500 hover:bg-fuchsia-600",
-                icon: <RotateCcw className="w-5 h-5 text-fuchsia-500" />,
-                borderHover: "group-hover:border-fuchsia-500/30",
-                glow: "from-fuchsia-500/20 to-pink-600/20",
-                chartColor: "#d946ef" // fuchsia-500
+                accent: "text-emerald-500",
+                bgGradient: "from-emerald-500/10 to-green-500/5",
+                buttonActive: "bg-emerald-500 hover:bg-emerald-600",
+                icon: <TrendingUp className="w-5 h-5 text-emerald-500" />,
+                borderHover: "group-hover:border-emerald-500/30",
+                glow: "from-emerald-500/20 to-green-600/20",
+                chartColor: "#10b981" // emerald-500
             }
         } else {
+            // SMA_CROSSOVER (Blue/Cyan)
             return {
                 accent: "text-cyan-500",
                 bgGradient: "from-cyan-500/10 to-blue-500/5",
@@ -103,26 +107,28 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
 
     return (
         <>
-            <div className="relative group h-full">
+            <div className={cn("relative group h-full transition-opacity duration-300", !isEnabled && "opacity-60 grayscale-[0.8]")}>
                 {/* Background Glow Effect */}
                 <div className={cn(
                     "absolute -inset-0.5 bg-gradient-to-r rounded-3xl blur-xl opacity-20 group-hover:opacity-60 transition duration-700 pointer-events-none mix-blend-multiply dark:mix-blend-normal",
-                    theme.glow
+                    theme.glow,
+                    !isEnabled && "opacity-0 group-hover:opacity-0"
                 )} />
 
                 <Card className={cn(
                     "relative h-full min-h-[340px] bg-white dark:bg-card/40 backdrop-blur-xl border-black/5 dark:border-white/5 overflow-hidden transition-all duration-300 flex flex-col shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-none",
-                    theme.borderHover
+                    theme.borderHover,
+                    !isEnabled && "border-transparent bg-secondary/10 dark:bg-card/20"
                 )}>
                     {/* Interior Background Decoration */}
-                    <div className={cn("absolute inset-0 bg-gradient-to-br opacity-30 dark:opacity-50 transition-opacity", theme.bgGradient)} />
+                    <div className={cn("absolute inset-0 bg-gradient-to-br opacity-30 dark:opacity-50 transition-opacity", theme.bgGradient, !isEnabled && "opacity-0")} />
                     <div className="absolute inset-0 bg-grid-black/5 dark:bg-grid-white/5 mask-image-linear-gradient-to-b opacity-50 dark:opacity-30" />
 
                     {/* Header */}
                     <CardHeader className="relative pb-2 pt-5 px-5 z-10">
                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                             <div className="flex gap-3">
-                                <div className={cn("h-10 w-10 rounded-xl bg-white dark:bg-background/50 border border-black/5 dark:border-white/10 flex items-center justify-center shadow-md dark:shadow-inner mt-0.5 shrink-0")}>
+                                <div className={cn("h-10 w-10 rounded-xl bg-white dark:bg-background/50 border border-black/5 dark:border-white/10 flex items-center justify-center shadow-md dark:shadow-inner mt-0.5 shrink-0", !isEnabled && "grayscale opacity-50")}>
                                     {theme.icon}
                                 </div>
                                 <div className="space-y-0.5">
@@ -133,6 +139,27 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                                         {description}
                                     </CardDescription>
                                 </div>
+                            </div>
+
+                            {/* Toggle Switch */}
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="flex items-center">
+                                                <Switch
+                                                    checked={isEnabled}
+                                                    onCheckedChange={onToggle}
+                                                    disabled={isLocked}
+                                                    className={cn("data-[state=checked]:bg-emerald-500")}
+                                                />
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{isEnabled ? "Deactivate Strategy" : "Activate Strategy"}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
                         </div>
                     </CardHeader>
@@ -226,6 +253,7 @@ export function ConsolidatedStrategyCard({ strategyName, strategyCode, descripti
                                 ) : (
                                     <Button
                                         variant="ghost"
+                                        disabled={!isEnabled}
                                         className="w-full h-12 flex justify-between items-center group/btn hover:bg-black/5 dark:hover:bg-white/5 px-3" // Increased height to h-12
                                         onClick={() => setShowDetails(true)}
                                     >

@@ -76,6 +76,29 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         LOG.error(f"Telegram Start Error: {e}")
         await update.message.reply_text("❌ **System Error** while linking.")
 
+    except Exception as e:
+        LOG.error(f"Telegram Start Error: {e}")
+        await update.message.reply_text("❌ **System Error** while linking.")
+
+async def telegram_error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log the error and handle specific conflict cases."""
+    import telegram.error
+    
+    if isinstance(context.error, telegram.error.Conflict):
+        LOG.warning("⚠️ TELEGRAM CONFLICT DETECTED: Another instance (likely PROD) is running. Stopping local polling to prevent spam.")
+        print("⚠️ TELEGRAM CONFLICT: Backend detected another bot instance. Polling stopped.")
+        
+        # Stop the updater to prevent further conflict errors
+        if context.application and context.application.updater:
+            try:
+                await context.application.updater.stop()
+            except:
+                pass
+        return
+
+    # For other errors, log as usual
+    LOG.error(f"Telegram Update Error: {context.error}", exc_info=context.error)
+
 async def start_telegram_bot_async():
     """Async entry point for main.py integration"""
     global telegram_app
@@ -95,6 +118,9 @@ async def start_telegram_bot_async():
 
         # Register Handlers
         telegram_app.add_handler(CommandHandler("start", start_command))
+        
+        # Register Error Handler
+        telegram_app.add_error_handler(telegram_error_handler)
 
         # Initialize
         print("[TELEGRAM] Calling app.initialize()...")
@@ -120,6 +146,12 @@ async def start_telegram_bot_async():
         print(f"[TELEGRAM] Bot verified and listening (@{telegram_app.bot.username})")
         
     except Exception as e:
+        import telegram.error
+        if isinstance(e, telegram.error.Conflict):
+            LOG.warning("⚠️ TELEGRAM CONFLICT ON STARTUP: Another instance is running. Bot disabled locally.")
+            print("⚠️ TELEGRAM CONFLICT: Another instance is running. Bot disabled locally.")
+            return
+
         LOG.exception("CRITICAL: Telegram Bot Async Startup Failed!")
         print(f"CRITICAL: Telegram Bot Async Startup Failed! {e}")
         import traceback

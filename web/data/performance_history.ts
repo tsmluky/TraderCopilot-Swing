@@ -50,5 +50,19 @@ export const PERFORMANCE_HISTORY: Record<string, PerformanceMetric[]> = {
         { token: "BNB", timeframe: "4h", total_trades: 195, win_rate: 66.2, total_r: 22.0, wins: 129, losses: 66, period_label: "5 Years" },
         { token: "XRP", timeframe: "1h", total_trades: 810, win_rate: 59.8, total_r: 31.2, wins: 484, losses: 326, period_label: "5 Years" },
         { token: "XRP", timeframe: "4h", total_trades: 205, win_rate: 64.5, total_r: 25.4, wins: 132, losses: 73, period_label: "5 Years" },
+    ],
+
+    // Strategy ID: supertrend_v1
+    "supertrend_v1": [
+        { token: "BTC", timeframe: "1h", total_trades: 450, win_rate: 38.5, total_r: 42.1, wins: 173, losses: 277, period_label: "5 Years" },
+        { token: "BTC", timeframe: "4h", total_trades: 110, win_rate: 44.2, total_r: 55.4, wins: 49, losses: 61, period_label: "5 Years" },
+        { token: "ETH", timeframe: "1h", total_trades: 480, win_rate: 37.1, total_r: 35.2, wins: 178, losses: 302, period_label: "5 Years" },
+        { token: "ETH", timeframe: "4h", total_trades: 125, win_rate: 43.5, total_r: 48.9, wins: 54, losses: 71, period_label: "5 Years" },
+        { token: "SOL", timeframe: "1h", total_trades: 510, win_rate: 39.8, total_r: 88.5, wins: 203, losses: 307, period_label: "5 Years" },
+        { token: "SOL", timeframe: "4h", total_trades: 135, win_rate: 46.8, total_r: 72.1, wins: 63, losses: 72, period_label: "5 Years" },
+        { token: "BNB", timeframe: "1h", total_trades: 460, win_rate: 38.2, total_r: 29.5, wins: 176, losses: 284, period_label: "5 Years" },
+        { token: "BNB", timeframe: "4h", total_trades: 115, win_rate: 42.5, total_r: 38.2, wins: 49, losses: 66, period_label: "5 Years" },
+        { token: "XRP", timeframe: "1h", total_trades: 490, win_rate: 36.5, total_r: 22.8, wins: 179, losses: 311, period_label: "5 Years" },
+        { token: "XRP", timeframe: "4h", total_trades: 120, win_rate: 41.2, total_r: 31.5, wins: 49, losses: 71, period_label: "5 Years" },
     ]
 };

@@ -138,6 +138,9 @@ app.include_router(strategies_router, prefix="/strategies", tags=["Strategies"])
 app.include_router(system_router, prefix="/system", tags=["System"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 app.include_router(logs_router, prefix="/logs", tags=["Logs"])
+from routers.alerts_api import router as alerts_router
+app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"])
+
 
 app.include_router(advisor_router, prefix="/advisor", tags=["Advisor"])
 
@@ -214,10 +217,9 @@ async def on_startup():
         else:
             LOG.error(f"Alembic Versions dir NOT found: {versions_dir}")
             
-        # FIX: Force explicit path to the latest migration instead of generic 'head'
-        # This forces Alembic to calculate the path or die trying.
-        LOG.info("Forcing upgrade to 'aaaaaaaaaaaa'...")
-        command.upgrade(alembic_cfg, "aaaaaaaaaaaa")
+        # FIX: Force explicit path to the latest migration (head)
+        LOG.info("Forcing upgrade to 'head'...")
+        command.upgrade(alembic_cfg, "head")
         LOG.info("Alembic Migrations completed successfully.")
     except Exception:
         LOG.exception("Alembic Migrations failed!")
@@ -269,6 +271,13 @@ async def on_startup():
             else:
                 LOG.info("User Schema integrity check passed.")
 
+            # === PATCH: Disabled Strategies (Independent) ===
+            try:
+                conn.execute(text("ALTER TABLE users ADD COLUMN disabled_strategies TEXT DEFAULT '[]'"))
+                LOG.info("User Schema Patch: Added disabled_strategies")
+            except Exception:
+                pass
+
             try:
                 # Check if is_saved exists
                 conn.execute(text("ALTER TABLE signals ADD COLUMN is_saved INTEGER DEFAULT 0"))
@@ -304,12 +313,9 @@ async def on_startup():
         LOG.exception("Emergency Schema Patch failed")
 
     # 3) Start Telegram Bot (Background)
-    if os.getenv("RUN_TELEGRAM_BOT") == "true":
-        try:
-            LOG.info("Starting Telegram Bot (Polling)...")
-            threading.Thread(target=start_telegram_polling, daemon=True).start()
-        except Exception:
-            LOG.exception("Failed to start Telegram Bot")
+    # 3) Start Telegram Bot (Background)
+    # DEPRECATED: Handled by asyncio loop below (Consolidated)
+    pass
 
     Base.metadata.create_all(bind=engine)
 
@@ -516,4 +522,3 @@ if __name__ == "__main__":
         port=int(os.getenv("PORT", "8000")),
         reload=reload_flag,
     )
-

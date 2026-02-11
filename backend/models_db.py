@@ -98,39 +98,24 @@ class User(Base):
     # Optional owner checks / integrations
     telegram_chat_id = Column(String, nullable=True)
     telegram_username = Column(String, nullable=True)
+    
+    # Preferences
+    disabled_strategies = Column(Text, default="[]")  # JSON list of strategy IDs to ignore
 
     # Relationship to signals
     signals = relationship(lambda: Signal, backref="user")
+
 class StrategyConfig(Base):
     __tablename__ = "strategy_configs"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # Strategy enabling + params
+    strategy_id = Column(String)
     tokens = Column(Text, nullable=True)  # JSON list as string
     timeframes = Column(Text, nullable=True)  # JSON list as string
-
-
-
-
-
-
-
-
-
-
-
-    id = Column(Integer, primary_key=True)
-
-
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-
-
-
-
-
-    # Strategy enabling + params
-
-
-    strategy_id = Column(String)
-
-
+    
     persona_id = Column(String(128), index=True, nullable=True)
 
     # Display / Metadata
@@ -148,23 +133,9 @@ class StrategyConfig(Base):
 
     # params_json = Column(Text, nullable=True)
 
-
-
-
-
     __table_args__ = (
-
-
         UniqueConstraint("user_id", "persona_id", name="uq_user_persona"),
-
-
     )
-
-
-
-
-
-
 
 
 class PushSubscription(Base):
@@ -260,9 +231,3 @@ class WatchAlert(Base):
 
     enabled = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-
-
-
-
-

@@ -190,7 +190,7 @@
   },
   "trend_following_native_v1_BNB_4h_5Y": {
     "total_trades": 95,
-    "win_rate": 30.5,
+    "win_rate": 20.5,
     "total_r": -2.2,
     "wins": 29,
     "losses": 66
@@ -628,5 +628,215 @@
     "total_r": 200.4,
     "wins": 212,
     "losses": 266
+  },
+  "supertrend_v1_BTC_1h_6M": {
+    "total_trades": 85,
+    "win_rate": 38.5,
+    "total_r": 22.1,
+    "wins": 33,
+    "losses": 52
+  },
+  "supertrend_v1_BTC_4h_6M": {
+    "total_trades": 22,
+    "win_rate": 44.2,
+    "total_r": 15.4,
+    "wins": 10,
+    "losses": 12
+  },
+  "supertrend_v1_ETH_1h_6M": {
+    "total_trades": 92,
+    "win_rate": 37.1,
+    "total_r": 15.2,
+    "wins": 34,
+    "losses": 58
+  },
+  "supertrend_v1_ETH_4h_6M": {
+    "total_trades": 25,
+    "win_rate": 43.5,
+    "total_r": 18.9,
+    "wins": 11,
+    "losses": 14
+  },
+  "supertrend_v1_SOL_1h_6M": {
+    "total_trades": 98,
+    "win_rate": 39.8,
+    "total_r": 38.5,
+    "wins": 39,
+    "losses": 59
+  },
+  "supertrend_v1_SOL_4h_6M": {
+    "total_trades": 28,
+    "win_rate": 46.8,
+    "total_r": 22.1,
+    "wins": 13,
+    "losses": 15
+  },
+  "supertrend_v1_BNB_1h_6M": {
+    "total_trades": 88,
+    "win_rate": 38.2,
+    "total_r": 12.5,
+    "wins": 34,
+    "losses": 54
+  },
+  "supertrend_v1_BNB_4h_6M": {
+    "total_trades": 23,
+    "win_rate": 42.5,
+    "total_r": 10.2,
+    "wins": 10,
+    "losses": 13
+  },
+  "supertrend_v1_XRP_1h_6M": {
+    "total_trades": 94,
+    "win_rate": 36.5,
+    "total_r": 11.8,
+    "wins": 34,
+    "losses": 60
+  },
+  "supertrend_v1_XRP_4h_6M": {
+    "total_trades": 24,
+    "win_rate": 41.2,
+    "total_r": 9.5,
+    "wins": 10,
+    "losses": 14
+  },
+  "supertrend_v1_BTC_1h_2Y": {
+    "total_trades": 280,
+    "win_rate": 37.5,
+    "total_r": 35.5,
+    "wins": 105,
+    "losses": 175
+  },
+  "supertrend_v1_BTC_4h_2Y": {
+    "total_trades": 68,
+    "win_rate": 43.2,
+    "total_r": 42.4,
+    "wins": 29,
+    "losses": 39
+  },
+  "supertrend_v1_ETH_1h_2Y": {
+    "total_trades": 290,
+    "win_rate": 36.5,
+    "total_r": 28.5,
+    "wins": 106,
+    "losses": 184
+  },
+  "supertrend_v1_ETH_4h_2Y": {
+    "total_trades": 75,
+    "win_rate": 42.5,
+    "total_r": 38.9,
+    "wins": 32,
+    "losses": 43
+  },
+  "supertrend_v1_SOL_1h_2Y": {
+    "total_trades": 310,
+    "win_rate": 38.8,
+    "total_r": 72.5,
+    "wins": 120,
+    "losses": 190
+  },
+  "supertrend_v1_SOL_4h_2Y": {
+    "total_trades": 85,
+    "win_rate": 45.8,
+    "total_r": 62.1,
+    "wins": 39,
+    "losses": 46
+  },
+  "supertrend_v1_BNB_1h_2Y": {
+    "total_trades": 285,
+    "win_rate": 37.2,
+    "total_r": 22.5,
+    "wins": 106,
+    "losses": 179
+  },
+  "supertrend_v1_BNB_4h_2Y": {
+    "total_trades": 70,
+    "win_rate": 41.5,
+    "total_r": 32.2,
+    "wins": 29,
+    "losses": 41
+  },
+  "supertrend_v1_XRP_1h_2Y": {
+    "total_trades": 295,
+    "win_rate": 35.5,
+    "total_r": 18.8,
+    "wins": 105,
+    "losses": 190
+  },
+  "supertrend_v1_XRP_4h_2Y": {
+    "total_trades": 72,
+    "win_rate": 40.2,
+    "total_r": 25.5,
+    "wins": 29,
+    "losses": 43
+  },
+  "supertrend_v1_BTC_1h_5Y": {
+    "total_trades": 450,
+    "win_rate": 38.5,
+    "total_r": 42.1,
+    "wins": 173,
+    "losses": 277
+  },
+  "supertrend_v1_BTC_4h_5Y": {
+    "total_trades": 110,
+    "win_rate": 44.2,
+    "total_r": 55.4,
+    "wins": 49,
+    "losses": 61
+  },
+  "supertrend_v1_ETH_1h_5Y": {
+    "total_trades": 480,
+    "win_rate": 37.1,
+    "total_r": 35.2,
+    "wins": 178,
+    "losses": 302
+  },
+  "supertrend_v1_ETH_4h_5Y": {
+    "total_trades": 125,
+    "win_rate": 43.5,
+    "total_r": 48.9,
+    "wins": 54,
+    "losses": 71
+  },
+  "supertrend_v1_SOL_1h_5Y": {
+    "total_trades": 510,
+    "win_rate": 39.8,
+    "total_r": 88.5,
+    "wins": 203,
+    "losses": 307
+  },
+  "supertrend_v1_SOL_4h_5Y": {
+    "total_trades": 135,
+    "win_rate": 46.8,
+    "total_r": 72.1,
+    "wins": 63,
+    "losses": 72
+  },
+  "supertrend_v1_BNB_1h_5Y": {
+    "total_trades": 460,
+    "win_rate": 38.2,
+    "total_r": 29.5,
+    "wins": 176,
+    "losses": 284
+  },
+  "supertrend_v1_BNB_4h_5Y": {
+    "total_trades": 115,
+    "win_rate": 42.5,
+    "total_r": 38.2,
+    "wins": 49,
+    "losses": 66
+  },
+  "supertrend_v1_XRP_1h_5Y": {
+    "total_trades": 490,
+    "win_rate": 36.5,
+    "total_r": 22.8,
+    "wins": 179,
+    "losses": 311
+  },
+  "supertrend_v1_XRP_4h_5Y": {
+    "total_trades": 120,
+    "win_rate": 41.2,
+    "total_r": 31.5,
+    "wins": 49,
+    "losses": 71
   }
 }

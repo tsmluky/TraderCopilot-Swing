@@ -47,4 +47,16 @@ export const strategiesService = {
   getHistory: async (personaId: string) => {
     return apiFetch(`/strategies/marketplace/${personaId}/history`);
   },
+
+  updatePreferences: async (disabledList: string[]) => {
+    return apiFetch("/users/me/strategies", {
+      method: "PATCH",
+      body: JSON.stringify({ disabled_strategies: disabledList })
+    });
+  },
+
+  getPreferences: async () => {
+    const user = await apiFetch("/users/me");
+    return user.disabled_strategies || [];
+  }
 };

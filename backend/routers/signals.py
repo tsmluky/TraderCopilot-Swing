@@ -65,6 +65,18 @@ def get_signals(
         # Hard filter out "verification" signals from audit
         query = query.filter(Signal.source != "verification")
             
+        # Filter out Disabled Strategies (User Preference)
+        if current_user.disabled_strategies:
+            import json
+            try:
+                disabled_list = json.loads(current_user.disabled_strategies)
+                for code in disabled_list:
+                    # Filter out any strategy_id that starts with the disabled code
+                    # e.g. "DONCHIAN" hides "DONCHIAN_1H", "DONCHIAN_4H"
+                    query = query.filter(Signal.strategy_id.notlike(f"{code}%"))
+            except Exception as e:
+                print(f"[SIGNALS] Error parsing disabled strategies: {e}")
+
         query = query.order_by(Signal.timestamp.desc())
         
         results = query.limit(limit).offset(offset).all()

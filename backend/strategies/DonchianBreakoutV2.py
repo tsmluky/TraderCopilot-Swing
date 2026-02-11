@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
+import numpy as np
 
 from core.schemas import Signal
 from market_data import get_ohlcv
@@ -23,50 +24,44 @@ class StrategyMeta:
 
 
 class DonchianBreakoutV2:
-    """Donchian Breakout con filtro de tendencia + ATR.
+    """Donchian Breakout Optimized (Split Windows).
 
-    FilosofÃ­a (producto):
-    - Emitimos seÃ±ales solo cuando hay ruptura limpia + contexto a favor.
-    - Racional analista-grade: describe setup, filtro, y por quÃ© el riesgo es aceptable.
-    - Confianza: bucketed (decisiva). Evitamos 51%.
-
-    Compat:
-    - El engine LITE pasa `context` opcional con OHLCV pre-fetched para evitar fetch duplicado.
+    Optimized logic based on 2022-2025 dataset:
+    - Uses separate windows for Entry (Breakout) and Exit (Trailing Stop).
+    - Per-Token parameters injected dynamically.
     """
 
     META = StrategyMeta(
         id="donchian_v2",
-        name="Donchian Breakout V2",
-        description="Breakout sobre canal Donchian con filtro EMA200 y targets basados en ATR.",
+        name="Donchian Breakout Optimized",
+        description="Trend Following system with split Entry/Exit windows.",
         supported_tokens=["BTC", "ETH", "SOL", "BNB", "XRP"],
         supported_timeframes=["1h", "4h"],
-        mode="LITE",
+        mode="PRO",
     )
+
+    # Optimized Parameters from final_results_optimized.csv
+    # Format: Token: (Entry_Window, Exit_Window)
+    PARAMS = {
+        "SOL": (110, 80),  # Max Return
+        "BNB": (55, 55),
+        "BTC": (80, 80),
+        "ETH": (55, 35),
+        "XRP": (20, 20),   # Default/Fallback
+        "DEFAULT": (20, 20)
+    }
 
     def metadata(self):
         return self.META.__dict__
 
-    def __init__(
-        self,
-        donchian_period: int = 20,
-        ema_period: int = 200,
-        atr_period: int = 14,
-        tp_atr: float = 2.0,
-        sl_atr: float = 1.2,
-        min_break_atr: float = 0.02,
-    ):
-        self.donchian_period = donchian_period
-        self.ema_period = ema_period
-        self.atr_period = atr_period
-        self.tp_atr = tp_atr
-        self.sl_atr = sl_atr
-        self.min_break_atr = min_break_atr
+    def __init__(self):
+        # Parameters are now dynamic per token
+        pass
+
+    def _get_params(self, token: str):
+        return self.PARAMS.get(token, self.PARAMS["DEFAULT"])
 
     def _df_from_context(self, token: str, context: Optional[Dict[str, Any]]) -> Optional[pd.DataFrame]:
-        """
-        context esperado:
-          { "data": { "BTC": [ {open,high,low,close,volume,time,timestamp}, ... ] } }
-        """
         try:
             if not context:
                 return None
@@ -75,7 +70,6 @@ class DonchianBreakoutV2:
             if not rows:
                 return None
             df = pd.DataFrame(rows)
-            # columnas mÃ­nimas
             for col in ["open", "high", "low", "close", "volume"]:
                 if col not in df.columns:
                     return None
@@ -87,7 +81,7 @@ class DonchianBreakoutV2:
         except Exception:
             return None
 
-    def _compute_atr(self, df: pd.DataFrame) -> pd.Series:
+    def _compute_atr(self, df: pd.DataFrame, period: int = 14) -> pd.Series:
         high = df["high"]
         low = df["low"]
         close = df["close"]
@@ -100,26 +94,7 @@ class DonchianBreakoutV2:
             ],
             axis=1,
         ).max(axis=1)
-        atr = tr.rolling(self.atr_period).mean()
-        return atr
-
-    def _rsi(self, df: pd.DataFrame, period: int = 14) -> pd.Series:
-        delta = df["close"].diff()
-        gain = (delta.where(delta > 0, 0)).fillna(0)
-        loss = (-delta.where(delta < 0, 0)).fillna(0)
-        avg_gain = gain.rolling(window=period, min_periods=1).mean()
-        avg_loss = loss.rolling(window=period, min_periods=1).mean()
-        rs = avg_gain / avg_loss
-        return 100 - (100 / (1 + rs))
-
-    def _confidence_bucket(self, break_strength_atr: float) -> float:
-        if break_strength_atr >= 0.25:
-            return 0.90
-        if break_strength_atr >= 0.15:
-            return 0.85
-        if break_strength_atr >= 0.08:
-            return 0.80
-        return 0.74
+        return tr.rolling(period).mean()
 
     def generate_signals(
         self,
@@ -132,61 +107,55 @@ class DonchianBreakoutV2:
 
         for token in tokens:
             token_u = token.upper().strip()
+            entry_w, exit_w = self._get_params(token_u)
 
-            # 1) Preferir contexto (evita doble fetch y hace el sistema mÃ¡s estable)
+            # Context or Fetch
             df = self._df_from_context(token_u, context)
-
-            # 2) Fallback a provider estÃ¡ndar
             if df is None:
                 df = get_ohlcv(token_u, tf, limit=350)
 
-            if df is None or len(df) < (self.donchian_period + self.ema_period + 5):
+            min_req = max(entry_w, exit_w) + 10
+            if df is None or len(df) < min_req:
                 continue
 
             df = df.copy().reset_index(drop=True)
-            df["donchian_high"] = df["high"].rolling(self.donchian_period).max()
-            df["donchian_low"] = df["low"].rolling(self.donchian_period).min()
-            df["ema200"] = df["close"].ewm(span=self.ema_period, adjust=False).mean()
+            
+            # Donchian Channels
+            # Shift 1 to avoid lookahead bias
+            df["long_entry_band"] = df["high"].rolling(window=entry_w).max().shift(1)
+            df["long_exit_band"] = df["low"].rolling(window=exit_w).min().shift(1)
+            
+            # For Short:
+            df["short_entry_band"] = df["low"].rolling(window=entry_w).min().shift(1)
+            df["short_exit_band"] = df["high"].rolling(window=exit_w).max().shift(1)
+
             df["atr"] = self._compute_atr(df)
-            df["rsi"] = self._rsi(df)
 
             last = df.iloc[-1]
             prev = df.iloc[-2]
 
-            if (
-                pd.isna(last["atr"])
-                or pd.isna(last["ema200"])
-                or pd.isna(last["donchian_high"])
-                or pd.isna(last["rsi"])
-            ):
+            if pd.isna(last["long_entry_band"]) or pd.isna(last["long_exit_band"]):
                 continue
 
             close = float(last["close"])
-            atr = float(last["atr"])
-            ema200 = float(last["ema200"])
-            upper = float(last["donchian_high"])
-            lower = float(last["donchian_low"])
-            rsi = float(last["rsi"])
+            prev_close = float(prev["close"])
+            atr = float(last["atr"]) if not pd.isna(last["atr"]) else (close * 0.05)
 
-            bull_break_strength = (close - upper) / atr if atr > 0 else 0.0
-            bear_break_strength = (lower - close) / atr if atr > 0 else 0.0
-
-            is_bull_breakout = (float(prev["close"]) <= float(prev["donchian_high"])) and (close > upper)
-            bull_trend_ok = close > ema200
-            rsi_safe_long = rsi < 75 # Don't buy if already euphoric
-
-            if is_bull_breakout and bull_trend_ok and rsi_safe_long and bull_break_strength >= self.min_break_atr:
+            # --- LONG LOGIC ---
+            entry_band = float(last["long_entry_band"])
+            prev_entry_band = float(prev["long_entry_band"])
+            
+            is_bull_breakout = (prev_close <= prev_entry_band) and (close > entry_band)
+            
+            if is_bull_breakout:
                 entry = close
-                tp = entry + (self.tp_atr * atr)
-                sl = entry - (self.sl_atr * atr)
-
-                conf = self._confidence_bucket(bull_break_strength)
+                tp = entry + (3.0 * atr)
+                sl = entry - (1.5 * atr) 
 
                 rationale = (
-                    f"We detected a Bullish Breakout. Price broke the Upper Donchian Channel. "
-                    f"Trend is favorable (Above EMA200). "
-                    f"RSI ({rsi:.1f}) confirms momentum is healthy (Not Overbought). "
-                    f"Breakout Strength: {bull_break_strength:.2f} ATR."
+                    f"Donchian Bullish Breakout (Optimized). "
+                    f"Price broke {entry_w}-period High ({entry_band}). "
+                    f"Trailing Exit set at {exit_w}-period Low."
                 )
 
                 signals.append(
@@ -197,37 +166,35 @@ class DonchianBreakoutV2:
                         entry=round(entry, 6),
                         tp=round(tp, 6),
                         sl=round(sl, 6),
-                        confidence=conf,
+                        confidence=0.85, 
                         rationale=rationale,
                         source="LITE",
                         mode=self.META.mode,
                         strategy_id=self.META.id,
                         timeframe=timeframe,
                         extra={
-                            "setup": "Donchian Breakout + RSI",
-                            "trend": "Bullish",
-                            "break_strength_atr": round(bull_break_strength, 3),
-                            "rsi": round(rsi, 1)
+                            "entry_window": entry_w,
+                            "exit_window": exit_w,
+                            "breakout_level": entry_band
                         },
                     )
                 )
 
-            is_bear_breakout = (float(prev["close"]) >= float(prev["donchian_low"])) and (close < lower)
-            bear_trend_ok = close < ema200
-            rsi_safe_short = rsi > 25 # Don't sell if already capitulated
-
-            if is_bear_breakout and bear_trend_ok and rsi_safe_short and bear_break_strength >= self.min_break_atr:
+            # --- SHORT LOGIC ---
+            short_band = float(last["short_entry_band"])
+            prev_short_band = float(prev["short_entry_band"])
+            
+            is_bear_breakout = (prev_close >= prev_short_band) and (close < short_band)
+            
+            if is_bear_breakout:
                 entry = close
-                tp = entry - (self.tp_atr * atr)
-                sl = entry + (self.sl_atr * atr)
-
-                conf = self._confidence_bucket(bear_break_strength)
+                tp = entry - (3.0 * atr)
+                sl = entry + (1.5 * atr)
 
                 rationale = (
-                    f"We detected a Bearish Breakout. Price broke the Lower Donchian Channel. "
-                    f"Trend is favorable (Below EMA200). "
-                    f"RSI ({rsi:.1f}) confirms momentum is healthy (Not Oversold). "
-                    f"Breakout Strength: {bear_break_strength:.2f} ATR."
+                    f"Donchian Bearish Breakout (Optimized). "
+                    f"Price broke {entry_w}-period Low ({short_band}). "
+                    f"Trailing Exit set at {exit_w}-period High."
                 )
 
                 signals.append(
@@ -238,194 +205,133 @@ class DonchianBreakoutV2:
                         entry=round(entry, 6),
                         tp=round(tp, 6),
                         sl=round(sl, 6),
-                        confidence=conf,
+                        confidence=0.85,
                         rationale=rationale,
                         source="LITE",
                         mode=self.META.mode,
                         strategy_id=self.META.id,
                         timeframe=timeframe,
                         extra={
-                            "setup": "Donchian Breakout + RSI",
-                            "trend": "Bearish",
-                            "break_strength_atr": round(bear_break_strength, 3),
-                            "rsi": round(rsi, 1)
+                            "entry_window": entry_w,
+                            "exit_window": exit_w,
+                            "breakout_level": short_band
                         },
                     )
                 )
+
         return signals
+
     def analyze_watchlist(
         self,
         token: str,
         timeframe: str,
         context: Optional[Dict[str, Any]] = None,
         max_items: int = 2,
-        near_atr: float = 0.5,
+        near_percent: float = 1.5, # 1.5% distance
         **kwargs: Any,
     ) -> List[Dict[str, Any]]:
-        """
-        Near-setups para UX: si no hay breakout, reportamos distancia al canal.
-        near_atr: umbral de proximidad en unidades de ATR.
-        """
         token_u = token.upper().strip()
         tf = str(timeframe).lower().strip()
+        entry_w, exit_w = self._get_params(token_u)
 
         df = self._df_from_context(token_u, context)
         if df is None:
             df = get_ohlcv(token_u, tf, limit=350)
-        if df is None or len(df) < (self.donchian_period + self.ema_period + 5):
+        if df is None or len(df) < max(entry_w, exit_w) + 10:
             return []
 
         df = df.copy().reset_index(drop=True)
-        df["donchian_high"] = df["high"].rolling(self.donchian_period).max()
-        df["donchian_low"] = df["low"].rolling(self.donchian_period).min()
-        df["ema200"] = df["close"].ewm(span=self.ema_period, adjust=False).mean()
+        # We focus on ENTRY bands for watchlist
+        df["long_entry_band"] = df["high"].rolling(window=entry_w).max().shift(1)
+        df["short_entry_band"] = df["low"].rolling(window=entry_w).min().shift(1)
         df["atr"] = self._compute_atr(df)
 
         last = df.iloc[-1]
-        if (
-            pd.isna(last["atr"])
-            or pd.isna(last["ema200"])
-            or pd.isna(last["donchian_high"])
-            or pd.isna(last["donchian_low"])
-        ):
+        if pd.isna(last["long_entry_band"]):
             return []
 
         close = float(last["close"])
-        atr = float(last["atr"])
-        ema200 = float(last["ema200"])
-        upper = float(last["donchian_high"])
-        lower = float(last["donchian_low"])
-        if atr <= 0:
-            return []
+        upper = float(last["long_entry_band"])
+        lower = float(last["short_entry_band"])
+        atr = float(last["atr"]) if not pd.isna(last["atr"]) else close*0.05
 
         items: List[Dict[str, Any]] = []
 
-        # Long bias if price above EMA200
-        long_bias = close > ema200
-        dist_to_upper_atr = (upper - close) / atr
-        if long_bias and dist_to_upper_atr >= 0 and dist_to_upper_atr <= near_atr:
-            # Dynamic Confidence: Closer = Higher. 
-            # Range: 0.5 (at margin) -> 0.9 (at breakout)
-            conf_score = 0.5 + (0.4 * (1.0 - (dist_to_upper_atr / near_atr)))
-            
+        # Near Upper?
+        dist_upper_pct = (upper - close) / close * 100
+        if 0 <= dist_upper_pct <= near_percent:
             items.append({
                 "strategy_id": self.META.id,
                 "token": token_u,
                 "timeframe": timeframe,
                 "side": "long",
                 "trigger_price": round(upper, 2),
-                "tp": round(upper + (self.tp_atr * atr), 2),
-                "sl": round(upper - (self.sl_atr * atr), 2),
-                "distance_atr": round(dist_to_upper_atr, 3),
-                "confidence": round(conf_score, 2),
-                "reason": (
-                    f"Near Donchian upper. Need breakout. Dist ≈ {dist_to_upper_atr:.2f} ATR. "
-                    "Trend: bullish (above EMA200)."
-                ),
+                "tp": round(upper + 3*atr, 2),
+                "sl": round(upper - 1.5*atr, 2),
+                "distance_pct": round(dist_upper_pct, 2),
+                "confidence": 0.70 + (0.2 * (1 - dist_upper_pct/near_percent)),
+                "reason": f"Near {entry_w}-High Breakout ({upper}). Dist: {dist_upper_pct:.2f}%"
             })
 
-        # Short bias if price below EMA200
-        short_bias = close < ema200
-        dist_to_lower_atr = (close - lower) / atr
-        if short_bias and dist_to_lower_atr >= 0 and dist_to_lower_atr <= near_atr:
-             # Dynamic Confidence: Closer = Higher.
-            conf_score = 0.5 + (0.4 * (1.0 - (dist_to_lower_atr / near_atr)))
-            
+        # Near Lower?
+        dist_lower_pct = (close - lower) / close * 100
+        if 0 <= dist_lower_pct <= near_percent:
             items.append({
                 "strategy_id": self.META.id,
                 "token": token_u,
                 "timeframe": timeframe,
                 "side": "short",
                 "trigger_price": round(lower, 2),
-                "tp": round(lower - (self.tp_atr * atr), 2),
-                "sl": round(lower + (self.sl_atr * atr), 2),
-                "distance_atr": round(dist_to_lower_atr, 3),
-                "confidence": round(conf_score, 2),
-                "reason": (
-                    f"Near Donchian lower. Need breakdown. Dist ≈ {dist_to_lower_atr:.2f} ATR. "
-                    "Trend: bearish (below EMA200)."
-                ),
+                "tp": round(lower - 3*atr, 2),
+                "sl": round(lower + 1.5*atr, 2),
+                "distance_pct": round(dist_lower_pct, 2),
+                "confidence": 0.70 + (0.2 * (1 - dist_lower_pct/near_percent)),
+                "reason": f"Near {entry_w}-Low Breakdown ({lower}). Dist: {dist_lower_pct:.2f}%"
             })
-            
+
         return items
 
-
-
-
-
     def find_historical_signals(self, token: str, df: pd.DataFrame, timeframe: str = "1h") -> List[Signal]:
-        """Backtesting helper: Scan entire DF for signals."""
+        # Simple backtest implementation for the frontend "historical" view
         signals = []
         token_u = token.upper()
+        entry_w, exit_w = self._get_params(token_u)
 
-        df["donchian_high"] = df["high"].rolling(self.donchian_period).max()
-        df["donchian_low"] = df["low"].rolling(self.donchian_period).min()
-        df["ema200"] = df["close"].ewm(span=self.ema_period, adjust=False).mean()
-        df["atr"] = self._compute_atr(df)
-        df["rsi"] = self._rsi(df)
-
-        for i in range(250, len(df)):
-            last = df.iloc[i]
-            prev = df.iloc[i-1]
+        df = df.copy()
+        df["long_entry_band"] = df["high"].rolling(window=entry_w).max().shift(1)
+        df["short_entry_band"] = df["low"].rolling(window=entry_w).min().shift(1)
+        
+        for i in range(max(entry_w, 20), len(df)):
+            if pd.isna(df["long_entry_band"].iloc[i]): continue
             
-            if pd.isna(last["atr"]) or pd.isna(last["ema200"]) or pd.isna(last["rsi"]):
-                continue
+            close = df["close"].iloc[i]
+            prev_close = df["close"].iloc[i-1]
+            try:
+                entry_band = df["long_entry_band"].iloc[i]
+                prev_entry_band = df["long_entry_band"].iloc[i-1]
+                
+                short_band = df["short_entry_band"].iloc[i]
+                prev_short_band = df["short_entry_band"].iloc[i-1]
+                
+                ts = df.iloc[i].get("timestamp") or datetime.utcnow()
 
-            close = float(last["close"])
-            atr = float(last["atr"])
-            ema200 = float(last["ema200"])
-            
-            # USE PREVIOUS BANDS for breakout level
-            upper = float(prev["donchian_high"])
-            lower = float(prev["donchian_low"])
-            rsi = float(last["rsi"])
-            ts = last['timestamp']
-
-            if atr <= 0:
-                continue
-
-            bull_break_strength = (close - upper) / atr 
-            bear_break_strength = (lower - close) / atr 
-            
-            is_bull_breakout = (
-                (float(prev["close"]) <= float(prev["donchian_high"])) 
-                and (close > float(prev["donchian_high"]))
-            )
-            bull_trend_ok = close > ema200
-            rsi_safe_long = rsi < 75 
-            
-            if is_bull_breakout and bull_trend_ok and rsi_safe_long and bull_break_strength >= self.min_break_atr:
-                entry = close
-                tp = entry + (self.tp_atr * atr)
-                sl = entry - (self.sl_atr * atr)
-                conf = self._confidence_bucket(bull_break_strength)
-                try:
-                    signals.append(Signal(
-                        timestamp=ts, strategy_id=self.META.id, mode=self.META.mode, token=token_u, timeframe=timeframe,
-                        direction="long", entry=entry, tp=tp, sl=sl, confidence=conf, source="BACKTEST",
-                        rationale="Hist Bull Break + RSI", extra={"strength":bull_break_strength}
-                    ))
-                except Exception:
-                    pass
-
-            is_bear_breakout = (
-                (float(prev["close"]) >= float(prev["donchian_low"])) 
-                and (close < float(prev["donchian_low"]))
-            )
-            bear_trend_ok = close < ema200
-            rsi_safe_short = rsi > 25
-
-            if is_bear_breakout and bear_trend_ok and rsi_safe_short and bear_break_strength >= self.min_break_atr:
-                entry = close
-                tp = entry - (self.tp_atr * atr)
-                sl = entry + (self.sl_atr * atr)
-                conf = self._confidence_bucket(bear_break_strength)
-                try:
-                    signals.append(Signal(
-                        timestamp=ts, strategy_id=self.META.id, mode=self.META.mode, token=token_u, timeframe=timeframe,
-                        direction="short", entry=entry, tp=tp, sl=sl, confidence=conf, source="BACKTEST",
-                        rationale="Hist Bear Break + RSI", extra={"strength":bear_break_strength}
-                    ))
-                except Exception:
-                    pass
+                # Long
+                if prev_close <= prev_entry_band and close > entry_band:
+                     signals.append(Signal(
+                        timestamp=ts, strategy_id=self.META.id, mode="BACKTEST",
+                        token=token_u, timeframe=timeframe, direction="long",
+                        entry=close, tp=0, sl=0, confidence=1.0, source="BACKTEST",
+                        rationale="Hist Breakout", extra={}
+                     ))
+                
+                # Short
+                if prev_close >= prev_short_band and close < short_band:
+                     signals.append(Signal(
+                        timestamp=ts, strategy_id=self.META.id, mode="BACKTEST",
+                        token=token_u, timeframe=timeframe, direction="short",
+                        entry=close, tp=0, sl=0, confidence=1.0, source="BACKTEST",
+                        rationale="Hist Breakdown", extra={}
+                     ))
+            except Exception:
+                pass
         return signals

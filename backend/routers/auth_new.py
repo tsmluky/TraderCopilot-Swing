@@ -12,6 +12,8 @@ from models_db import User
 from pydantic import BaseModel
 from database import get_db, SessionLocal
 from core.schemas import UserCreate, UserResponse
+import logging
+LOG = logging.getLogger("tradercopilot.auth")
 from core.security import (
     verify_password,
     create_access_token,
@@ -65,17 +67,17 @@ async def get_current_user(
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
-            print("[AUTH] Token missing 'sub' claim")
+            LOG.warning("[AUTH] Token missing 'sub' claim")
             raise credentials_exception
     except JWTError as e:
-        print(f"[AUTH] JWT Decode Error: {e}")
+        LOG.warning(f"[AUTH] JWT Decode Error: {e}")
         raise credentials_exception
 
     result = db.execute(select(User).where(User.email == email))
     user = result.scalars().first()
 
     if user is None:
-        print(f"[AUTH] User {email} not found in DB")
+        LOG.warning(f"[AUTH] User {email} not found in DB")
         raise credentials_exception
 
     return user
@@ -210,7 +212,7 @@ async def register_user(request: Request, db: Session = fastapi.Depends(get_db))
             # seed_default_strategies(db, new_user)
             pass
         except Exception as seed_err:
-            print(
+            LOG.warning(
                 f"⚠️ [AUTH WARNING] Strategy seeding failed "
                 f"for {new_user.email}: {seed_err}"
             )
@@ -247,7 +249,7 @@ async def register_user(request: Request, db: Session = fastapi.Depends(get_db))
         raise
     except Exception as e:
         db.rollback()
-        print(f"[AUTH ERROR] Register failed: {e}")
+        LOG.error(f"[AUTH ERROR] Register failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error: {str(e)}",

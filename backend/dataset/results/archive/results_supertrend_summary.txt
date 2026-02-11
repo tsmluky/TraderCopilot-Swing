@@ -1,0 +1,8 @@
+=== SUPERTREND BASELINE RESULTS ===
+
+| Token   | Mode     |   Return% |   MaxDD% |   Trades |   WinRate% |   ProfitFactor |
+|:--------|:---------|----------:|---------:|---------:|-----------:|---------------:|
+| BNB     | LongOnly |    901.43 |   -80.37 |      808 |      36.39 |           1.86 |
+| BTC     | LongOnly |     55.95 |   -69.46 |      780 |      34.1  |           1.99 |
+| ETH     | LongOnly |    112.9  |   -77.79 |      807 |      35.69 |           1.85 |
+| SOL     | LongOnly |    545.71 |   -75.21 |      578 |      37.2  |           1.84 |

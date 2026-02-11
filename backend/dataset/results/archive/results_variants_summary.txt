@@ -1,0 +1,6 @@
+Variant  V1_Standard  V2_Turtle  V3_Trend  V4_ATR_Trail  V5_Aggressive
+Token                                                                 
+BNB           182.10    8895.44    664.78         -8.08         102.85
+BTC           -49.99     333.91     39.83        -70.94         -75.29
+ETH           -17.69    1572.71    238.81        -64.68         -18.87
+SOL           216.88     474.62    654.53        -90.80         -40.36

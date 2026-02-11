@@ -14,6 +14,7 @@ from pathlib import Path
 import time
 import uuid
 import os
+import json
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
 
@@ -188,9 +189,10 @@ class StrategyScheduler:
         
         # MAPPING (Hardcoded for MVP or import from entitlements if we add it there)
         impl_map = {
-            "TITAN_BREAKOUT": "donchian_v2",
-            "FLOW_MASTER": "trend_following_native_v1",
-            "MEAN_REVERSION": "mean_reversion_v1"
+            "DONCHIAN_V2": "donchian_v2",
+            "SMA_CROSSOVER": "trend_following_native_v1",
+            "SUPER_TREND": "supertrend_v1",
+            "MEAN_REVERSION_V1": "mean_reversion_v1"
         }
         impl_id = impl_map.get(task["strategy_code"], "").lower()
         
@@ -224,7 +226,11 @@ class StrategyScheduler:
                  from datetime import datetime
                  
                  for t in task["tokens"]:
-                     items = strategy_impl.analyze_watchlist(t, task["timeframe"])
+                     try:
+                        items = strategy_impl.analyze_watchlist(t, task["timeframe"])
+                     except Exception:
+                        items = []
+                     
                      for item in items:
                          # Convert dict to Signal (Activity Mode)
                          # direction = item['side']
@@ -256,7 +262,7 @@ class StrategyScheduler:
                  # Limit watchlist noise? Maybe just top 1 per task?
                  if watchlist_signals:
                      signals.extend(watchlist_signals[:2]) 
-
+                     
              return signals or []
         except Exception:
             LOG.exception("Task failed %s", task["key"])
@@ -302,7 +308,9 @@ class StrategyScheduler:
     def fan_out_notifications(self, db: Session, sig: Any, plan: str):
         """
         Sends Telegram alerts to all users in 'plan' who have Telegram configured.
+        RESPECTS: User.disabled_strategies preferences.
         """
+        
         # 1. Find Users in Plan (active coverage)
         # Normalize plan query often requires handling aliases if DB has mixed data.
         # We assume strict adherence to 'TRADER', 'PRO' etc. or map aliases.
@@ -319,23 +327,35 @@ class StrategyScheduler:
             User.telegram_chat_id.isnot(None)
         ).all()
         
-        # 3. Dedupe & Send
-        # We use a set of Chat IDs to handle users + fallback admin ID
-        target_chat_ids = {u.telegram_chat_id for u in users if u.telegram_chat_id}
+        # 3. Filter Users based on Preferences
+        base_strategy_code = sig.strategy_id.split('_')[0] if '_' in sig.strategy_id else sig.strategy_id
+        
+        valid_users = []
+        for u in users:
+            try:
+                disabled_list = json.loads(u.disabled_strategies) if u.disabled_strategies else []
+                # Check exact ID or Base Code
+                if base_strategy_code in disabled_list or sig.strategy_id in disabled_list:
+                    continue
+                valid_users.append(u)
+            except:
+                # Safe default: Send if error parsing JSON
+                valid_users.append(u)
+        
+        if not valid_users:
+            return
+            
+        # 4. Dedupe & Send
+        target_chat_ids = {u.telegram_chat_id for u in valid_users}
         
         # Add Admin Fallback (from Env)
-        # This fixes the issue where a dev/admin user exists without a DB User record
         admin_chat_id = os.getenv("TELEGRAM_CHAT_ID")
         if admin_chat_id:
              target_chat_ids.add(admin_chat_id)
-
-        if not target_chat_ids:
-            return
-
-        # 3. Dedupe & Send
-        # We use a cache key to avoid spamming the same global signal repeated times 
-        # (log_signal handles idempotency DB-side, but duplicate execution might trigger this)
         
+        if not target_chat_ids:
+             return
+
         LOG.info(f"[Fan-Out] Found {len(target_chat_ids)} recipients (Plan+Admin) for {plan}. Sending...")
 
         msg = (

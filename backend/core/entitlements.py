@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session # For quota
 
 # Enums / Types
 PlanType = Literal["TRIAL", "TRADER", "PRO"]
-StrategyCode = Literal["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"]
+StrategyCode = Literal["DONCHIAN_V2", "SMA_CROSSOVER", "SUPER_TREND", "MEAN_REVERSION_V1"]
 TimeframeCode = Literal["1H", "4H", "1D"]
 TokenCode = Literal["BTC", "ETH", "SOL", "BNB", "XRP"]
 
@@ -33,24 +33,25 @@ PLANS: Dict[PlanType, PlanEntitlements] = {
     "TRIAL": {
         "tokens": ["BTC", "ETH"],
         "timeframes": ["4H", "1D"],
-        "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"],
+        "strategies": ["DONCHIAN_V2", "SMA_CROSSOVER", "SUPER_TREND", "MEAN_REVERSION_V1"],
     },
     "TRADER": {
         "tokens": ["BTC", "ETH", "SOL"],
         "timeframes": ["4H", "1D"],
-        "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"],
+        "strategies": ["DONCHIAN_V2", "SMA_CROSSOVER", "SUPER_TREND", "MEAN_REVERSION_V1"],
     },
     "PRO": {
         "tokens": ["BTC", "ETH", "SOL", "BNB", "XRP"],
         "timeframes": ["1H", "4H", "1D"],
-        "strategies": ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"],
+        "strategies": ["DONCHIAN_V2", "SMA_CROSSOVER", "SUPER_TREND", "MEAN_REVERSION_V1"],
     }
 }
 
 STRATEGY_NAMES = {
-    "TITAN_BREAKOUT": "Titan Breakout",
-    "FLOW_MASTER": "Flow Master",
-    "MEAN_REVERSION": "Mean Reversion"
+    "DONCHIAN_V2": "Donchian Breakout",
+    "SMA_CROSSOVER": "Trend Surfer (SMA)",
+    "SUPER_TREND": "SuperTrend",
+    "MEAN_REVERSION_V1": "Mean Reversion (BB+RSI)"
 }
 
 # --- Core Logic ---
@@ -95,7 +96,7 @@ def get_user_entitlements(user: Optional[User]) -> Dict[str, List[StrategyOfferi
     pro_entitlements = get_plan_entitlements("PRO")
     
     # 4. Build Offerings
-    all_strategies = ["TITAN_BREAKOUT", "FLOW_MASTER", "MEAN_REVERSION"]
+    all_strategies = ["DONCHIAN_V2", "SMA_CROSSOVER", "SUPER_TREND", "MEAN_REVERSION_V1"]
     canonical_timeframes = ["1H", "4H", "1D"]
 
     for strat_code in all_strategies:

@@ -289,7 +289,7 @@ export function ScanDialog({ onScanComplete }: ScanDialogProps) {
                                                                     try {
                                                                         const tid = toast.loading("Configuring Watch...")
                                                                         const { apiFetch } = await import('@/lib/api-client')
-                                                                        const res = await apiFetch<{ status: string; expires_at: string }>('/api/alerts/watch', {
+                                                                        const res = await apiFetch<{ status: string; expires_at: string }>('/alerts/watch', {
                                                                             method: 'POST',
                                                                             body: JSON.stringify({
                                                                                 token: result.token,
@@ -324,7 +324,7 @@ export function ScanDialog({ onScanComplete }: ScanDialogProps) {
                                                                         const { apiFetch } = await import('@/lib/api-client')
                                                                         // Manual Create Signal
                                                                         // Endpoint: POST /api/signals
-                                                                        await apiFetch('/api/signals', {
+                                                                        await apiFetch('/signals', {
                                                                             method: 'POST',
                                                                             body: JSON.stringify({
                                                                                 token: result.token,

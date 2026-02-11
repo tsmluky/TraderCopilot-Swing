@@ -109,6 +109,7 @@ def load_default_strategies():
     from .DonchianBreakoutV2 import DonchianBreakoutV2
     from .TrendFollowingNative import TrendFollowingNative
     from .MeanReversionBollinger import MeanReversionBollinger
+    from .SuperTrend import SuperTrendStrategy
 
     r = get_registry()
     
@@ -118,13 +119,16 @@ def load_default_strategies():
     r.register(DonchianBreakoutV2)
     r.register(TrendFollowingNative)
     r.register(MeanReversionBollinger)
+    r.register(SuperTrendStrategy)
     
     # 3. Canonical Aliases (For DB backward compatibility only)
-    if "donchian" not in r._strategies:
-         r._strategies["donchian"] = DonchianBreakoutV2
+    # REMOVING DONCHIAN ALIAS to be cleaner, unless DB strictly needs it.
+    # The Scheduler now uses "donchian_v2" explicitly.
+    # if "donchian" not in r._strategies:
+    #      r._strategies["donchian"] = DonchianBreakoutV2
          
     # Validate Whitelist
-    allowed_ids = {"trend_following_native_v1", "donchian_v2", "donchian", "mean_reversion_v1"}
+    allowed_ids = {"trend_following_native_v1", "donchian_v2", "supertrend_v1", "mean_reversion_v1"}
     current_ids = set(r._strategies.keys())
     
     diff = current_ids - allowed_ids
