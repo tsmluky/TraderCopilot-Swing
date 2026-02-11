@@ -134,7 +134,13 @@ class Backtester:
                     # Shares = - (Collateral / Price)
                     shares = - (collateral / price)
                     
-                    trades.append({'type': 'SELL_SHORT', 'date': date, 'price': price, 'capital': balance, 'collateral': collateral})
+                    trades.append({
+                        'type': 'SELL_SHORT',
+                        'date': date,
+                        'price': price,
+                        'capital': balance,
+                        'collateral': collateral
+                    })
                     balance = 0
                     position = -1
                     entry_price = price

@@ -21,7 +21,8 @@ def run_sma_optimization():
         
         for slow in slow_windows:
             for fast in fast_windows:
-                if fast >= slow: continue # Fast must be smaller
+                if fast >= slow:
+                    continue # Fast must be smaller
                 
                 strategy = SMACrossoverStrategy(fast_window=fast, slow_window=slow)
                 

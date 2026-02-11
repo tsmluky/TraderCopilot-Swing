@@ -25,7 +25,8 @@ def run_variants():
         
         for v_name, strategy in variants.items():
             try:
-                # Re-instantiate strategy if it has state? No, current implementation is stateless or re-initialized in run?
+                # Re-instantiate strategy if it has state? 
+                # No, current implementation is stateless or re-initialized in run?
                 # Actually generate_signals returns new DF, so it's fine.
                 
                 tester = Backtester(file, strategy, initial_capital=10000)

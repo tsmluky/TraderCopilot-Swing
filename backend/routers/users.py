@@ -16,7 +16,7 @@ def get_me(current_user: User = Depends(get_current_user)):
     """
     try:
         disabled = json.loads(current_user.disabled_strategies) if current_user.disabled_strategies else []
-    except:
+    except Exception:
         disabled = []
         
     return {

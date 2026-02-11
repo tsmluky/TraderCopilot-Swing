@@ -6,7 +6,11 @@ class Strategy:
         raise NotImplementedError("Should implement generate_signals method")
 
 class DonchianStrategy(Strategy):
-    def __init__(self, window=20, exit_window=None, ema_filter=None, rsi_filter=None, adx_threshold=None, atr_trailing=None, fixed_sl_atr=None, fixed_tp_atr=None, allow_short=False):
+    def __init__(
+        self, window=20, exit_window=None, ema_filter=None, rsi_filter=None, 
+        adx_threshold=None, atr_trailing=None, fixed_sl_atr=None, 
+        fixed_tp_atr=None, allow_short=False
+    ):
         self.window = window
         self.exit_window = exit_window if exit_window else window
         self.ema_filter = ema_filter
@@ -43,11 +47,19 @@ class DonchianStrategy(Strategy):
              data['tr'] = data[['tr0', 'tr1', 'tr2']].max(axis=1)
              data['up_move'] = data['high'] - data['high'].shift()
              data['down_move'] = data['low'].shift() - data['low']
-             data['plus_dm'] = np.where((data['up_move'] > data['down_move']) & (data['up_move'] > 0), data['up_move'], 0)
-             data['minus_dm'] = np.where((data['down_move'] > data['up_move']) & (data['down_move'] > 0), data['down_move'], 0)
+             data['plus_dm'] = np.where(
+                 (data['up_move'] > data['down_move']) & (data['up_move'] > 0), 
+                 data['up_move'], 0
+             )
+             data['minus_dm'] = np.where(
+                 (data['down_move'] > data['up_move']) & (data['down_move'] > 0), 
+                 data['down_move'], 0
+             )
              adx_window = 14
-             data['plus_di'] = 100 * (data['plus_dm'].rolling(window=adx_window).mean() / data['tr'].rolling(window=adx_window).mean())
-             data['minus_di'] = 100 * (data['minus_dm'].rolling(window=adx_window).mean() / data['tr'].rolling(window=adx_window).mean())
+             tr_smooth = data['tr'].rolling(window=adx_window).mean()
+             data['plus_di'] = 100 * (data['plus_dm'].rolling(window=adx_window).mean() / tr_smooth)
+             data['minus_di'] = 100 * (data['minus_dm'].rolling(window=adx_window).mean() / tr_smooth)
+             
              data['dx'] = 100 * abs(data['plus_di'] - data['minus_di']) / (data['plus_di'] + data['minus_di'])
              data['adx'] = data['dx'].rolling(window=adx_window).mean()
 
@@ -213,11 +225,19 @@ class MeanReversionStrategy(Strategy):
         data['tr'] = data[['tr0', 'tr1', 'tr2']].max(axis=1)
         data['up_move'] = data['high'] - data['high'].shift()
         data['down_move'] = data['low'].shift() - data['low']
-        data['plus_dm'] = np.where((data['up_move'] > data['down_move']) & (data['up_move'] > 0), data['up_move'], 0)
-        data['minus_dm'] = np.where((data['down_move'] > data['up_move']) & (data['down_move'] > 0), data['down_move'], 0)
+        data['plus_dm'] = np.where(
+            (data['up_move'] > data['down_move']) & (data['up_move'] > 0), 
+            data['up_move'], 0
+        )
+        data['minus_dm'] = np.where(
+            (data['down_move'] > data['up_move']) & (data['down_move'] > 0), 
+            data['down_move'], 0
+        )
         adx_window = 14
-        data['plus_di'] = 100 * (data['plus_dm'].rolling(window=adx_window).mean() / data['tr'].rolling(window=adx_window).mean())
-        data['minus_di'] = 100 * (data['minus_dm'].rolling(window=adx_window).mean() / data['tr'].rolling(window=adx_window).mean())
+        tr_smooth = data['tr'].rolling(window=adx_window).mean()
+        data['plus_di'] = 100 * (data['plus_dm'].rolling(window=adx_window).mean() / tr_smooth)
+        data['minus_di'] = 100 * (data['minus_dm'].rolling(window=adx_window).mean() / tr_smooth)
+        
         data['dx'] = 100 * abs(data['plus_di'] - data['minus_di']) / (data['plus_di'] + data['minus_di'])
         data['adx'] = data['dx'].rolling(window=adx_window).mean()
 
@@ -293,11 +313,19 @@ class CompositeStrategy(Strategy):
         data['tr'] = data[['tr0', 'tr1', 'tr2']].max(axis=1)
         data['up_move'] = data['high'] - data['high'].shift()
         data['down_move'] = data['low'].shift() - data['low']
-        data['plus_dm'] = np.where((data['up_move'] > data['down_move']) & (data['up_move'] > 0), data['up_move'], 0)
-        data['minus_dm'] = np.where((data['down_move'] > data['up_move']) & (data['down_move'] > 0), data['down_move'], 0)
+        data['plus_dm'] = np.where(
+            (data['up_move'] > data['down_move']) & (data['up_move'] > 0), 
+            data['up_move'], 0
+        )
+        data['minus_dm'] = np.where(
+            (data['down_move'] > data['up_move']) & (data['down_move'] > 0), 
+            data['down_move'], 0
+        )
         adx_window = 14
-        data['plus_di'] = 100 * (data['plus_dm'].rolling(window=adx_window).mean() / data['tr'].rolling(window=adx_window).mean())
-        data['minus_di'] = 100 * (data['minus_dm'].rolling(window=adx_window).mean() / data['tr'].rolling(window=adx_window).mean())
+        tr_smooth = data['tr'].rolling(window=adx_window).mean()
+        data['plus_di'] = 100 * (data['plus_dm'].rolling(window=adx_window).mean() / tr_smooth)
+        data['minus_di'] = 100 * (data['minus_dm'].rolling(window=adx_window).mean() / tr_smooth)
+        
         data['dx'] = 100 * abs(data['plus_di'] - data['minus_di']) / (data['plus_di'] + data['minus_di'])
         data['adx'] = data['dx'].rolling(window=adx_window).mean()
         
@@ -350,11 +378,19 @@ class SMACrossoverStrategy(Strategy):
             data['tr'] = data[['tr0', 'tr1', 'tr2']].max(axis=1)
             data['up_move'] = data['high'] - data['high'].shift()
             data['down_move'] = data['low'].shift() - data['low']
-            data['plus_dm'] = np.where((data['up_move'] > data['down_move']) & (data['up_move'] > 0), data['up_move'], 0)
-            data['minus_dm'] = np.where((data['down_move'] > data['up_move']) & (data['down_move'] > 0), data['down_move'], 0)
+            data['plus_dm'] = np.where(
+                (data['up_move'] > data['down_move']) & (data['up_move'] > 0), 
+                data['up_move'], 0
+            )
+            data['minus_dm'] = np.where(
+                (data['down_move'] > data['up_move']) & (data['down_move'] > 0), 
+                data['down_move'], 0
+            )
             adx_window = 14
-            data['plus_di'] = 100 * (data['plus_dm'].rolling(window=adx_window).mean() / data['tr'].rolling(window=adx_window).mean())
-            data['minus_di'] = 100 * (data['minus_dm'].rolling(window=adx_window).mean() / data['tr'].rolling(window=adx_window).mean())
+            tr_smooth = data['tr'].rolling(window=adx_window).mean()
+            data['plus_di'] = 100 * (data['plus_dm'].rolling(window=adx_window).mean() / tr_smooth)
+            data['minus_di'] = 100 * (data['minus_dm'].rolling(window=adx_window).mean() / tr_smooth)
+            
             data['dx'] = 100 * abs(data['plus_di'] - data['minus_di']) / (data['plus_di'] + data['minus_di'])
             data['adx'] = data['dx'].rolling(window=adx_window).mean()
             
@@ -370,7 +406,10 @@ class SMACrossoverStrategy(Strategy):
         return data
 
 class RSI2Strategy(Strategy):
-    def __init__(self, rsi_window=2, sma_filter=200, exit_sma=5, rsi_long_threshold=10, rsi_short_threshold=90, sl_atr=None):
+    def __init__(
+        self, rsi_window=2, sma_filter=200, exit_sma=5, 
+        rsi_long_threshold=10, rsi_short_threshold=90, sl_atr=None
+    ):
         self.rsi_window = rsi_window
         self.sma_filter = sma_filter # Trend Filter (200 SMA)
         self.exit_sma = exit_sma # Mean Reversion Target

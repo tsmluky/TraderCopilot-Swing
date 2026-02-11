@@ -129,8 +129,10 @@ class SuperTrendStrategy:
                     trend_vals[i] = -1
             else:
                 # Init
-                if close_vals[i] > fu_vals[i]: trend_vals[i] = 1
-                else: trend_vals[i] = -1
+                if close_vals[i] > fu_vals[i]:
+                    trend_vals[i] = 1
+                else:
+                    trend_vals[i] = -1
         
         return trend_vals, fl_vals, fu_vals, atr
 
@@ -229,7 +231,8 @@ class SuperTrendStrategy:
         df = self._df_from_context(token_u, context)
         if df is None:
             df = get_ohlcv(token_u, tf, limit=300)
-        if df is None or len(df) < period + 10: return []
+        if df is None or len(df) < period + 10:
+            return []
         
         df = df.copy().reset_index(drop=True)
         trend, lower, upper, atr = self._calculate_supertrend(df, period, mult)

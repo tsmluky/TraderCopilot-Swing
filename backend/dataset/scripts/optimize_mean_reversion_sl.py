@@ -42,7 +42,8 @@ def run_mean_reversion_sl_optimization():
                 tester = Backtester(file, strategy, initial_capital=10000, start_date=start_date, end_date=end_date)
                 res = tester.run()
                 
-                if res['trades_count'] < 5: continue
+                if res['trades_count'] < 5:
+                    continue
 
                 results_data.append({
                     "Token": symbol,

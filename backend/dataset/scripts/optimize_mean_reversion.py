@@ -37,7 +37,7 @@ def run_mean_reversion_optimization():
                     tester = Backtester(file, strategy, initial_capital=10000)
                     res = tester.run()
                     
-                    variant_name = f"ADX<{adx if adx else 'X'}_RSI<{rsi if rsi else 'X'}"
+
                     
                     results_data.append({
                         "Token": symbol,

@@ -63,7 +63,10 @@ def run_mean_reversion_period_optimization():
         for symbol in df_res['Token'].unique():
             print(f"\n--- {symbol} ---")
             df_token = df_res[df_res['Token'] == symbol].sort_values(by='Return%', ascending=False)
-            print(df_token.head(3)[['ADX_Thresh', 'RSI_Thresh', 'Return%', 'MaxDD%', 'Trades']].to_markdown(index=False))
+            print(
+                df_token.head(3)[['ADX_Thresh', 'RSI_Thresh', 'Return%', 'MaxDD%', 'Trades']]
+                .to_markdown(index=False)
+            )
             
         with open('results_mean_reversion_2022_2024_summary.txt', 'w') as f:
             f.write("=== MEAN REVERSION (2022-2024) ===\n\n")

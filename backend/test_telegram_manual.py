@@ -22,7 +22,11 @@ def test_alert():
         print("Error: No bot token found in .env")
         return
 
-    msg = "🚀 <b>TEST ALERT</b>\nThis is a manual test from the backend.\nIf you see this, automatic alerts <i>should</i> work if the scheduler finds a signal."
+    msg = (
+        "🚀 <b>TEST ALERT</b>\n"
+        "This is a manual test from the backend.\n"
+        "If you see this, automatic alerts <i>should</i> work if the scheduler finds a signal."
+    )
     
     try:
         # Try sending to env ID first

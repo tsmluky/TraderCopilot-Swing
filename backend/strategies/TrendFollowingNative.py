@@ -220,7 +220,8 @@ class TrendFollowingNative:
         df["slow_ma"] = df["close"].rolling(slow_p).mean()
 
         last = df.iloc[-1]
-        if pd.isna(last["fast_ma"]): return []
+        if pd.isna(last["fast_ma"]):
+            return []
 
         fast = float(last["fast_ma"])
         slow = float(last["slow_ma"])
@@ -265,7 +266,8 @@ class TrendFollowingNative:
         df["slow_ma"] = df["close"].rolling(slow_p).mean()
         
         for i in range(slow_p, len(df)):
-            if pd.isna(df["fast_ma"].iloc[i]): continue
+            if pd.isna(df["fast_ma"].iloc[i]):
+                continue
             
             fast = df["fast_ma"].iloc[i]
             slow = df["slow_ma"].iloc[i]

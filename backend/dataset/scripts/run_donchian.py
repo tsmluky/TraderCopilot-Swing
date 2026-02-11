@@ -20,7 +20,10 @@ def run_all():
             tester = Backtester(file, strategy, initial_capital=10000)
             results = tester.run()
             
-            line = f"{symbol:<10} | {results['total_return']:>6.2f}%    | {results['trades_count']:<8} | ${results['final_equity']:<15.2f}\n"
+            line = (
+                f"{symbol:<10} | {results['total_return']:>6.2f}%    | "
+                f"{results['trades_count']:<8} | ${results['final_equity']:<15.2f}\n"
+            )
             print(line.strip())
             f.write(line)
             

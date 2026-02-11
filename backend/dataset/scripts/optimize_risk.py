@@ -24,7 +24,8 @@ def run_risk_optimization():
     for symbol, params in targets.items():
         file_pattern = f"data/{symbol}_*_1h.csv"
         files = glob.glob(file_pattern)
-        if not files: continue
+        if not files:
+            continue
         file = files[0]
         
         print(f"\nAnalyzing {symbol} (Base: W{params['window']}-E{params['exit_window']})...")
@@ -44,9 +45,9 @@ def run_risk_optimization():
                     tester = Backtester(file, strategy, initial_capital=10000)
                     res = tester.run()
                     
-                    variant_name = "Base"
+                    
                     if sl or tp:
-                        variant_name = f"SL{sl if sl else 'X'}_TP{tp if tp else 'X'}"
+                        pass
                     
                     results_data.append({
                         "Token": symbol,

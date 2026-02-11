@@ -27,8 +27,7 @@ def optimize_rsi2():
     for file in files:
         symbol = os.path.basename(file).split('_')[0]
         
-        best_return = -999
-        best_config = {}
+
         
         for rsi_entry, exit_sma, sma_filter in combinations:
             
