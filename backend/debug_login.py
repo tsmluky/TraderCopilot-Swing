@@ -1,9 +1,8 @@
 
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models_db import User
-from database import Base, DATABASE_URL
+from database import DATABASE_URL
 from core.trial_policy import get_access_tier, is_trial_active
 from core.entitlements import get_plan_entitlements
 import logging
@@ -25,7 +24,7 @@ def debug_login_logic():
             return
 
         print(f"Testing User: {user.email}")
-        print(f"Plan: {user.plan}, Role: {user.role}")
+        print(f"Plan: {user.plan}, Role: {getattr(user, 'role', 'N/A')}")
         print(f"Created At: {user.created_at}, Plan Expires At: {user.plan_expires_at}")
 
         # Test Trial Policy Logic
@@ -40,12 +39,13 @@ def debug_login_logic():
         print(f"Entitlements: {ent}")
 
         # Test Auth Response Construction (simulating auth_new.py)
-        plan_upper = (getattr(user, "plan", None) or "FREE").upper()
-        role = getattr(user, "role", "user")
+        # Just accessing them to verify they exist/don't crash
+        _ = (getattr(user, "plan", None) or "FREE").upper()
+        _ = getattr(user, "role", "user")
         
         print("Auth Logic Success!")
 
-    except Exception as e:
+    except Exception:
         logger.exception("Debug Login Failed!")
     finally:
         db.close()
