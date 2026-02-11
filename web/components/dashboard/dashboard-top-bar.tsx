@@ -38,7 +38,7 @@ export function DashboardTopBar({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-black/5 dark:border-white/5">
       {/* Token and Timeframe Selectors */}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
 
         {/* Token Selector */}
         <div className="bg-black/5 dark:bg-black/20 backdrop-blur-md p-1 rounded-xl border border-black/5 dark:border-white/5 flex items-center">
@@ -171,7 +171,7 @@ export function DashboardTopBar({
         <ChangelogModal />
 
         {/* Upgrade Button (Only for Non-PRO) */}
-        {user?.plan !== 'PRO' && (
+        {!['PRO', 'OWNER'].includes(user?.plan || '') && (
           <Link href="/pricing">
             <Button size="sm" className="gap-2 h-9 px-4 bg-gradient-to-r from-primary to-blue-600 border-0 shadow-lg shadow-primary/20 hover:scale-105 transition-all">
               Unlock Full Access
