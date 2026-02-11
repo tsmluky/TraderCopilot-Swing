@@ -15,7 +15,7 @@ def run_rsi2_baseline():
     
     results_data = []
 
-    print(f"Running RSI-2 Strategy Baseline...")
+    print("Running RSI-2 Strategy Baseline...")
     
     for file in files:
         symbol = os.path.basename(file).split('_')[0]

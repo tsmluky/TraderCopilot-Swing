@@ -88,7 +88,8 @@ class DonchianStrategy(Strategy):
             lowest_since_entry = 99999999
             
             for i in range(len(data)):
-                if i < self.window: continue
+                if i < self.window:
+                    continue
                 price = data['close'].iloc[i]
                 high = data['high'].iloc[i]
                 low = data['low'].iloc[i]
@@ -98,9 +99,12 @@ class DonchianStrategy(Strategy):
                 # Manage Long
                 if position == 1:
                     exit_signal = False
-                    if self.fixed_sl_atr and low < (entry_price - atr * self.fixed_sl_atr): exit_signal = True
-                    if self.fixed_tp_atr and high > (entry_price + atr * self.fixed_tp_atr): exit_signal = True
-                    if self.atr_trailing and price < (highest_since_entry - (atr * self.atr_trailing[1])): exit_signal = True
+                    if self.fixed_sl_atr and low < (entry_price - atr * self.fixed_sl_atr):
+                        exit_signal = True
+                    if self.fixed_tp_atr and high > (entry_price + atr * self.fixed_tp_atr):
+                        exit_signal = True
+                    if self.atr_trailing and price < (highest_since_entry - (atr * self.atr_trailing[1])):
+                        exit_signal = True
                     
                     # Channel Exit
                     if price < data['lower'].iloc[i]:
@@ -130,9 +134,12 @@ class DonchianStrategy(Strategy):
                 # Manage Short
                 elif position == -1:
                     exit_signal = False
-                    if self.fixed_sl_atr and high > (entry_price + atr * self.fixed_sl_atr): exit_signal = True
-                    if self.fixed_tp_atr and low < (entry_price - atr * self.fixed_tp_atr): exit_signal = True
-                    if self.atr_trailing and price > (lowest_since_entry + (atr * self.atr_trailing[1])): exit_signal = True
+                    if self.fixed_sl_atr and high > (entry_price + atr * self.fixed_sl_atr):
+                        exit_signal = True
+                    if self.fixed_tp_atr and low < (entry_price - atr * self.fixed_tp_atr):
+                        exit_signal = True
+                    if self.atr_trailing and price > (lowest_since_entry + (atr * self.atr_trailing[1])):
+                        exit_signal = True
                     
                     # Channel Exit
                     if price > data['upper'].iloc[i]:
@@ -238,17 +245,18 @@ class MeanReversionStrategy(Strategy):
             atr_series = data['tr'].rolling(window=14).mean() # Approx ATR
 
             for i in range(len(data)):
-                if i < self.window: continue
+                if i < self.window:
+                    continue
                 price = data['close'].iloc[i]
                 low = data['low'].iloc[i]
-                high = data['high'].iloc[i] 
                 idx = data.index[i]
                 atr = atr_series.iloc[i]
                 
                 if position == 1:
                     exit_signal = False
                     if self.sl_atr:
-                        if low < (entry_price - atr * self.sl_atr): exit_signal = True
+                        if low < (entry_price - atr * self.sl_atr):
+                            exit_signal = True
                     
                     if not exit_signal and price > data['ma'].iloc[i]:
                         exit_signal = True

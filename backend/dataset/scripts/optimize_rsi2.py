@@ -74,7 +74,7 @@ def optimize_rsi2():
                     "WinRate%": round(res['win_rate'], 2)
                 })
                 
-            except Exception as e:
+            except Exception:
                 pass
 
     # Save Output

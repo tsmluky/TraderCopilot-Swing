@@ -9,8 +9,8 @@ def run_composite_baseline():
     
     results_data = []
 
-    print(f"Running Composite Strategy (Regime Switching)...")
-    print(f"Logic: ADX < 25 -> Mean Reversion | ADX >= 25 -> Donchian")
+    print("Running Composite Strategy (Regime Switching)...")
+    print("Logic: ADX < 25 -> Mean Reversion | ADX >= 25 -> Donchian")
     
     for file in files:
         symbol = os.path.basename(file).split('_')[0]

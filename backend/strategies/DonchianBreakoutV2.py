@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-import numpy as np
 
 from core.schemas import Signal
 from market_data import get_ohlcv
@@ -302,7 +301,8 @@ class DonchianBreakoutV2:
         df["short_entry_band"] = df["low"].rolling(window=entry_w).min().shift(1)
         
         for i in range(max(entry_w, 20), len(df)):
-            if pd.isna(df["long_entry_band"].iloc[i]): continue
+            if pd.isna(df["long_entry_band"].iloc[i]):
+                continue
             
             close = df["close"].iloc[i]
             prev_close = df["close"].iloc[i-1]

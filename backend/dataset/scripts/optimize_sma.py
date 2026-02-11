@@ -40,7 +40,7 @@ def run_sma_optimization():
                         "Trades": res['trades_count'],
                         "Calmar": round(calmar, 2)
                     })
-                except Exception as e:
+                except Exception:
                     pass
 
     # Save Output

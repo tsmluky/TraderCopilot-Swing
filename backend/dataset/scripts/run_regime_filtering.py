@@ -9,7 +9,7 @@ def run_regime_filtering_test():
     
     results_data = []
 
-    print(f"Running Comparative Test: Donchian Classic vs. Smart Donchian (ADX > 25)...")
+    print("Running Comparative Test: Donchian Classic vs. Smart Donchian (ADX > 25)...")
     
     for file in files:
         symbol = os.path.basename(file).split('_')[0]

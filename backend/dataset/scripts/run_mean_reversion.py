@@ -3,7 +3,6 @@ from strategies import MeanReversionStrategy
 import glob
 import os
 import pandas as pd
-import numpy as np
 
 def run_mean_reversion_baseline():
     files = glob.glob('data/*_1h.csv')

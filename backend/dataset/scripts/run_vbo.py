@@ -14,7 +14,7 @@ def run_vbo_baseline():
     
     results_data = []
 
-    print(f"Running Volatility Breakout (Squeeze) Baseline...")
+    print("Running Volatility Breakout (Squeeze) Baseline...")
     
     for file in files:
         symbol = os.path.basename(file).split('_')[0]

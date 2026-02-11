@@ -12,8 +12,8 @@ def run_supertrend_baseline():
     
     results_data = []
 
-    print(f"Running SuperTrend Strategy Baseline...")
-    print(f"Parameters: ATR=10, Mult=3.0")
+    print("Running SuperTrend Strategy Baseline...")
+    print("Parameters: ATR=10, Mult=3.0")
     
     for file in files:
         symbol = os.path.basename(file).split('_')[0]

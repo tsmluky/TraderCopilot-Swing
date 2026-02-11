@@ -3,7 +3,6 @@ from strategies import DonchianStrategy
 import glob
 import os
 import pandas as pd
-import numpy as np
 
 def run_optimization():
     files = glob.glob('data/*_1h.csv')
@@ -48,14 +47,18 @@ def run_optimization():
                         "Calmar": calmar,
                         "WinRate%": res['win_rate']
                     })
-                except Exception as e:
+                except Exception:
                     pass
         
         # Determine Best for this token (by Calmar)
         df_token = pd.DataFrame(token_results)
         if not df_token.empty:
             best = df_token.sort_values(by='Calmar', ascending=False).iloc[0]
-            print(f"  -> BEST: Entry {best['Entry']} / Exit {best['Exit']} | Return: {best['Return%']:.0f}% | DD: {best['MaxDD%']:.1f}% | Calmar: {best['Calmar']:.2f}")
+            print(
+                f"  -> BEST: Entry {best['Entry']} / Exit {best['Exit']} | "
+                f"Return: {best['Return%']:.0f}% | DD: {best['MaxDD%']:.1f}% | "
+                f"Calmar: {best['Calmar']:.2f}"
+            )
             all_results.extend(token_results)
 
     # Save full results
@@ -66,10 +69,11 @@ def run_optimization():
     best_per_token = df_all.loc[df_all.groupby("Token")["Calmar"].idxmax()]
     
     print("\n=== OPTIMIZATION RESULTS (Best Risk-Adjusted) ===")
-    print(best_per_token[['Token', 'Entry', 'Exit', 'Return%', 'MaxDD%', 'Calmar', 'Trades']].round(2).to_markdown(index=False))
+    summary_cols = ['Token', 'Entry', 'Exit', 'Return%', 'MaxDD%', 'Calmar', 'Trades']
+    print(best_per_token[summary_cols].round(2).to_markdown(index=False))
     
     with open('results_optimization_summary.txt', 'w') as f:
-        f.write(best_per_token[['Token', 'Entry', 'Exit', 'Return%', 'MaxDD%', 'Calmar', 'Trades']].round(2).to_markdown(index=False))
+        f.write(best_per_token[summary_cols].round(2).to_markdown(index=False))
 
 if __name__ == "__main__":
     run_optimization()

@@ -65,7 +65,13 @@ class Backtester:
                 last_trade_cap = trades[-1]['capital']
                 trade_pnl = balance - last_trade_cap
                 
-                trades.append({'type': 'SELL_CLOSE', 'date': date, 'price': price, 'capital': balance, 'pnl': trade_pnl})
+                trades.append({
+                    'type': 'SELL_CLOSE',
+                    'date': date,
+                    'price': price,
+                    'capital': balance,
+                    'pnl': trade_pnl
+                })
                 position = 0
                 shares = 0
                 entry_price = 0
@@ -73,7 +79,7 @@ class Backtester:
             elif position == -1 and (signal == 1 or signal == 0):
                 # Close Short
                 # Cost to Close
-                cost_close = abs(shares) * price * (1 + self.commission)
+                # cost_close = abs(shares) * price * (1 + self.commission) # Unused
                 
                 # Gross PnL
                 gross_pnl = (entry_price - price) * abs(shares)
@@ -98,7 +104,13 @@ class Backtester:
                 
                 balance = collateral + net_pnl
                 
-                trades.append({'type': 'BUY_COVER', 'date': date, 'price': price, 'capital': balance, 'pnl': net_pnl})
+                trades.append({
+                    'type': 'BUY_COVER',
+                    'date': date,
+                    'price': price,
+                    'capital': balance,
+                    'pnl': net_pnl
+                })
                 position = 0
                 shares = 0
                 entry_price = 0

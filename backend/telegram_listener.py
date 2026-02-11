@@ -85,14 +85,17 @@ async def telegram_error_handler(update: object, context: ContextTypes.DEFAULT_T
     import telegram.error
     
     if isinstance(context.error, telegram.error.Conflict):
-        LOG.warning("⚠️ TELEGRAM CONFLICT DETECTED: Another instance (likely PROD) is running. Stopping local polling to prevent spam.")
+        LOG.warning(
+            "⚠️ TELEGRAM CONFLICT DETECTED: Another instance (likely PROD) is running. "
+            "Stopping local polling to prevent spam."
+        )
         print("⚠️ TELEGRAM CONFLICT: Backend detected another bot instance. Polling stopped.")
         
         # Stop the updater to prevent further conflict errors
         if context.application and context.application.updater:
             try:
                 await context.application.updater.stop()
-            except:
+            except Exception:
                 pass
         return
 

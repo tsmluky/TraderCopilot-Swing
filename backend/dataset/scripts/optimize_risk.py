@@ -1,9 +1,7 @@
 from backtest import Backtester
 from strategies import DonchianStrategy
 import glob
-import os
 import pandas as pd
-import numpy as np
 
 def run_risk_optimization():
     # Only optimizing SOL and BNB as requested
@@ -21,7 +19,7 @@ def run_risk_optimization():
     
     results_data = []
 
-    print(f"Starting Risk Optimization on SOL and BNB...")
+    print("Starting Risk Optimization on SOL and BNB...")
     
     for symbol, params in targets.items():
         file_pattern = f"data/{symbol}_*_1h.csv"

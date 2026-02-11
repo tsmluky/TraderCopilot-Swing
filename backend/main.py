@@ -28,7 +28,6 @@ load_dotenv()
 
 from database import SessionLocal, engine, Base, get_db
 from models_db import User, Signal, SignalEvaluation
-from telegram_listener import start_telegram_polling
 
 from routers.auth_new import router as auth_router
 from routers.analysis import router as analysis_router

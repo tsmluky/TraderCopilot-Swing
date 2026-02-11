@@ -37,7 +37,7 @@ def run_sma_variants_optimization():
     
     results_data = []
 
-    print(f"Running SMA/EMA Variants Optimization on BTC & ETH...")
+    print("Running SMA/EMA Variants Optimization on BTC & ETH...")
     
     for file in target_files:
         symbol = os.path.basename(file).split('_')[0]
@@ -71,7 +71,7 @@ def run_sma_variants_optimization():
                         "MaxDD%": round(res['max_drawdown'], 2),
                         "Calmar": round(calmar, 2)
                     })
-                except Exception as e:
+                except Exception:
                     pass
 
     # Save Output

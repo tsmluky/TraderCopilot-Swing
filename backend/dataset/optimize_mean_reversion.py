@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 import os
-from datetime import datetime
 
 # Configuration
 DATA_DIR = r"c:\Users\lukx\Desktop\TraderCopilot-Swing\backend\dataset\data"
@@ -111,7 +110,8 @@ def run_optimization():
     
     for token in TOKENS:
         df = load_data(token)
-        if df is None: continue
+        if df is None:
+            continue
         
         print(f"\nAnalyzing {token} ({len(df)} candles)...")
         best_ret = -999
@@ -142,7 +142,11 @@ def run_optimization():
         
         if best_config:
             filter_txt = "ON" if best_config[3] else "OFF"
-            print(f" -> BEST {token}: Filter={filter_txt}, RSI {best_config[0]}/{best_config[1]}, BB {best_config[2]} => Return: {best_ret:.2f}%")
+            print(
+                f" -> BEST {token}: Filter={filter_txt}, "
+                f"RSI {best_config[0]}/{best_config[1]}, "
+                f"BB {best_config[2]} => Return: {best_ret:.2f}%"
+            )
 
     print("\n--- NEW OPTIMIZED CONFIG ---")
     final_df = pd.DataFrame(results)

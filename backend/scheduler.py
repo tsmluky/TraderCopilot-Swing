@@ -338,7 +338,7 @@ class StrategyScheduler:
                 if base_strategy_code in disabled_list or sig.strategy_id in disabled_list:
                     continue
                 valid_users.append(u)
-            except:
+            except Exception:
                 # Safe default: Send if error parsing JSON
                 valid_users.append(u)
         

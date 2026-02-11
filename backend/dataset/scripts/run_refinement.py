@@ -3,7 +3,6 @@ from strategies import DonchianStrategy
 import glob
 import os
 import pandas as pd
-import numpy as np
 
 def run_refinement():
     files = glob.glob('data/*_1h.csv')

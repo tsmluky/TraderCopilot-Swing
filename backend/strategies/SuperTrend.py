@@ -92,10 +92,6 @@ class SuperTrendStrategy:
         basic_lower = hl2 - (multiplier * atr)
         
         # Final Bands
-        final_upper = pd.Series(0.0, index=df.index)
-        final_lower = pd.Series(0.0, index=df.index)
-        trend = pd.Series(0, index=df.index)
-        
         # Numba optimization would be better here, but using loop for compatibility
         # We need to iterate
         
@@ -174,7 +170,7 @@ class SuperTrendStrategy:
             if prev_trend == -1 and curr_trend == 1:
                 # Buy Signal
                 sl_level = lower[last_idx]
-                rationale = f"SuperTrend Flip to Bullish. Price closed above Trend Line."
+                rationale = "SuperTrend Flip to Bullish. Price closed above Trend Line."
                 
                 signals.append(Signal(
                     timestamp=datetime.utcnow(),
@@ -195,7 +191,7 @@ class SuperTrendStrategy:
             elif prev_trend == 1 and curr_trend == -1:
                 # Sell Signal
                 sl_level = upper[last_idx]
-                rationale = f"SuperTrend Flip to Bearish. Price closed below Trend Line."
+                rationale = "SuperTrend Flip to Bearish. Price closed below Trend Line."
                 
                 signals.append(Signal(
                     timestamp=datetime.utcnow(),

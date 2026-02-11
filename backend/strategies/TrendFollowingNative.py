@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-import numpy as np
 
 from core.schemas import Signal
 from market_data import get_ohlcv
@@ -233,9 +232,8 @@ class TrendFollowingNative:
         
         items = []
         if gap_pct <= near_gap_pct:
-            # Converging
-            bias = "Bullish" if fast < slow else "Bearish" # If fast < slow, it's organizing for a bull cross? Or just noise? 
-            # Actually if Gap is small, a cross is imminent.
+            # Converging: Cross is imminent.
+            pass
             # If Fast < Slow, we expect Bull Cross (Up)
             # If Fast > Slow, we expect Bear Cross (Down)
             

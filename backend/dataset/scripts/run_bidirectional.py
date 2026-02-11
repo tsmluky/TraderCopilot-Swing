@@ -21,7 +21,7 @@ def run_bidirectional_test():
     
     results_data = []
 
-    print(f"Running Bi-Directional Strategy Tests...")
+    print("Running Bi-Directional Strategy Tests...")
     
     for file in files:
         symbol = os.path.basename(file).split('_')[0]

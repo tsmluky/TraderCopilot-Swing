@@ -1,7 +1,6 @@
 from backtest import Backtester
 from strategies import DonchianStrategy
 import glob
-import os
 import pandas as pd
 
 # === OPTIMAL CONFIGURATION PER TOKEN ===

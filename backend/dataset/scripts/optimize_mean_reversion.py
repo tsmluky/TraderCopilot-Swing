@@ -3,7 +3,6 @@ from strategies import MeanReversionStrategy
 import glob
 import os
 import pandas as pd
-import numpy as np
 
 def run_mean_reversion_optimization():
     files = glob.glob('data/*_1h.csv')
@@ -50,7 +49,7 @@ def run_mean_reversion_optimization():
                         "WinRate%": round(res['win_rate'], 1),
                         "FinalEquity": round(res['final_equity'], 2)
                     })
-                except Exception as e:
+                except Exception:
                     pass
 
     # Save Output

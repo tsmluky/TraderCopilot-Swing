@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-import numpy as np
 
 from core.schemas import Signal
 from market_data import get_ohlcv
@@ -50,7 +49,7 @@ class MeanReversionBollinger:
     PARAMS = {
         "SOL": {"rsi_period": 14, "overbought": 65, "oversold": 35, "bb_std": 2.0, "trend_filter": True},
         "BTC": {"rsi_period": 14, "overbought": 70, "oversold": 30, "bb_std": 2.0, "trend_filter": True},
-        "ETH": {"rsi_period": 14, "overbought": 60, "oversold": 40, "bb_std": 1.8, "trend_filter": True}, # Tighter for "Heavy" asset
+        "ETH": {"rsi_period": 14, "overbought": 60, "oversold": 40, "bb_std": 1.8, "trend_filter": True},
         "BNB": {"rsi_period": 14, "overbought": 65, "oversold": 35, "bb_std": 2.0, "trend_filter": True},
         "DEFAULT": {"rsi_period": 14, "overbought": 70, "oversold": 30, "bb_std": 2.5, "trend_filter": True}
     }
@@ -356,7 +355,10 @@ class MeanReversionBollinger:
 
              if trend_ok:
                  tentative_entry = lower
-                 tentative_tp = sma if self.defaults["tp_method"] == "SMA" else (tentative_entry + (self.defaults["tp_atr_mult"] * atr))
+                 if self.defaults["tp_method"] == "SMA":
+                     tentative_tp = sma
+                 else:
+                     tentative_tp = tentative_entry + (self.defaults["tp_atr_mult"] * atr)
                  tentative_sl = tentative_entry - (self.defaults["sl_atr_mult"] * atr)
                  conf = self._confidence(rsi, 0.0)
                  
@@ -388,7 +390,10 @@ class MeanReversionBollinger:
 
              if trend_ok:
                  tentative_entry = upper
-                 tentative_tp = sma if self.defaults["tp_method"] == "SMA" else (tentative_entry - (self.defaults["tp_atr_mult"] * atr))
+                 if self.defaults["tp_method"] == "SMA":
+                     tentative_tp = sma
+                 else:
+                     tentative_tp = tentative_entry - (self.defaults["tp_atr_mult"] * atr)
                  tentative_sl = tentative_entry + (self.defaults["sl_atr_mult"] * atr)
                  conf = self._confidence(rsi, 0.0)
 
