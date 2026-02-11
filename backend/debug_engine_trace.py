@@ -1,7 +1,6 @@
 import sys
 import os
-import json
-from datetime import datetime
+
 
 # Setup paths
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -14,7 +13,8 @@ from strategies.registry import load_default_strategies
 # Init Registry
 load_default_strategies()
 
-def debug_run(token="BTC", timeframe="1h"): # Use '1h' lowercase to match CCXT expectations if needed, but engine handles it.
+def debug_run(token="BTC", timeframe="1h"): 
+    # Use '1h' lowercase to match CCXT expectations if needed, but engine handles it.
     print(f"--- DEBUG RUN: {token} {timeframe} ---")
     db = SessionLocal()
     try:
@@ -36,7 +36,8 @@ def debug_run(token="BTC", timeframe="1h"): # Use '1h' lowercase to match CCXT e
         print("\n--- STRATEGIES RUN ---")
         strats = indicators.get("strategies", [])
         for s in strats:
-            print(f"  > {s.get('strategy_id')}: OK={s.get('ok')} Setup={s.get('has_setup')} Dir={s.get('direction')} Err={s.get('error')}")
+            print(f"  > {s.get('strategy_id')}: OK={s.get('ok')} "
+                  f"Setup={s.get('has_setup')} Dir={s.get('direction')} Err={s.get('error')}")
             if s.get("state"):
                 print(f"    State: {str(s.get('state'))[:100]}...")
 
@@ -44,7 +45,8 @@ def debug_run(token="BTC", timeframe="1h"): # Use '1h' lowercase to match CCXT e
         watchlist = lite.watchlist
         if watchlist:
             for w in watchlist:
-                print(f"  > {w.get('strategy_id')} ({w.get('token')}): Dist={w.get('distance_atr')} Reason={w.get('reason')}")
+                print(f"  > {w.get('strategy_id')} ({w.get('token')}): "
+                      f"Dist={w.get('distance_atr')} Reason={w.get('reason')}")
         else:
             print("  (Empty Watchlist)")
 

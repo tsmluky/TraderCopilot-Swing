@@ -1,5 +1,4 @@
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
 # import models_db # Avoid importing if possible to avoid deps, but best to use raw SQL or models
 import json
 import ast
@@ -10,7 +9,9 @@ def migrate_manual_signals():
     try:
         # Find signals that are manual but have strategy_id != 'MARKET_SCANNER'
         # source might be 'manual_scanner' or 'manual'
-        result = db.execute(text("SELECT id, strategy_id, extra, raw_response FROM signals WHERE (source = 'manual_scanner' OR source = 'manual') AND strategy_id != 'MARKET_SCANNER'"))
+        result = db.execute(text("SELECT id, strategy_id, extra, raw_response FROM signals "
+                                 "WHERE (source = 'manual_scanner' OR source = 'manual') "
+                                 "AND strategy_id != 'MARKET_SCANNER'"))
         
         count = 0
         for row in result:
@@ -22,12 +23,12 @@ def migrate_manual_signals():
             if row.extra:
                 try:
                     current_extra = json.loads(row.extra)
-                except:
+                except Exception:
                     pass
             elif row.raw_response:
                 try:
                     current_extra = ast.literal_eval(row.raw_response)
-                except:
+                except Exception:
                     pass
             
             # Update extra
@@ -36,7 +37,8 @@ def migrate_manual_signals():
             
             # Recalculate Idempotency Key
             # Key format from signal_logger.py: 
-            # f"{signal.strategy_id}|{signal.token.upper()}|{signal.timeframe}|{ts_iso}|{signal.direction.lower()}|{signal.user_id}|{signal.mode}"
+            # f"{signal.strategy_id}|{signal.token.upper()}|{signal.timeframe}|
+            #  {ts_iso}|{signal.direction.lower()}|{signal.user_id}|{signal.mode}"
             
             # We need to fetch other fields to reconstruct key
             # But wait, we can't easily perform string format in SQL in portable way.
@@ -48,9 +50,9 @@ def migrate_manual_signals():
             # For this script to be simple and safe on production without complex logic:
             # We will just update strategy_id and extra. 
             # The idempotency key was useful for INSERT deduplication. 
-            # Updating existing rows doesn't trigger the unique check against *itself*, but might collide with others.
-            # BUT, the key is derived. If we ever re-generate the signal, it would generate a NEW key with MARKET_SCANNER.
-            # If we don't update the key on the old row, the new signal WOULD be inserted as a duplicate (if it perfectly matches).
+            # Updating existing rows doesn't trigger the unique check against *itself*, but might collide.
+            # BUT, the key is derived. If we ever re-generate the signal, it would generate a NEW key.
+            # If we don't update the key on the old row, the new signal WOULD be inserted as a duplicate.
             # So we SHOULD update the key to match the new ID, so it "occupies" that slot.
             
             # Fetch full row data for key generation
@@ -67,7 +69,8 @@ def migrate_manual_signals():
                 )
                 
                 # Update DB
-                db.execute(text("UPDATE signals SET strategy_id = 'MARKET_SCANNER', extra = :extra, source = 'manual_scanner', idempotency_key = :ikey WHERE id = :id"), 
+                db.execute(text("UPDATE signals SET strategy_id = 'MARKET_SCANNER', extra = :extra, "
+                                "source = 'manual_scanner', idempotency_key = :ikey WHERE id = :id"), 
                            {"extra": new_extra_json, "id": sig_id, "ikey": idem_key})
                 count += 1
             except Exception as e:

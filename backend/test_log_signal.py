@@ -1,8 +1,6 @@
 import sys
 import os
 from datetime import datetime
-from unittest.mock import MagicMock
-
 # Setup paths
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
