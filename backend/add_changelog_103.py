@@ -1,5 +1,3 @@
-import sys
-from sqlalchemy.orm import Session
 from database import SessionLocal
 from models_db import Changelog
 import json
@@ -13,7 +11,8 @@ def main():
             title="Optimización de Estrategias",
             description="Ajuste temporal en los módulos de análisis para mejorar la precisión global del sistema.",
             changes=json.dumps([
-                "Temporalmente estrategias Donchian Breakout y Trend Surfer SMA desactivadas (en gris) para evaluación de rendimiento."
+                "Temporalmente estrategias Donchian Breakout y Trend Surfer "
+                "SMA desactivadas (en gris) para evaluación de rendimiento."
             ]),
             type="minor"
         )
