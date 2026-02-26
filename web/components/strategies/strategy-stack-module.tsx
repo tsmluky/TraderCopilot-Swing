@@ -17,7 +17,7 @@ export interface StrategyOffering {
     tokens: string[]
     all_tokens?: string[]
     locked: boolean
-    locked_reason?: string
+    locked_reason?: "UPGRADE_REQUIRED" | "TRIAL_EXPIRED" | "DISABLED" | string
     plan_required?: string
     badges?: string[]
     win_rate?: string
@@ -110,19 +110,22 @@ export function StrategyStackModule({
     }, [strategyCode])
 
     const isLocked = selectedVariant.locked
+    const isDisabledSystem = selectedVariant.locked_reason === "DISABLED"
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation()
-        if (!isLocked) {
+        if (!isLocked && !isDisabledSystem) {
             onToggle(!isEnabled)
         }
     }
+
+    const isEffectivelyDisabled = !isEnabled || isDisabledSystem
 
     return (
         <>
             <div className={cn(
                 "group relative w-full transition-all duration-500",
-                !isEnabled && "opacity-70 grayscale-[0.6] hover:opacity-90 hover:grayscale-[0.4]"
+                isEffectivelyDisabled && "opacity-70 grayscale-[0.6] hover:opacity-90 hover:grayscale-[0.4]"
             )}>
                 {/* Connecting Bus Line (Left - Compact) */}
                 {!isLast && (
@@ -133,25 +136,25 @@ export function StrategyStackModule({
 
                     {/* 1. Status Core (Power Button Only) */}
                     <div
-                        className="flex flex-col items-center justify-center py-3 pl-2 pr-4 cursor-pointer z-20 relative"
+                        className={cn("flex flex-col items-center justify-center py-3 pl-2 pr-4 z-20 relative", !isDisabledSystem && "cursor-pointer")}
                         onClick={handleToggle}
-                        title={isEnabled ? "Deactivate Module" : "Activate Module"}
+                        title={isDisabledSystem ? "Module Disabled Temporarily" : (isEnabled ? "Deactivate Module" : "Activate Module")}
                     >
                         {/* Power Button Container */}
                         <div className={cn(
                             "w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-300 shadow-sm relative overflow-hidden group/power",
-                            isEnabled
+                            isEnabled && !isDisabledSystem
                                 ? cn(theme.bgActive, theme.border, theme.shadow)
                                 : "bg-white border-zinc-200 hover:border-zinc-300 dark:bg-card/40 dark:border-border/30 dark:hover:bg-card/60 dark:hover:border-border/60"
                         )}>
                             {/* Inner Glow for Active State */}
-                            {isEnabled && (
+                            {isEnabled && !isDisabledSystem && (
                                 <div className={cn("absolute inset-0 opacity-20 bg-gradient-to-br", theme.bgGradient)} />
                             )}
 
                             <Power className={cn(
                                 "w-5 h-5 transition-all duration-300",
-                                isEnabled ? theme.icon : "text-zinc-300 group-hover/power:text-zinc-400 dark:text-muted-foreground/40 dark:group-hover/power:text-foreground"
+                                (isEnabled && !isDisabledSystem) ? theme.icon : "text-zinc-300 group-hover/power:text-zinc-400 dark:text-muted-foreground/40 dark:group-hover/power:text-foreground"
                             )} />
                         </div>
                     </div>
@@ -159,14 +162,14 @@ export function StrategyStackModule({
                     {/* 2. Main Module Body (Compact Blade) */}
                     <div className={cn(
                         "flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 my-1 mr-1 rounded-xl border transition-all duration-300 cursor-pointer group/card relative overflow-hidden",
-                        isEnabled
+                        isEnabled && !isDisabledSystem
                             ? cn("bg-card/40 backdrop-blur-sm border-border/40 hover:border-border/80 hover:bg-card/60 hover:shadow-lg", theme.border)
                             : "bg-card/10 border-border/10 hover:bg-card/20 hover:border-border/30"
                     )}
-                        onClick={() => !isLocked && setShowDetails(true)}
+                        onClick={() => !isLocked && !isDisabledSystem && setShowDetails(true)}
                     >
                         {/* Background Subtle Gradient */}
-                        {isEnabled && (
+                        {isEnabled && !isDisabledSystem && (
                             <div className={cn("absolute inset-0 opacity-[0.03] bg-gradient-to-r", theme.bgGradient)} />
                         )}
 
@@ -175,12 +178,13 @@ export function StrategyStackModule({
                             <div className="flex items-center gap-3 mb-1.5">
                                 <h3 className={cn(
                                     "font-bold text-lg tracking-tight transition-colors duration-300",
-                                    isEnabled ? "text-foreground" : "text-muted-foreground"
+                                    (isEnabled && !isDisabledSystem) ? "text-foreground" : "text-muted-foreground"
                                 )}>
                                     {strategyName}
                                 </h3>
-                                {isLocked && <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-widest border-muted text-muted-foreground px-1.5 py-0">Locked</Badge>}
-                                {!isLocked && isEnabled && (
+                                {isDisabledSystem && <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-widest border-muted text-muted-foreground px-1.5 py-0 bg-secondary/10">Disabled</Badge>}
+                                {isLocked && !isDisabledSystem && <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-widest border-muted text-muted-foreground px-1.5 py-0">Locked</Badge>}
+                                {!isLocked && !isDisabledSystem && isEnabled && (
                                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-background/50 border border-border/50 shadow-sm">
                                         <div className={cn("w-1 h-1 rounded-full animate-pulse", theme.bar)} />
                                         <span className={cn("text-[9px] font-bold tracking-widest uppercase", theme.accent)}>Active</span>
@@ -224,7 +228,7 @@ export function StrategyStackModule({
                         {/* Action Arrow (Subtle) */}
                         <div className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center border border-transparent transition-all duration-300",
-                            isEnabled ? "group-hover/card:bg-background group-hover/card:border-border group-hover/card:shadow-md text-muted-foreground" : "opacity-0"
+                            (isEnabled && !isDisabledSystem) ? "group-hover/card:bg-background group-hover/card:border-border group-hover/card:shadow-md text-muted-foreground" : "opacity-0"
                         )}>
                             <ArrowUpRight className="w-4 h-4" />
                         </div>

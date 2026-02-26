@@ -33,17 +33,17 @@ PLANS: Dict[PlanType, PlanEntitlements] = {
     "TRIAL": {
         "tokens": ["BTC", "ETH"],
         "timeframes": ["4H", "1D"],
-        "strategies": ["DONCHIAN_V2", "SMA_CROSSOVER", "SUPER_TREND", "MEAN_REVERSION_V1"],
+        "strategies": ["SUPER_TREND", "MEAN_REVERSION_V1"],
     },
     "TRADER": {
         "tokens": ["BTC", "ETH", "SOL"],
         "timeframes": ["4H", "1D"],
-        "strategies": ["DONCHIAN_V2", "SMA_CROSSOVER", "SUPER_TREND", "MEAN_REVERSION_V1"],
+        "strategies": ["SUPER_TREND", "MEAN_REVERSION_V1"],
     },
     "PRO": {
         "tokens": ["BTC", "ETH", "SOL", "BNB", "XRP"],
         "timeframes": ["1H", "4H", "1D"],
-        "strategies": ["DONCHIAN_V2", "SMA_CROSSOVER", "SUPER_TREND", "MEAN_REVERSION_V1"],
+        "strategies": ["SUPER_TREND", "MEAN_REVERSION_V1"],
     }
 }
 
@@ -124,6 +124,15 @@ def get_user_entitlements(user: Optional[User]) -> Dict[str, List[StrategyOfferi
                     "tokens": user_tokens,
                     "all_tokens": max_tokens, # Send full list so UI can show diff
                     "locked": False, "locked_reason": None, "plan_required": None, "badges": [] 
+                })
+            elif strat_code in ["DONCHIAN_V2", "SMA_CROSSOVER"]:
+                # Forcefully disabled strategies
+                 locked_offerings.append({
+                    "id": offering_id, "strategy_code": strat_code, "strategy_name": name,
+                    "timeframe": tf, 
+                    "tokens": [],
+                    "all_tokens": max_tokens,
+                    "locked": True, "locked_reason": "DISABLED", "plan_required": None, "badges": ["DISABLED"]
                 })
             elif is_in_my_plan and is_trial_expired:
                  locked_offerings.append({
