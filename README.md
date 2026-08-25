@@ -1,115 +1,104 @@
-#  TraderCopilot Swing
-### Institutional-Grade AI Assistant for Swing Trading
+# TraderCopilot Swing
 
-![License](https://img.shields.io/badge/license-Proprietary-black?style=for-the-badge)
-![Python](https://img.shields.io/badge/python-3.11+-blue?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-16.0-black?style=for-the-badge&logo=next.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+[![CI](https://img.shields.io/github/actions/workflow/status/tsmluky/TraderCopilot-Swing/ci.yml?label=CI&style=flat-square)](https://github.com/tsmluky/TraderCopilot-Swing/actions)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql&logoColor=white)
 
----
+> Plataforma de señales para swing trading. El motor cuantitativo dice **cuándo**, y la capa
+> de IA explica **por qué**, con el nivel donde la idea deja de ser válida.
 
-##  The Vision
-**TraderCopilot Swing** is not just another trading bot; it is a **comprehensive intelligence platform** designed to bridge the gap between retail and institutional trading. 
+## Por qué existe
 
-By combining **Quantitative Rigor** (Donchian Breakouts, Trend Following) with **Generative AI** (RAG-enhanced Market Analysis), it provides traders with a "Copilot" that doesn't just signal *when* to trade, but explains *why*.
+Es la segunda versión de [TraderCopilot](https://github.com/tsmluky/Trader-Copilot). La
+primera intentaba servir a todos los horizontes a la vez y no servía bien a ninguno. Esta se
+centra en swing: operaciones de días o semanas, donde hay tiempo para pensar y la calidad del
+análisis pesa más que la latencia.
 
----
+El problema de fondo es el mismo. Una señal sin explicación no se puede evaluar, así que o la
+obedeces a ciegas o la ignoras. Y un LLM preguntado a pelo opina con seguridad sobre un
+gráfico que no ha visto.
 
-##  Key Features
+Aquí la señal la calcula un motor determinista y la explicación la redacta un modelo que
+recibe **exactamente los mismos datos**: precio, indicadores, datos on-chain, sentimiento y
+noticias del activo. No adivina el contexto, se lo damos.
 
-###  AI Analyst Core (RAG Engine)
-*   **Context-Aware Intelligence**: Retrieves real-time data from 5+ sources (Price Action, On-Chain Data, Social Sentiment, News) to generate institutional-grade trade theses.
-*   **Gemini 2.0 Integration**: Powered by Google's latest LLM models for sub-second inference and deep reasoning.
-*   **Structured Reports**: Generates detailed Markdown reports with "Executive Summaries", "Risk Assessments", and "Invalidation Levels".
+## Qué hace
 
-###  Quantitative Signal Engine
-*   **Multi-Strategy Support**:
-    *   **Donchian V2**: Classic breakout strategy optimized for volatility compression.
-    *   **Trend Native**: Pure trend-following logic for high-timeframe captures.
-*   **Real-Time Screening**: Scans 50+ markets simultaneously for setup criteria.
-*   **Smart Filtering**: Filters out low-quality chops using ADX and Volatility thresholds.
+**Motor de señales.** Estrategias independientes, cada una en su módulo y registradas en un
+`registry`: ruptura de Donchian, seguimiento de tendencia, SuperTrend, y reversión a la media
+con RSI o con bandas de Bollinger. Escanea muchos mercados por ciclo y filtra los que no
+cumplen los criterios de entrada.
 
-###  Premium User Experience (Frontend)
-*   **Modern Stack**: Built with **Next.js 16 (App Router)** and **React 19**.
-*   **Glassmorphic Design**: Sleek, dark-themed UI with **Tailwind CSS 4** and **Radix UI** primitives.
-*   **Interactive Visualization**: Dynamic charts powered by **Recharts**.
-*   **Mobile-First**: Fully responsive with native-like drawers (Vaul) and touch gestures.
+**Analista con RAG.** Para cada señal genera un informe en Markdown con resumen ejecutivo,
+evaluación de riesgo y, lo más útil, **el nivel de invalidación**: el precio a partir del cual
+la idea deja de tener sentido. El contexto sale de `backend/brain/<activo>/`, donde viven la
+tesis, los catalizadores, el riesgo, el playbook, las noticias, los datos on-chain y el
+sentimiento de cada activo.
 
-###  Enterprise-Grade Backend
-*   **Robust API**: Async **FastAPI** architecture capable of handling high-concurrency requests.
-*   **Self-Healing Database**: Automatic schema migrations on startup with **Alembic**.
-*   **Secure Auth**: HttpOnly Cookies, JWT, and Role-Based Access Control (RBAC).
-*   **Billing & Monetization**: Deep integration with **Stripe** for subscription management.
+**Varios proveedores de IA.** Gemini, DeepSeek, OpenAI y Anthropic detrás de una misma
+interfaz, así que cambiar de modelo es configuración.
 
----
+**Backtesting.** Validación contra histórico antes de confiar en una estrategia.
 
-##  Technology Stack
+**Avisos por Telegram** y **suscripciones con Stripe.**
 
-### Backend
-*   **Language**: Python 3.11
-*   **Framework**: FastAPI
-*   **Database**: PostgreSQL + SQLAlchemy (Async)
-*   **Migrations**: Alembic (Auto-healing)
-*   **AI Provider**: Google Gemini (via `google-generativeai`)
-*   **Payments**: Stripe API
+## Estado
 
-### Frontend (`/web`)
-*   **Framework**: Next.js 16 (App Router)
-*   **Library**: React 19
-*   **Styling**: Tailwind CSS 4 + Tailwind Animate
-*   **State**: Server Components + React Hooks
-*   **Components**: Radix UI (Headless), Lucide React (Icons)
-*   **Charts**: Recharts
+Proyecto personal, de enero a **febrero de 2026**. Funcional pero **no mantenido**: fue el
+último trabajo antes de pasarme a agentes conversacionales en
+[Studio32](https://github.com/tsmluky/studio32-agent). La raíz del repositorio conserva
+scripts de depuración de la época.
 
----
+## Puesta en marcha
 
-##  Getting Started
+Python 3.11 o superior, Node.js 20 o superior y PostgreSQL 16.
 
-### Prerequisites
-*   Python 3.11+
-*   Node.js 18+ (for Frontend)
-*   PostgreSQL 14+
-*   Git
-
-### 1. Clone the Repository
 ```bash
 git clone https://github.com/tsmluky/TraderCopilot-Swing.git
 cd TraderCopilot-Swing
 ```
 
-### 2. Backend Setup
+Backend:
+
 ```bash
 cd backend
 python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux/Mac
-source .venv/bin/activate
-
+.venv\Scripts\activate         # en Linux o Mac: source .venv/bin/activate
 pip install -r requirements.txt
-
-# Run the Server (Auto-migrates DB on start)
-python main.py
+cp .env.example .env           # claves de API y DATABASE_URL
+uvicorn main:app --reload      # migra la base al arrancar
 ```
-*Port: `8000`*
 
-### 3. Frontend Setup
+Frontend:
+
 ```bash
-cd web
+cd ../web
 npm install
 npm run dev
 ```
-*Port: `3000`*
 
----
+Backend en `http://localhost:8000`, con la API documentada en `/docs`. Interfaz en
+`http://localhost:3000`.
 
-##  Gallery
-*(Add your premium screenshots here)*
+## Stack
 
----
+| Capa | Qué usa |
+|---|---|
+| Backend | Python 3.11, FastAPI, SQLAlchemy, Alembic |
+| Base de datos | PostgreSQL 16 |
+| IA | Gemini, DeepSeek, OpenAI y Anthropic tras una interfaz común |
+| Frontend | Next.js 16, React 19, TypeScript |
+| Autenticación | JWT |
+| Pagos | Stripe |
+| Avisos | Telegram |
 
-##  License
-Proprietary Software. All rights reserved.
-Developed by **Lukx** for **TraderCopilot**.
+## Aviso
+
+Herramienta de análisis con fines educativos. **No es asesoramiento financiero** y no ejecuta
+operaciones por ti. Operar conlleva riesgo real de pérdida.
+
+Las claves de API van en tu `.env` y nunca se versionan.
+
+Escrito por Francisco Iannicelli · [github.com/tsmluky](https://github.com/tsmluky)
